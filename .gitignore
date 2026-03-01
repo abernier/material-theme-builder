@@ -6,5 +6,7 @@ package-lock.json
 material-theme
 src/fixtures/.dtcg-schemas
 
+figma-plugin/code.js
+
 src/stories
 .DS_Store

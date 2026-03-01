@@ -11,11 +11,17 @@ import React, {
 import { builder, type McuConfig, type TokenName } from "./lib/builder";
 import { createRequiredContext } from "./lib/createRequiredContext";
 
+/** Return type of builder().toFigmaTokens() */
+export type FigmaTokens = ReturnType<
+  ReturnType<typeof builder>["toFigmaTokens"]
+>;
+
 type Api = {
   initials: McuConfig;
   setMcuConfig: (config: McuConfig) => void;
   getMcuColor: (colorName: TokenName, theme?: string) => string;
   allPalettes: Record<string, TonalPalette>;
+  figmaTokens: FigmaTokens;
 };
 
 const [useMcu, Provider, McuContext] = createRequiredContext<Api>();
@@ -41,10 +47,13 @@ export const McuProvider = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [configKey]);
 
-  const { css, mergedColorsLight, mergedColorsDark, allPalettes } =
+  const { css, mergedColorsLight, mergedColorsDark, allPalettes, figmaTokens } =
     useMemo(() => {
-      const { toCss, ...rest } = builder(mcuConfig.source, mcuConfig);
-      return { css: toCss(), ...rest };
+      const { toCss, toFigmaTokens, ...rest } = builder(
+        mcuConfig.source,
+        mcuConfig,
+      );
+      return { css: toCss(), figmaTokens: toFigmaTokens(), ...rest };
     }, [mcuConfig]);
 
   //
@@ -92,8 +101,9 @@ export const McuProvider = ({
         setMcuConfig,
         getMcuColor,
         allPalettes,
+        figmaTokens,
       }) satisfies Api,
-    [getMcuColor, initials, allPalettes],
+    [getMcuColor, initials, allPalettes, figmaTokens],
   );
 
   return <Provider value={value}>{children}</Provider>;

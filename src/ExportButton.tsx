@@ -1,3 +1,4 @@
+import { Fab } from "./components/ui/Fab";
 import type { McuConfig } from "./lib/builder";
 import { builder } from "./lib/builder";
 
@@ -36,11 +37,11 @@ export function ExportButton({ config }: ExportButtonProps) {
   };
 
   return (
-    <button
+    <Fab
       onClick={handleExport}
       title="Export Figma Tokens"
       aria-label="Export Figma Tokens"
-      className="fixed bottom-6 right-6 z-50 flex size-14 items-center justify-center rounded-full bg-primary text-on-primary shadow-lg transition-shadow hover:shadow-xl active:shadow-md cursor-pointer"
+      className="fixed z-50 bottom-6 right-6"
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -57,6 +58,6 @@ export function ExportButton({ config }: ExportButtonProps) {
         <polyline points="7 10 12 15 17 10" />
         <line x1="12" y1="15" x2="12" y2="3" />
       </svg>
-    </button>
+    </Fab>
   );
 }
