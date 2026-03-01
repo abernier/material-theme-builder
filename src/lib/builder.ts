@@ -1011,7 +1011,7 @@ export function builder(
             "com.figma.isOverride": true,
           };
         }
-        const tokenName = kebabCase(v.path.split("/").pop());
+        const tokenName = kebabCase(v.path.split("/").at(-1)!);
         return {
           "com.figma.scopes": v.scopes ?? ["ALL_SCOPES"],
           "css.variable": `--${prefix}-sys-color-${tokenName}`,
