@@ -57,6 +57,7 @@
     "clsx": "^2.1.1",
     "culori": "^4.0.2",
     "eslint": "^10.0.0",
+    "eslint-plugin-jsdoc": "^62.7.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-sonarjs": "^4.0.0",
     "globals": "^17.3.0",

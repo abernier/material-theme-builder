@@ -4,7 +4,7 @@ import type { ComponentProps } from "react";
 import { ExportButton } from "./ExportButton";
 import { STANDARD_TONES } from "./lib/builder";
 import { cn } from "./lib/cn";
-import { Mcu } from "./Mcu";
+import type { Mcu } from "./Mcu";
 import { useMcu } from "./Mcu.context";
 
 function Foo({ children, ...props }: ComponentProps<"div">) {
@@ -25,13 +25,19 @@ function FooBottom({ children, ...props }: ComponentProps<"div">) {
   return <div {...props}>{children || "FooBottom"}</div>;
 }
 
+/**
+ * Storybook layout wrapper with optional source-color label and export button.
+ */
 export function Layout({
   notext,
   noExport,
   children,
 }: {
+  /** Hide the source-color text label. */
   notext?: boolean;
+  /** Hide the export button. */
   noExport?: boolean;
+  /** Story content to render inside the layout. */
   children: React.ReactNode;
 }) {
   const { initials } = useMcu();
@@ -94,6 +100,9 @@ const schemeVariants = cva(
   },
 );
 
+/**
+ * Renders a light or dark color scheme grid with all M3 tokens.
+ */
 export function Scheme({
   theme,
   title = "",
@@ -102,7 +111,9 @@ export function Scheme({
   className,
   ...props
 }: {
+  /** Heading displayed above the scheme. */
   title?: string;
+  /** Custom colors forwarded to the inner `<Mcu>`. */
   customColors?: ComponentProps<typeof Mcu>["customColors"];
 } & VariantProps<typeof schemeVariants> &
   Omit<ComponentProps<"div">, "title">) {
@@ -484,11 +495,16 @@ export function Scheme({
   );
 }
 
+/**
+ * Renders tonal palette shades for all core and custom palettes.
+ */
 export function Shades({
   customColors,
   noTitle,
 }: {
+  /** Hide the palette group titles. */
   noTitle?: boolean;
+  /** Custom colors forwarded to the inner `<Mcu>`. */
   customColors?: ComponentProps<typeof Mcu>["customColors"];
 }) {
   return (
@@ -539,6 +555,9 @@ export function Shades({
   );
 }
 
+/**
+ * Renders a grid of Tailwind CSS utility classes mapped to M3 tokens.
+ */
 export function TailwindScheme() {
   return (
     <div className="p-6 space-y-6">

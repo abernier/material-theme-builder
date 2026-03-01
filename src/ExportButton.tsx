@@ -3,9 +3,11 @@ import type { McuConfig } from "./lib/builder";
 import { builder } from "./lib/builder";
 
 interface ExportButtonProps {
+  /** Current theme configuration used to generate the exported tokens. */
   config: McuConfig;
 }
 
+/** FAB that exports the current theme as Figma DTCG token JSON files. */
 export function ExportButton({ config }: ExportButtonProps) {
   const handleExport = () => {
     try {

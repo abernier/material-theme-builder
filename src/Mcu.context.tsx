@@ -28,12 +28,15 @@ type Api = {
 
 const [useMcu, Provider, McuContext] = createRequiredContext<Api>();
 
+/** Provider that computes the Material You theme and exposes it via context. */
 export const McuProvider = ({
   styleId,
   children,
   ...configProps
 }: McuConfig & {
+  /** The `id` attribute applied to the injected `<style>` element. */
   styleId: string;
+  /** Content to render inside the provider. */
   children?: React.ReactNode;
 }) => {
   const [initials] = useState<McuConfig>(() => configProps);
