@@ -1,6 +1,6 @@
 /// <reference types="@figma/plugin-typings" />
 
-import type { FigmaTokens } from "../src/Mcu.context";
+import type { FigmaTokens } from "../../src/Mcu.context";
 
 // ─── Token shape types ──────────────────────────────────────────────────
 
