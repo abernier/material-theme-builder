@@ -250,7 +250,9 @@ export const tokenDescriptions = {
     "Dimmed variant of the fixed tertiary color for lower emphasis.",
 } as const;
 
-/** Type-guard that checks whether a string is a known M3 color token name. */
+/**
+ * Type-guard that checks whether a string is a known M3 color token name.
+ */
 export function isTokenName(
   key: string,
 ): key is keyof typeof tokenDescriptions {
@@ -307,7 +309,9 @@ export type BuilderContext = {
 
 // ─── Shared utilities ────────────────────────────────────────────────────
 
-/** Derive the preferred palette name for a custom color token */
+/**
+ * Derive the preferred palette name for a custom color token.
+ */
 export function deriveCustomPaletteName(
   tokenName: string,
   allPaletteNamesKebab: Set<string>,

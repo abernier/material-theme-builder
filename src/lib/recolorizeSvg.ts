@@ -105,11 +105,6 @@ function findClosestTone(targetTone: number) {
  *
  * To filter palettes, pass a filtered subset of palettes as the second parameter.
  *
- * @param svgString - The SVG content as a string
- * @param palettes - The palettes to use for recoloring. Filter externally if needed.
- * @param options - Optional configuration for tolerance
- * @returns Recolorized SVG string with MCU CSS variables
- *
  * @example
  * // Use all palettes
  * recolorizeSvg(svg, allPalettes)

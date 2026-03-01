@@ -7,7 +7,9 @@ interface ExportButtonProps {
   config: McuConfig;
 }
 
-/** FAB that exports the current theme as Figma DTCG token JSON files. */
+/**
+ * FAB that exports the current theme as Figma DTCG token JSON files.
+ */
 export function ExportButton({ config }: ExportButtonProps) {
   const handleExport = () => {
     try {

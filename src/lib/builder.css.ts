@@ -7,7 +7,9 @@ import { kebabCase } from "lodash-es";
 import type { BuilderContext } from "./builder";
 import { deriveCustomPaletteName, STANDARD_TONES } from "./builder";
 
-/** Generate CSS custom properties (light + dark) from the builder context. */
+/**
+ * Generate CSS custom properties (light + dark) from the builder context.
+ */
 export function buildCss(ctx: BuilderContext) {
   const {
     prefix,

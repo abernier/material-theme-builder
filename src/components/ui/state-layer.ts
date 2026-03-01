@@ -33,4 +33,5 @@ export const stateLayer = cva(
   },
 );
 
+/** Variant props for the Material 3 state layer. */
 export type StateLayerProps = VariantProps<typeof stateLayer>;

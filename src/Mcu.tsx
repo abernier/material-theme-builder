@@ -13,7 +13,9 @@ import { McuProvider } from "./Mcu.context";
 const mcuStyleId = "mcu-styles";
 const DEFAULT_COLOR_MATCH = false;
 
-/** Root component that generates and injects a Material You color theme into the page. */
+/**
+ * Root component that generates and injects a Material You color theme into the page.
+ */
 export function Mcu({
   source,
   scheme = DEFAULT_SCHEME,

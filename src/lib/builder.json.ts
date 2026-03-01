@@ -68,7 +68,9 @@ const FIXTURE_TOKEN_ORDER = [
   "surfaceContainerHighest",
 ] as const satisfies readonly TokenName[];
 
-/** Generate a JSON object matching the Material Theme Builder export format. */
+/**
+ * Generate a JSON object matching the Material Theme Builder export format.
+ */
 export function buildJson(ctx: BuilderContext) {
   const {
     hexSource,

@@ -186,7 +186,9 @@ export function buildFigmaVariables(ctx: BuilderContext) {
 // The flat list (buildFigmaVariables) is the primary data source;
 // this reconstructs the nested tree for JSON/DTCG export.
 
-/** Build DTCG-compliant Figma token files (Light + Dark) from the builder context. */
+/**
+ * Build DTCG-compliant Figma token files (Light + Dark) from the builder context.
+ */
 export function buildFigmaTokens(ctx: BuilderContext) {
   const { prefix } = ctx;
   const variables = buildFigmaVariables(ctx);

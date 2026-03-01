@@ -28,7 +28,9 @@ type Api = {
 
 const [useMcu, Provider, McuContext] = createRequiredContext<Api>();
 
-/** Provider that computes the Material You theme and exposes it via context. */
+/**
+ * Provider that computes the Material You theme and exposes it via context.
+ */
 export const McuProvider = ({
   styleId,
   children,
