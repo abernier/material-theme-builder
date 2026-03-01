@@ -591,7 +591,7 @@ export function builder(
   const allPaletteNamesKebab = new Set(Object.keys(allPalettes).map(kebabCase));
 
   // Derive the preferred palette name for a custom color token
-  function deriveCustomPaletteName(tokenName: string): string | undefined {
+  function deriveCustomPaletteName(tokenName: string) {
     let baseName = tokenName;
     if (/^on[A-Z]/.test(baseName) && baseName.length > 2) {
       baseName = baseName.charAt(2).toLowerCase() + baseName.slice(3);
@@ -1134,7 +1134,7 @@ export function builder(
     // ── Alias resolution ──
     // Prefers the semantically correct palette via tokenToPalette,
     // falls back to any palette match
-    function findAlias(hex: string, tokenName: string): string | null {
+    function findAlias(hex: string, tokenName: string) {
       const preferredKebab =
         tokenToPalette[tokenName] ?? deriveCustomPaletteName(tokenName);
       const preferred = preferredKebab ? startCase(preferredKebab) : undefined;
@@ -1150,7 +1150,7 @@ export function builder(
       return null;
     }
 
-    function resolveValue(argb: number, tokenName: string): FigmaVariableValue {
+    function resolveValue(argb: number, tokenName: string) {
       const hex = hexFromArgb(argb).toUpperCase();
       const aliasPath = findAlias(hex, tokenName);
       if (aliasPath) return { alias: aliasPath };
@@ -1159,7 +1159,7 @@ export function builder(
         g: greenFromArgb(argb) / 255,
         b: blueFromArgb(argb) / 255,
         a: 1,
-      };
+      } satisfies FigmaVariableValue;
     }
 
     // ── sys/color/* — aliases or direct colors, mode-specific ──

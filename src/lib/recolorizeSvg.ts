@@ -39,11 +39,11 @@ function scoreCandidates(
   tolerance: number,
   deltaE: (colorA: Color | string, colorB: Color | string) => number,
   rgbToLab: (color: Color | string) => Lab65 | undefined,
-): ToneMatch | null {
+) {
   let best: ToneMatch | null = null;
   const targetIsNeutral = targetHct.chroma < 8;
 
-  function matchTone(candidate: CandidateInfo, tone: number): ToneMatch | null {
+  function matchTone(candidate: CandidateInfo, tone: number) {
     const toneHct = Hct.fromInt(candidate.palette.tone(tone));
     if (Math.abs(targetHct.tone - toneHct.tone) > tolerance) return null;
 
@@ -76,7 +76,7 @@ function scoreCandidates(
 /**
  * Find the closest standard tone to a given target tone value.
  */
-function findClosestTone(targetTone: number): number {
+function findClosestTone(targetTone: number) {
   let bestTone = 50;
   let minToneDist = Infinity;
   for (const t of STANDARD_TONES) {
@@ -127,7 +127,7 @@ export function recolorizeSvg(
   svgString: string,
   palettes: ReturnType<typeof useMcu>["allPalettes"],
   options: RecolorizeSvgOptions = {},
-): string {
+) {
   const { tolerance = 15.0 } = options;
 
   // Create CIEDE2000 difference function and RGB to LAB converter (reused for all colors)
