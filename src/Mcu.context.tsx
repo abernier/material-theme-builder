@@ -8,13 +8,13 @@ import React, {
   useMemo,
   useState,
 } from "react";
-import { builder, type McuConfig, type TokenName } from "./lib/builder";
+import {
+  builder,
+  type FigmaTokens,
+  type McuConfig,
+  type TokenName,
+} from "./lib/builder";
 import { createRequiredContext } from "./lib/createRequiredContext";
-
-/** Return type of builder().toFigmaTokens() */
-export type FigmaTokens = ReturnType<
-  ReturnType<typeof builder>["toFigmaTokens"]
->;
 
 type Api = {
   initials: McuConfig;

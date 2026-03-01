@@ -1,40 +1,6 @@
 /// <reference types="@figma/plugin-typings" />
 
-import type { FigmaTokens } from "../../src/Mcu.context";
-
-// ─── Token shape types ──────────────────────────────────────────────────
-
-interface FigmaColorValue {
-  colorSpace: "srgb";
-  components: [number, number, number];
-  alpha: number;
-  hex: string;
-}
-
-interface FigmaColorToken {
-  $type: "color";
-  $value: FigmaColorValue;
-  $extensions: Record<string, unknown>;
-}
-
-interface FigmaSysToken {
-  $type: "color";
-  $value: FigmaColorValue | string;
-  $description?: string;
-  $extensions: Record<string, unknown>;
-}
-
-interface ModeFile {
-  ref: {
-    palette: Record<string, Record<string, FigmaColorToken>>;
-  };
-  sys: {
-    color: Record<string, FigmaSysToken>;
-  };
-  $extensions: {
-    "com.figma.modeName": string;
-  };
-}
+import type { FigmaColorValue, FigmaTokens } from "../../src/lib/builder";
 
 // ─── Plugin entry point ─────────────────────────────────────────────────
 
@@ -119,8 +85,8 @@ function toFigmaColor(components: number[], alpha?: number): RGBA {
 // ─── Sync logic ─────────────────────────────────────────────────────────
 
 async function syncVariables(tokens: FigmaTokens) {
-  const lightFile = tokens["Light.tokens.json"] as unknown as ModeFile;
-  const darkFile = tokens["Dark.tokens.json"] as unknown as ModeFile;
+  const lightFile = tokens["Light.tokens.json"];
+  const darkFile = tokens["Dark.tokens.json"];
 
   // Single collection with Light & Dark modes
   const collection = findOrCreateCollection("Material Theme");
