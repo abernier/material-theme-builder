@@ -25,9 +25,7 @@ figma.ui.onmessage = async (msg: { type: string; tokens: FigmaTokens }) => {
 // ─── Helpers ────────────────────────────────────────────────────────────
 
 /** Find a local collection by name or create a new one */
-async function findOrCreateCollection(
-  name: string,
-): Promise<VariableCollection> {
+async function findOrCreateCollection(name: string) {
   const collections = await figma.variables.getLocalVariableCollectionsAsync();
   const existing = collections.find((c) => c.name === name);
   if (existing) return existing;
@@ -35,10 +33,7 @@ async function findOrCreateCollection(
 }
 
 /** Ensure the collection has exactly the requested modes (by name) and return their IDs */
-function ensureModes(
-  collection: VariableCollection,
-  ...modeNames: string[]
-): Record<string, string> {
+function ensureModes(collection: VariableCollection, ...modeNames: string[]) {
   const result: Record<string, string> = {};
 
   for (let i = 0; i < modeNames.length; i++) {
@@ -65,7 +60,7 @@ async function findOrCreateVariable(
   name: string,
   collection: VariableCollection,
   resolvedType: VariableResolvedDataType,
-): Promise<Variable> {
+) {
   const variables = await figma.variables.getLocalVariablesAsync(resolvedType);
   const existing = variables.find(
     (v) => v.name === name && v.variableCollectionId === collection.id,
@@ -75,7 +70,7 @@ async function findOrCreateVariable(
 }
 
 /** Convert DTCG color components [r, g, b] (0-1 range) to Figma RGBA */
-function toFigmaColor(components: number[], alpha?: number): RGBA {
+function toFigmaColor(components: number[], alpha?: number) {
   return {
     r: components[0],
     g: components[1],
@@ -168,7 +163,7 @@ async function syncVariables(tokens: FigmaTokens) {
 function resolveValue(
   value: string | FigmaColorValue,
   refVarMap: Record<string, Variable>,
-): VariableAlias | RGBA {
+) {
   if (typeof value === "string") {
     // Parse alias: "{ref.palette.Primary.80}" → "ref.palette.Primary.80"
     const aliasPath = value.replace(/^\{|\}$/g, "");
