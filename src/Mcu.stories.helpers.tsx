@@ -27,9 +27,11 @@ function FooBottom({ children, ...props }: ComponentProps<"div">) {
 
 export function Layout({
   notext,
+  noExport,
   children,
 }: {
   notext?: boolean;
+  noExport?: boolean;
   children: React.ReactNode;
 }) {
   const { initials } = useMcu();
@@ -68,7 +70,7 @@ export function Layout({
           }
         }
       `}</style>
-      <ExportButton config={initials} />
+      {!noExport && <ExportButton config={initials} />}
       {children}
     </div>
   );

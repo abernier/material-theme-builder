@@ -1095,11 +1095,18 @@ export function builder(
 
       // Build sys.color.* — System Tokens (Tier 2)
       // Semantic role tokens for a single mode (Light or Dark)
+      type SysColorToken = {
+        $type: "color";
+        $value: ReturnType<typeof resolveModeValue>;
+        $description?: string;
+        $extensions: Record<string, unknown>;
+      };
+
       function buildSysColorTokens(
         mergedColors: typeof mergedColorsLight,
         refPalettes: RefPalettes,
       ) {
-        const tokens: Record<string, unknown> = {};
+        const tokens: Record<string, SysColorToken> = {};
 
         for (const [name, argb] of Object.entries(mergedColors)) {
           const description = tokenDescriptions[name as TokenName];
@@ -1154,3 +1161,22 @@ export function builder(
     allPalettes,
   };
 }
+
+// ─── Figma token types (derived from toFigmaTokens output) ──────────────
+
+/** Return type of builder().toFigmaTokens() */
+export type FigmaTokens = ReturnType<
+  ReturnType<typeof builder>["toFigmaTokens"]
+>;
+
+/** A single mode file (Light/Dark) from FigmaTokens */
+export type FigmaModeFile = FigmaTokens["Light.tokens.json"];
+
+/** A ref.palette color token */
+export type FigmaRefToken = FigmaModeFile["ref"]["palette"][string][string];
+
+/** A sys.color token (value is alias string or direct color) */
+export type FigmaSysToken = FigmaModeFile["sys"]["color"][string];
+
+/** Figma color value object with sRGB components */
+export type FigmaColorValue = FigmaRefToken["$value"];
