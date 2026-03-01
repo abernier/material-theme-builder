@@ -33,6 +33,14 @@ const stripDescription = ({
 }: Record<string, unknown>) => rest;
 
 describe("builder", () => {
+  //
+  // ██████  ██    ██ ██ ██      ██████  ███████ ██████
+  // ██   ██ ██    ██ ██ ██      ██   ██ ██      ██   ██
+  // ██████  ██    ██ ██ ██      ██   ██ █████   ██████
+  // ██   ██ ██    ██ ██ ██      ██   ██ ██      ██   ██
+  // ██████   ██████  ██ ███████ ██████  ███████ ██   ██
+  //
+
   it("should match material theme builder fixture 1", () => {
     const result = builder("#769CDF").toJson();
     expect(result).toEqual(stripDescription(fixture));
@@ -91,6 +99,14 @@ describe("builder", () => {
     expect(result).toEqual(stripDescription(fixture5));
   });
 
+  //
+  //  ██████ ███████ ███████
+  // ██      ██      ██
+  // ██      ███████ ███████
+  // ██           ██      ██
+  //  ██████ ███████ ███████
+  //
+
   it("should generate CSS with toCss()", () => {
     const result = builder("#769CDF").toCss();
     expect(result).toContain(":root {");
@@ -99,6 +115,109 @@ describe("builder", () => {
       "--md-sys-color-primary:var(--md-ref-palette-primary-",
     );
   });
+
+  //
+  // ███████ ██  ██████  ██    ██  █████  ██████  ███████
+  // ██      ██ ██       ██    ██ ██   ██ ██   ██ ██
+  // █████   ██ ██   ███ ██    ██ ███████ ██████  ███████
+  // ██      ██ ██    ██  ██  ██  ██   ██ ██   ██      ██
+  // ██      ██  ██████    ████   ██   ██ ██   ██ ███████
+  //
+
+  describe("toFigmaVariables()", () => {
+    it("should return a flat array of variable descriptors", () => {
+      const variables = builder("#6750A4").toFigmaVariables();
+
+      expect(Array.isArray(variables)).toBe(true);
+      expect(variables.length).toBeGreaterThan(0);
+
+      for (const v of variables) {
+        expect(v).toHaveProperty("path");
+        expect(v).toHaveProperty("values");
+        expect(v.values).toHaveProperty("Light");
+        expect(v.values).toHaveProperty("Dark");
+      }
+    });
+
+    it("should include ref palette variables with direct color values", () => {
+      const variables = builder("#6750A4").toFigmaVariables();
+      const refVar = variables.find((v) => v.path === "ref/palette/Primary/40");
+      expect(refVar).toBeDefined();
+      if (!refVar) return;
+
+      const light = refVar.values["Light"];
+      expect(light).toBeDefined();
+      if (!light) return;
+      expect(light).toHaveProperty("r");
+      expect(light).toHaveProperty("g");
+      expect(light).toHaveProperty("b");
+      expect(light).toHaveProperty("a");
+    });
+
+    it("should include sys color variables with alias values", () => {
+      const variables = builder("#6750A4").toFigmaVariables();
+      const sysVar = variables.find((v) => v.path === "sys/color/Primary");
+      expect(sysVar).toBeDefined();
+      if (!sysVar) return;
+
+      expect(sysVar.description).toBeDefined();
+      const light = sysVar.values["Light"];
+      expect(light).toBeDefined();
+      if (!light) return;
+      expect(isAlias(light)).toBe(true);
+      if (isAlias(light)) {
+        expect(light.alias).toMatch(/^ref\/palette\/.+\/\d+$/);
+      }
+    });
+
+    it("should have different aliases for light and dark modes", () => {
+      const variables = builder("#6750A4").toFigmaVariables();
+      const sysVar = variables.find((v) => v.path === "sys/color/Primary");
+      expect(sysVar).toBeDefined();
+      if (!sysVar) return;
+
+      const light = sysVar.values["Light"];
+      const dark = sysVar.values["Dark"];
+      expect(light).toBeDefined();
+      expect(dark).toBeDefined();
+      if (!light || !dark) return;
+      expect(isAlias(light)).toBe(true);
+      expect(isAlias(dark)).toBe(true);
+      if (isAlias(light) && isAlias(dark)) {
+        expect(light.alias).not.toBe(dark.alias);
+      }
+    });
+
+    it("should include custom color variables", () => {
+      const variables = builder("#6750A4", {
+        customColors: [{ name: "brand", hex: "#FF5733", blend: true }],
+      }).toFigmaVariables();
+
+      expect(
+        variables.some((v) => v.path.startsWith("ref/palette/Brand/")),
+      ).toBe(true);
+      expect(variables.some((v) => v.path === "sys/color/Brand")).toBe(true);
+    });
+
+    it("should have same ref palette values in both modes", () => {
+      const variables = builder("#6750A4").toFigmaVariables();
+      const refVars = variables.filter((v) =>
+        v.path.startsWith("ref/palette/"),
+      );
+
+      for (const v of refVars) {
+        expect(v.values["Light"]).toEqual(v.values["Dark"]);
+      }
+    });
+  });
+
+  //
+  // ███████ ██  ██████  ████████  ██████  ██   ██ ███████
+  // ██      ██ ██          ██    ██    ██ ██  ██  ██
+  // █████   ██ ██   ███    ██    ██    ██ █████   ███████
+  // ██      ██ ██    ██    ██    ██    ██ ██  ██       ██
+  // ██      ██  ██████     ██     ██████  ██   ██ ███████
+  //
 
   describe("toFigmaTokens()", () => {
     // DTCG schemas are downloaded by scripts/download-dtcg-schemas.sh (via pretest hook)
@@ -330,93 +449,6 @@ describe("builder", () => {
       expect(result["Dark.tokens.json"].$extensions["com.figma.modeName"]).toBe(
         "Dark",
       );
-    });
-  });
-
-  describe("toFigmaVariables()", () => {
-    it("should return a flat array of variable descriptors", () => {
-      const variables = builder("#6750A4").toFigmaVariables();
-
-      expect(Array.isArray(variables)).toBe(true);
-      expect(variables.length).toBeGreaterThan(0);
-
-      for (const v of variables) {
-        expect(v).toHaveProperty("path");
-        expect(v).toHaveProperty("values");
-        expect(v.values).toHaveProperty("Light");
-        expect(v.values).toHaveProperty("Dark");
-      }
-    });
-
-    it("should include ref palette variables with direct color values", () => {
-      const variables = builder("#6750A4").toFigmaVariables();
-      const refVar = variables.find((v) => v.path === "ref/palette/Primary/40");
-      expect(refVar).toBeDefined();
-      if (!refVar) return;
-
-      const light = refVar.values["Light"];
-      expect(light).toBeDefined();
-      if (!light) return;
-      expect(light).toHaveProperty("r");
-      expect(light).toHaveProperty("g");
-      expect(light).toHaveProperty("b");
-      expect(light).toHaveProperty("a");
-    });
-
-    it("should include sys color variables with alias values", () => {
-      const variables = builder("#6750A4").toFigmaVariables();
-      const sysVar = variables.find((v) => v.path === "sys/color/Primary");
-      expect(sysVar).toBeDefined();
-      if (!sysVar) return;
-
-      expect(sysVar.description).toBeDefined();
-      const light = sysVar.values["Light"];
-      expect(light).toBeDefined();
-      if (!light) return;
-      expect(isAlias(light)).toBe(true);
-      if (isAlias(light)) {
-        expect(light.alias).toMatch(/^ref\/palette\/.+\/\d+$/);
-      }
-    });
-
-    it("should have different aliases for light and dark modes", () => {
-      const variables = builder("#6750A4").toFigmaVariables();
-      const sysVar = variables.find((v) => v.path === "sys/color/Primary");
-      expect(sysVar).toBeDefined();
-      if (!sysVar) return;
-
-      const light = sysVar.values["Light"];
-      const dark = sysVar.values["Dark"];
-      expect(light).toBeDefined();
-      expect(dark).toBeDefined();
-      if (!light || !dark) return;
-      expect(isAlias(light)).toBe(true);
-      expect(isAlias(dark)).toBe(true);
-      if (isAlias(light) && isAlias(dark)) {
-        expect(light.alias).not.toBe(dark.alias);
-      }
-    });
-
-    it("should include custom color variables", () => {
-      const variables = builder("#6750A4", {
-        customColors: [{ name: "brand", hex: "#FF5733", blend: true }],
-      }).toFigmaVariables();
-
-      expect(
-        variables.some((v) => v.path.startsWith("ref/palette/Brand/")),
-      ).toBe(true);
-      expect(variables.some((v) => v.path === "sys/color/Brand")).toBe(true);
-    });
-
-    it("should have same ref palette values in both modes", () => {
-      const variables = builder("#6750A4").toFigmaVariables();
-      const refVars = variables.filter((v) =>
-        v.path.startsWith("ref/palette/"),
-      );
-
-      for (const v of refVars) {
-        expect(v.values["Light"]).toEqual(v.values["Dark"]);
-      }
     });
   });
 });
