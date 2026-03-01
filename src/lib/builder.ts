@@ -991,9 +991,35 @@ export function builder(
         return `#${toHex(r)}${toHex(g)}${toHex(b)}`.toUpperCase();
       }
 
+      function toDtcgValue(modeValue: FigmaVariableValue) {
+        if ("alias" in modeValue) {
+          // "ref/palette/Primary/80" → "{ref.palette.Primary.80}"
+          return `{${modeValue.alias.replaceAll("/", ".")}}`;
+        }
+        return {
+          colorSpace: "srgb",
+          components: [modeValue.r, modeValue.g, modeValue.b],
+          alpha: modeValue.a,
+          hex: rgbToHex(modeValue.r, modeValue.g, modeValue.b),
+        };
+      }
+
+      function toDtcgExtensions(v: FigmaVariable) {
+        if (v.path.startsWith("ref/palette/")) {
+          return {
+            "com.figma.scopes": v.scopes ?? ["ALL_SCOPES"],
+            "com.figma.isOverride": true,
+          };
+        }
+        const tokenName = kebabCase(v.path.split("/").pop());
+        return {
+          "com.figma.scopes": v.scopes ?? ["ALL_SCOPES"],
+          "css.variable": `--${prefix}-sys-color-${tokenName}`,
+        };
+      }
+
       function buildModeFile(modeName: string) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const tree: Record<string, any> = {};
+        const tree: Record<string, Record<string, unknown>> = {};
 
         for (const v of variables) {
           const modeValue = v.values[modeName];
@@ -1005,45 +1031,15 @@ export function builder(
           for (let i = 0; i < parts.length - 1; i++) {
             const part = parts[i]!;
             if (!(part in current)) current[part] = {};
-            current = current[part];
+            current = current[part] as typeof tree;
           }
 
-          const leafKey = parts[parts.length - 1]!; // safe: split always has ≥1 element;
-          const isRefPalette = v.path.startsWith("ref/palette/");
-
-          // Build DTCG token
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const token: Record<string, any> = { $type: "color" };
-
-          if ("alias" in modeValue) {
-            // "ref/palette/Primary/80" → "{ref.palette.Primary.80}"
-            token.$value = `{${modeValue.alias.replaceAll("/", ".")}}`;
-          } else {
-            token.$value = {
-              colorSpace: "srgb",
-              components: [modeValue.r, modeValue.g, modeValue.b],
-              alpha: modeValue.a,
-              hex: rgbToHex(modeValue.r, modeValue.g, modeValue.b),
-            };
-          }
-
-          if (v.description) token.$description = v.description;
-
-          if (isRefPalette) {
-            token.$extensions = {
-              "com.figma.scopes": v.scopes ?? ["ALL_SCOPES"],
-              "com.figma.isOverride": true,
-            };
-          } else {
-            // sys/color — compute css.variable from path
-            const tokenName = kebabCase(parts[parts.length - 1]);
-            token.$extensions = {
-              "com.figma.scopes": v.scopes ?? ["ALL_SCOPES"],
-              "css.variable": `--${prefix}-sys-color-${tokenName}`,
-            };
-          }
-
-          current[leafKey] = token;
+          current[parts[parts.length - 1]!] = {
+            $type: "color",
+            $value: toDtcgValue(modeValue),
+            ...(v.description ? { $description: v.description } : {}),
+            $extensions: toDtcgExtensions(v),
+          };
         }
 
         tree.$extensions = { "com.figma.modeName": modeName };
