@@ -25,10 +25,11 @@ figma.ui.onmessage = async (msg: { type: string; tokens: FigmaTokens }) => {
 // ─── Helpers ────────────────────────────────────────────────────────────
 
 /** Find a local collection by name or create a new one */
-function findOrCreateCollection(name: string): VariableCollection {
-  const existing = figma.variables
-    .getLocalVariableCollections()
-    .find((c) => c.name === name);
+async function findOrCreateCollection(
+  name: string,
+): Promise<VariableCollection> {
+  const collections = await figma.variables.getLocalVariableCollectionsAsync();
+  const existing = collections.find((c) => c.name === name);
   if (existing) return existing;
   return figma.variables.createVariableCollection(name);
 }
@@ -60,14 +61,15 @@ function ensureModes(
 }
 
 /** Find an existing variable in a collection by name, or create it */
-function findOrCreateVariable(
+async function findOrCreateVariable(
   name: string,
   collection: VariableCollection,
   resolvedType: VariableResolvedDataType,
-): Variable {
-  const existing = figma.variables
-    .getLocalVariables(resolvedType)
-    .find((v) => v.name === name && v.variableCollectionId === collection.id);
+): Promise<Variable> {
+  const variables = await figma.variables.getLocalVariablesAsync(resolvedType);
+  const existing = variables.find(
+    (v) => v.name === name && v.variableCollectionId === collection.id,
+  );
   if (existing) return existing;
   return figma.variables.createVariable(name, collection, resolvedType);
 }
@@ -89,7 +91,7 @@ async function syncVariables(tokens: FigmaTokens) {
   const darkFile = tokens["Dark.tokens.json"];
 
   // Single collection with Light & Dark modes
-  const collection = findOrCreateCollection("Material Theme");
+  const collection = await findOrCreateCollection("Material Theme");
   const modes = ensureModes(collection, "Light", "Dark");
   const lightModeId = modes["Light"];
   const darkModeId = modes["Dark"];
@@ -103,7 +105,7 @@ async function syncVariables(tokens: FigmaTokens) {
     for (const [tone, token] of Object.entries(tones)) {
       if (!token.$type) continue;
       const varName = `ref/palette/${paletteName}/${tone}`;
-      const variable = findOrCreateVariable(varName, collection, "COLOR");
+      const variable = await findOrCreateVariable(varName, collection, "COLOR");
 
       const color = toFigmaColor(token.$value.components, token.$value.alpha);
       variable.setValueForMode(lightModeId, color);
@@ -132,7 +134,7 @@ async function syncVariables(tokens: FigmaTokens) {
     if (!lightToken || !lightToken.$type) continue;
 
     const varName = `sys/color/${tokenName}`;
-    const variable = findOrCreateVariable(varName, collection, "COLOR");
+    const variable = await findOrCreateVariable(varName, collection, "COLOR");
 
     if (lightToken.$description) {
       variable.description = lightToken.$description;
