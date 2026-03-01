@@ -62,19 +62,19 @@ async function findOrCreateVariable(
 function collectTokens(
   obj: Record<string, unknown>,
   prefix = "",
+  out: [string, Record<string, unknown>][] = [],
 ): [string, Record<string, unknown>][] {
-  const entries: [string, Record<string, unknown>][] = [];
   for (const [key, value] of Object.entries(obj)) {
     if (key.startsWith("$")) continue;
     const record = value as Record<string, unknown>;
     const path = prefix ? `${prefix}/${key}` : key;
     if ("$type" in record) {
-      entries.push([path, record]);
+      out.push([path, record]);
     } else {
-      entries.push(...collectTokens(record, path));
+      collectTokens(record, path, out);
     }
   }
-  return entries;
+  return out;
 }
 
 // ─── Sync logic ─────────────────────────────────────────────────────────
@@ -100,7 +100,11 @@ async function syncVariables(tokens: FigmaTokens) {
 
   // Set values for each mode
   for (const [path, lightToken] of lightTokens) {
-    const darkToken = darkTokenMap.get(path) ?? lightToken;
+    let darkToken = darkTokenMap.get(path);
+    if (!darkToken) {
+      console.warn(`Dark mode token missing for ${path}, using light value`);
+      darkToken = lightToken;
+    }
     const variable = varMap[path];
 
     if (typeof lightToken.$description === "string") {
