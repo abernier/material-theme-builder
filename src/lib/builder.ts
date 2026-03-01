@@ -966,190 +966,92 @@ export function builder(
     // ██      ██  ██████  ██      ██ ██   ██
     //
 
-    toFigmaTokens() {
-      // Figma Variables compatible format using M3 token architecture:
-      //   ref.palette.* — Reference Tokens (Tier 1): raw tonal palette values
-      //   sys.color.*   — System Tokens (Tier 2): semantic roles referencing palette tones
-      //
-      // System tokens use DTCG alias syntax {ref.palette.<name>.<tone>} to link
-      // to the reference palette, enabling Figma to create linked variables and
-      // making the relationship between roles and tones explicit for AI/dev tools.
-      //
-      // see: https://m3.material.io/foundations/design-tokens/overview
-      // see: https://www.figma.com/plugin-docs/api/properties/variables-importVariablesByKeyAsync/
+    toFigmaTokens: buildFigmaTokens,
 
-      // tokenToPalette and schemePalettes are defined at builder scope
-      // and shared with toCss() for var() resolution.
+    //
+    // ██    ██  █████  ██████  ██  █████  ██████  ██      ███████ ███████
+    // ██    ██ ██   ██ ██   ██ ██ ██   ██ ██   ██ ██      ██      ██
+    // ██    ██ ███████ ██████  ██ ███████ ██████  ██      █████   ███████
+    //  ██  ██  ██   ██ ██   ██ ██ ██   ██ ██   ██ ██      ██           ██
+    //   ████   ██   ██ ██   ██ ██ ██   ██ ██████  ███████ ███████ ███████
+    //
 
-      function argbToFigmaColorValue(argb: number) {
-        return {
-          colorSpace: "srgb" as const,
-          components: [
-            redFromArgb(argb) / 255,
-            greenFromArgb(argb) / 255,
-            blueFromArgb(argb) / 255,
-          ],
-          alpha: 1,
-          hex: hexFromArgb(argb).toUpperCase(),
-        };
-      }
+    toFigmaVariables() {
+      // Higher-level, Figma-ready flat list of variable descriptors.
+      // Moves DTCG tree-walking + value resolution into the builder
+      // so the Figma plugin is a thin bridge to the Variables API.
 
-      function figmaToken(argb: number) {
-        return {
-          $type: "color" as const,
-          $value: argbToFigmaColorValue(argb),
-          $extensions: {
-            "com.figma.scopes": ["ALL_SCOPES"],
-            "com.figma.isOverride": true,
-          },
-        };
-      }
+      const tokens = buildFigmaTokens();
 
-      // Build ref.palette.* — Reference Tokens (Tier 1)
-      // Raw tonal palette values with direct color data (mode-independent)
-      function buildRefPaletteTokens() {
-        const palettes: Record<
-          string,
-          Record<string, ReturnType<typeof figmaToken>>
-        > = {};
-
-        for (const [name, palette] of Object.entries(allPalettes)) {
-          const tones: Record<string, ReturnType<typeof figmaToken>> = {};
-
-          for (const tone of STANDARD_TONES) {
-            const argb = palette.tone(tone);
-            tones[tone.toString()] = figmaToken(argb);
-          }
-
-          palettes[startCase(name)] = tones;
-        }
-
-        return palettes;
-      }
-
-      type RefPalettes = Record<
-        string,
-        Record<string, ReturnType<typeof figmaToken>>
-      >;
-
-      // Find a hex match in a single palette group, returning the alias path
-      function findToneInPalette(
-        hex: string,
-        paletteName: string,
-        tones: Record<string, ReturnType<typeof figmaToken>>,
+      function collectLeaves(
+        obj: Record<string, unknown>,
+        prefix: string,
+        out: Map<string, Record<string, unknown>>,
       ) {
-        for (const [tone, token] of Object.entries(tones)) {
-          if (token.$value.hex === hex) {
-            return `{ref.palette.${paletteName}.${tone}}`;
+        for (const [key, value] of Object.entries(obj)) {
+          if (key.startsWith("$")) continue;
+          const record = value as Record<string, unknown>;
+          const path = prefix ? `${prefix}/${key}` : key;
+          if ("$type" in record) {
+            out.set(path, record);
+          } else {
+            collectLeaves(record, path, out);
           }
         }
-        return null;
+        return out;
       }
 
-      // deriveCustomPaletteName is defined at builder scope
-
-      // Resolve a scheme token's hex to a DTCG alias reference {ref.palette.<name>.<tone>}
-      // Prefers the semantically correct palette via tokenToPalette, falls back to any match
-      function findAlias(
-        hex: string,
-        tokenName: string,
-        refPalettes: RefPalettes,
-      ) {
-        const preferredPaletteKebab =
-          tokenToPalette[tokenName] ?? deriveCustomPaletteName(tokenName);
-        const preferredPalette = preferredPaletteKebab
-          ? startCase(preferredPaletteKebab)
-          : undefined;
-
-        // Search preferred palette first
-        if (preferredPalette && refPalettes[preferredPalette]) {
-          const match = findToneInPalette(
-            hex,
-            preferredPalette,
-            refPalettes[preferredPalette],
-          );
-          if (match) return match;
+      function toVariableValue(
+        value: unknown,
+      ): FigmaVariableColor | FigmaVariableAlias {
+        if (typeof value === "string") {
+          return { alias: value.replace(/^\{|\}$/g, "").replaceAll(".", "/") };
         }
-
-        // Fall back to any palette
-        for (const [palName, tones] of Object.entries(refPalettes)) {
-          const match = findToneInPalette(hex, palName, tones);
-          if (match) return match;
-        }
-
-        return null;
-      }
-
-      // Resolve a mode value: DTCG alias string if a palette match is found,
-      // otherwise falls back to a direct color value object
-      function resolveModeValue(
-        argb: number,
-        tokenName: string,
-        refPalettes: RefPalettes,
-      ) {
-        const hex = hexFromArgb(argb).toUpperCase();
-        return (
-          findAlias(hex, tokenName, refPalettes) ?? argbToFigmaColorValue(argb)
-        );
-      }
-
-      // Build sys.color.* — System Tokens (Tier 2)
-      // Semantic role tokens for a single mode (Light or Dark)
-      type SysColorToken = {
-        $type: "color";
-        $value: ReturnType<typeof resolveModeValue>;
-        $description?: string;
-        $extensions: Record<string, unknown>;
-      };
-
-      function buildSysColorTokens(
-        mergedColors: typeof mergedColorsLight,
-        refPalettes: RefPalettes,
-      ) {
-        const tokens: Record<string, SysColorToken> = {};
-
-        for (const [name, argb] of Object.entries(mergedColors)) {
-          const description = tokenDescriptions[name as TokenName];
-          const cssVar = `--${prefix}-sys-color-${kebabCase(name)}`;
-
-          const value = resolveModeValue(argb, name, refPalettes);
-
-          tokens[startCase(name)] = {
-            $type: "color" as const,
-            $value: value,
-            ...(description ? { $description: description } : {}),
-            $extensions: {
-              "com.figma.scopes": ["ALL_SCOPES"],
-              "css.variable": cssVar,
-            },
-          };
-        }
-        return tokens;
-      }
-
-      const refPalettes = buildRefPaletteTokens();
-
-      function buildModeFile(
-        modeName: string,
-        mergedColors: typeof mergedColorsLight,
-      ) {
+        const c = value as {
+          components: [number, number, number];
+          alpha: number;
+        };
         return {
-          ref: {
-            palette: refPalettes,
-          },
-          sys: {
-            color: buildSysColorTokens(mergedColors, refPalettes),
-          },
-          $extensions: {
-            "com.figma.modeName": modeName,
-          },
+          r: c.components[0],
+          g: c.components[1],
+          b: c.components[2],
+          a: c.alpha,
         };
       }
 
-      return {
-        "Light.tokens.json": buildModeFile("Light", mergedColorsLight),
-        "Dark.tokens.json": buildModeFile("Dark", mergedColorsDark),
-      };
+      const lightMap = collectLeaves(
+        tokens["Light.tokens.json"] as unknown as Record<string, unknown>,
+        "",
+        new Map(),
+      );
+      const darkMap = collectLeaves(
+        tokens["Dark.tokens.json"] as unknown as Record<string, unknown>,
+        "",
+        new Map(),
+      );
+
+      const variables: FigmaVariable[] = [];
+
+      for (const [path, lightToken] of lightMap) {
+        const darkToken = darkMap.get(path) ?? lightToken;
+        const scopes = (
+          lightToken.$extensions as Record<string, unknown> | undefined
+        )?.["com.figma.scopes"] as string[] | undefined;
+
+        variables.push({
+          path,
+          ...(typeof lightToken.$description === "string"
+            ? { description: lightToken.$description }
+            : {}),
+          ...(scopes ? { scopes } : {}),
+          values: {
+            Light: toVariableValue(lightToken.$value),
+            Dark: toVariableValue(darkToken.$value),
+          },
+        });
+      }
+
+      return variables;
     },
 
     //
@@ -1160,6 +1062,195 @@ export function builder(
     mergedColorsDark,
     allPalettes,
   };
+
+  // ── buildFigmaTokens ─────────────────────────────────────────────────
+  // Extracted as a named function so toFigmaVariables() can reuse it.
+
+  function buildFigmaTokens() {
+    // Figma Variables compatible format using M3 token architecture:
+    //   ref.palette.* — Reference Tokens (Tier 1): raw tonal palette values
+    //   sys.color.*   — System Tokens (Tier 2): semantic roles referencing palette tones
+    //
+    // System tokens use DTCG alias syntax {ref.palette.<name>.<tone>} to link
+    // to the reference palette, enabling Figma to create linked variables and
+    // making the relationship between roles and tones explicit for AI/dev tools.
+    //
+    // see: https://m3.material.io/foundations/design-tokens/overview
+    // see: https://www.figma.com/plugin-docs/api/properties/variables-importVariablesByKeyAsync/
+
+    // tokenToPalette and schemePalettes are defined at builder scope
+    // and shared with toCss() for var() resolution.
+
+    function argbToFigmaColorValue(argb: number) {
+      return {
+        colorSpace: "srgb" as const,
+        components: [
+          redFromArgb(argb) / 255,
+          greenFromArgb(argb) / 255,
+          blueFromArgb(argb) / 255,
+        ],
+        alpha: 1,
+        hex: hexFromArgb(argb).toUpperCase(),
+      };
+    }
+
+    function figmaToken(argb: number) {
+      return {
+        $type: "color" as const,
+        $value: argbToFigmaColorValue(argb),
+        $extensions: {
+          "com.figma.scopes": ["ALL_SCOPES"],
+          "com.figma.isOverride": true,
+        },
+      };
+    }
+
+    // Build ref.palette.* — Reference Tokens (Tier 1)
+    // Raw tonal palette values with direct color data (mode-independent)
+    function buildRefPaletteTokens() {
+      const palettes: Record<
+        string,
+        Record<string, ReturnType<typeof figmaToken>>
+      > = {};
+
+      for (const [name, palette] of Object.entries(allPalettes)) {
+        const tones: Record<string, ReturnType<typeof figmaToken>> = {};
+
+        for (const tone of STANDARD_TONES) {
+          const argb = palette.tone(tone);
+          tones[tone.toString()] = figmaToken(argb);
+        }
+
+        palettes[startCase(name)] = tones;
+      }
+
+      return palettes;
+    }
+
+    type RefPalettes = Record<
+      string,
+      Record<string, ReturnType<typeof figmaToken>>
+    >;
+
+    // Find a hex match in a single palette group, returning the alias path
+    function findToneInPalette(
+      hex: string,
+      paletteName: string,
+      tones: Record<string, ReturnType<typeof figmaToken>>,
+    ) {
+      for (const [tone, token] of Object.entries(tones)) {
+        if (token.$value.hex === hex) {
+          return `{ref.palette.${paletteName}.${tone}}`;
+        }
+      }
+      return null;
+    }
+
+    // deriveCustomPaletteName is defined at builder scope
+
+    // Resolve a scheme token's hex to a DTCG alias reference {ref.palette.<name>.<tone>}
+    // Prefers the semantically correct palette via tokenToPalette, falls back to any match
+    function findAlias(
+      hex: string,
+      tokenName: string,
+      refPalettes: RefPalettes,
+    ) {
+      const preferredPaletteKebab =
+        tokenToPalette[tokenName] ?? deriveCustomPaletteName(tokenName);
+      const preferredPalette = preferredPaletteKebab
+        ? startCase(preferredPaletteKebab)
+        : undefined;
+
+      // Search preferred palette first
+      if (preferredPalette && refPalettes[preferredPalette]) {
+        const match = findToneInPalette(
+          hex,
+          preferredPalette,
+          refPalettes[preferredPalette],
+        );
+        if (match) return match;
+      }
+
+      // Fall back to any palette
+      for (const [palName, tones] of Object.entries(refPalettes)) {
+        const match = findToneInPalette(hex, palName, tones);
+        if (match) return match;
+      }
+
+      return null;
+    }
+
+    // Resolve a mode value: DTCG alias string if a palette match is found,
+    // otherwise falls back to a direct color value object
+    function resolveModeValue(
+      argb: number,
+      tokenName: string,
+      refPalettes: RefPalettes,
+    ) {
+      const hex = hexFromArgb(argb).toUpperCase();
+      return (
+        findAlias(hex, tokenName, refPalettes) ?? argbToFigmaColorValue(argb)
+      );
+    }
+
+    // Build sys.color.* — System Tokens (Tier 2)
+    // Semantic role tokens for a single mode (Light or Dark)
+    type SysColorToken = {
+      $type: "color";
+      $value: ReturnType<typeof resolveModeValue>;
+      $description?: string;
+      $extensions: Record<string, unknown>;
+    };
+
+    function buildSysColorTokens(
+      mergedColors: typeof mergedColorsLight,
+      refPalettes: RefPalettes,
+    ) {
+      const tokens: Record<string, SysColorToken> = {};
+
+      for (const [name, argb] of Object.entries(mergedColors)) {
+        const description = tokenDescriptions[name as TokenName];
+        const cssVar = `--${prefix}-sys-color-${kebabCase(name)}`;
+
+        const value = resolveModeValue(argb, name, refPalettes);
+
+        tokens[startCase(name)] = {
+          $type: "color" as const,
+          $value: value,
+          ...(description ? { $description: description } : {}),
+          $extensions: {
+            "com.figma.scopes": ["ALL_SCOPES"],
+            "css.variable": cssVar,
+          },
+        };
+      }
+      return tokens;
+    }
+
+    const refPalettes = buildRefPaletteTokens();
+
+    function buildModeFile(
+      modeName: string,
+      mergedColors: typeof mergedColorsLight,
+    ) {
+      return {
+        ref: {
+          palette: refPalettes,
+        },
+        sys: {
+          color: buildSysColorTokens(mergedColors, refPalettes),
+        },
+        $extensions: {
+          "com.figma.modeName": modeName,
+        },
+      };
+    }
+
+    return {
+      "Light.tokens.json": buildModeFile("Light", mergedColorsLight),
+      "Dark.tokens.json": buildModeFile("Dark", mergedColorsDark),
+    };
+  }
 }
 
 // ─── Figma token types (derived from toFigmaTokens output) ──────────────
@@ -1180,3 +1271,22 @@ export type FigmaSysToken = FigmaModeFile["sys"]["color"][string];
 
 /** Figma color value object with sRGB components */
 export type FigmaColorValue = FigmaRefToken["$value"];
+
+// ─── Figma variable types (derived from toFigmaVariables output) ────────
+
+/** Direct RGBA color value for a Figma variable */
+export type FigmaVariableColor = { r: number; g: number; b: number; a: number };
+
+/** Alias reference to another Figma variable by path */
+export type FigmaVariableAlias = { alias: string };
+
+/** A per-mode value: either a direct color or an alias */
+export type FigmaVariableValue = FigmaVariableColor | FigmaVariableAlias;
+
+/** A flat variable descriptor ready for the Figma Variables API */
+export type FigmaVariable = {
+  path: string;
+  description?: string;
+  scopes?: string[];
+  values: Record<string, FigmaVariableValue>;
+};

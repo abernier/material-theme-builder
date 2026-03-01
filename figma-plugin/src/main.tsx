@@ -9,13 +9,13 @@ import "../../src/tailwind.css";
 import "./main.css";
 
 function SyncButton() {
-  const { figmaTokens } = useMcu();
+  const { figmaVariables } = useMcu();
   const [syncing, setSyncing] = useState(false);
 
   function handleSync() {
     setSyncing(true);
     parent.postMessage(
-      { pluginMessage: { type: "sync-variables", tokens: figmaTokens } },
+      { pluginMessage: { type: "sync-variables", variables: figmaVariables } },
       "*",
     );
   }
