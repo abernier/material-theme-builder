@@ -174,17 +174,21 @@ describe("builder", () => {
       const result = builder("#6750A4").toFigmaTokens();
 
       for (const key of ["Light.tokens.json", "Dark.tokens.json"] as const) {
-        const file = result[key];
+        const file = result[key] as Record<string, unknown>;
         expect(file).toHaveProperty("ref");
-        expect(file.ref).toHaveProperty("palette");
+        expect(file.ref as Record<string, unknown>).toHaveProperty("palette");
         expect(file).toHaveProperty("sys");
-        expect(file.sys).toHaveProperty("color");
+        expect(file.sys as Record<string, unknown>).toHaveProperty("color");
       }
     });
 
     it("should use Title Case names for scheme tokens", () => {
       const result = builder("#6750A4").toFigmaTokens();
-      const sysColor = result["Light.tokens.json"].sys.color;
+      const file = result["Light.tokens.json"] as Record<string, unknown>;
+      const sysColor = (file.sys as Record<string, unknown>).color as Record<
+        string,
+        unknown
+      >;
 
       expect(sysColor).toHaveProperty("Primary");
       expect(sysColor).toHaveProperty("On Primary");
@@ -193,7 +197,9 @@ describe("builder", () => {
 
     it("should use Title Case names for palette groups", () => {
       const result = builder("#6750A4").toFigmaTokens();
-      const refPalette = result["Light.tokens.json"].ref.palette;
+      const file = result["Light.tokens.json"] as Record<string, unknown>;
+      const refPalette = (file.ref as Record<string, unknown>)
+        .palette as Record<string, unknown>;
 
       expect(refPalette).toHaveProperty("Primary");
       expect(refPalette).toHaveProperty("Secondary");
@@ -205,9 +211,10 @@ describe("builder", () => {
 
     it("should include all standard tones in each palette", () => {
       const result = builder("#6750A4").toFigmaTokens();
-      const primaryPalette = result["Light.tokens.json"].ref.palette[
-        "Primary"
-      ] as Record<string, unknown>;
+      const file = result["Light.tokens.json"] as Record<string, unknown>;
+      const primaryPalette = (
+        (file.ref as Record<string, unknown>).palette as Record<string, unknown>
+      )["Primary"] as Record<string, unknown>;
 
       for (const tone of STANDARD_TONES) {
         expect(primaryPalette).toHaveProperty(tone.toString());
@@ -216,8 +223,9 @@ describe("builder", () => {
 
     it("should produce Figma-compatible ref palette tokens with color objects", () => {
       const result = builder("#6750A4").toFigmaTokens();
+      const file = result["Light.tokens.json"] as Record<string, unknown>;
       const tone40 = (
-        result["Light.tokens.json"].ref.palette as Record<
+        (file.ref as Record<string, unknown>).palette as Record<
           string,
           Record<string, unknown>
         >
@@ -245,8 +253,13 @@ describe("builder", () => {
 
     it("should produce sys tokens with alias references in each mode file", () => {
       const result = builder("#6750A4").toFigmaTokens();
+      const lightFile = result["Light.tokens.json"] as Record<string, unknown>;
+      const darkFile = result["Dark.tokens.json"] as Record<string, unknown>;
       const lightPrimary = (
-        result["Light.tokens.json"].sys.color as Record<string, unknown>
+        (lightFile.sys as Record<string, unknown>).color as Record<
+          string,
+          unknown
+        >
       )["Primary"] as {
         $type: string;
         $value: string;
@@ -254,7 +267,10 @@ describe("builder", () => {
         $extensions: Record<string, unknown>;
       };
       const darkPrimary = (
-        result["Dark.tokens.json"].sys.color as Record<string, unknown>
+        (darkFile.sys as Record<string, unknown>).color as Record<
+          string,
+          unknown
+        >
       )["Primary"] as {
         $type: string;
         $value: string;
@@ -280,16 +296,20 @@ describe("builder", () => {
 
     it("should have different aliases for scheme tokens across modes", () => {
       const result = builder("#6750A4").toFigmaTokens();
+      const lightFile = result["Light.tokens.json"] as Record<string, unknown>;
+      const darkFile = result["Dark.tokens.json"] as Record<string, unknown>;
       const lightPrimary = (
-        result["Light.tokens.json"].sys.color as Record<string, unknown>
-      )["Primary"] as {
-        $value: string;
-      };
+        (lightFile.sys as Record<string, unknown>).color as Record<
+          string,
+          unknown
+        >
+      )["Primary"] as { $value: string };
       const darkPrimary = (
-        result["Dark.tokens.json"].sys.color as Record<string, unknown>
-      )["Primary"] as {
-        $value: string;
-      };
+        (darkFile.sys as Record<string, unknown>).color as Record<
+          string,
+          unknown
+        >
+      )["Primary"] as { $value: string };
 
       // Primary is tone 40 in Light, tone 80 in Dark
       expect(lightPrimary.$value).not.toBe(darkPrimary.$value);
@@ -298,17 +318,12 @@ describe("builder", () => {
     it("should produce mode-independent ref palette tones", () => {
       // ref palette is always the same in both mode files
       const result = builder("#6750A4").toFigmaTokens();
-
-      const palette = (
-        result["Light.tokens.json"].ref.palette as Record<
-          string,
-          Record<string, { $value: { hex: string } }>
-        >
-      )["Primary"]!;
+      const lightFile = result["Light.tokens.json"] as Record<string, unknown>;
+      const darkFile = result["Dark.tokens.json"] as Record<string, unknown>;
 
       // Both mode files should share the same ref palette
-      const lightPalette = result["Light.tokens.json"].ref.palette;
-      const darkPalette = result["Dark.tokens.json"].ref.palette;
+      const lightPalette = (lightFile.ref as Record<string, unknown>).palette;
+      const darkPalette = (darkFile.ref as Record<string, unknown>).palette;
       expect(lightPalette).toEqual(darkPalette);
     });
 
@@ -318,30 +333,32 @@ describe("builder", () => {
       }).toFigmaTokens();
 
       for (const key of ["Light.tokens.json", "Dark.tokens.json"] as const) {
-        const file = result[key];
+        const file = result[key] as Record<string, unknown>;
+        const refPalette = (file.ref as Record<string, unknown>)
+          .palette as Record<string, unknown>;
+        const sysColor = (file.sys as Record<string, unknown>).color as Record<
+          string,
+          unknown
+        >;
 
         // Custom color should appear in ref palette
-        expect(file.ref.palette).toHaveProperty("Brand");
+        expect(refPalette).toHaveProperty("Brand");
 
         // Custom color scheme tokens in sys.color
-        expect(file.sys.color).toHaveProperty("Brand");
-        expect(file.sys.color).toHaveProperty("On Brand");
-        expect(file.sys.color).toHaveProperty("Brand Container");
-        expect(file.sys.color).toHaveProperty("On Brand Container");
+        expect(sysColor).toHaveProperty("Brand");
+        expect(sysColor).toHaveProperty("On Brand");
+        expect(sysColor).toHaveProperty("Brand Container");
+        expect(sysColor).toHaveProperty("On Brand Container");
       }
     });
 
     it("should contain com.figma.modeName in each mode file", () => {
       const result = builder("#6750A4").toFigmaTokens();
+      const lightFile = result["Light.tokens.json"] as Record<string, unknown>;
+      const darkFile = result["Dark.tokens.json"] as Record<string, unknown>;
 
-      const lightExt = result["Light.tokens.json"].$extensions as Record<
-        string,
-        unknown
-      >;
-      const darkExt = result["Dark.tokens.json"].$extensions as Record<
-        string,
-        unknown
-      >;
+      const lightExt = lightFile.$extensions as Record<string, unknown>;
+      const darkExt = darkFile.$extensions as Record<string, unknown>;
       expect(lightExt["com.figma.modeName"]).toBe("Light");
       expect(darkExt["com.figma.modeName"]).toBe("Dark");
     });

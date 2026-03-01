@@ -959,16 +959,6 @@ export function builder(
     },
 
     //
-    // ███████ ██  ██████  ███    ███  █████
-    // ██      ██ ██       ████  ████ ██   ██
-    // █████   ██ ██   ███ ██ ████ ██ ███████
-    // ██      ██ ██    ██ ██  ██  ██ ██   ██
-    // ██      ██  ██████  ██      ██ ██   ██
-    //
-
-    toFigmaTokens: buildFigmaTokens,
-
-    //
     // ██    ██  █████  ██████  ██  █████  ██████  ██      ███████ ███████
     // ██    ██ ██   ██ ██   ██ ██ ██   ██ ██   ██ ██      ██      ██
     // ██    ██ ███████ ██████  ██ ███████ ██████  ██      █████   ███████
@@ -976,86 +966,94 @@ export function builder(
     //   ████   ██   ██ ██   ██ ██ ██   ██ ██████  ███████ ███████ ███████
     //
 
-    toFigmaVariables() {
-      // Higher-level, Figma-ready flat list of variable descriptors.
-      // Moves DTCG tree-walking + value resolution into the builder
-      // so the Figma plugin is a thin bridge to the Variables API.
+    toFigmaVariables: buildFigmaVariables,
 
-      const tokens = buildFigmaTokens();
+    //
+    // ███████ ██  ██████  ███    ███  █████
+    // ██      ██ ██       ████  ████ ██   ██
+    // █████   ██ ██   ███ ██ ████ ██ ███████
+    // ██      ██ ██    ██ ██  ██  ██ ██   ██
+    // ██      ██  ██████  ██      ██ ██   ██
+    //
 
-      function collectLeaves(
-        obj: Record<string, unknown>,
-        prefix: string,
-        out: Map<string, Record<string, unknown>>,
-      ) {
-        for (const [key, value] of Object.entries(obj)) {
-          if (key.startsWith("$")) continue;
-          const record = value as Record<string, unknown>;
-          const path = prefix ? `${prefix}/${key}` : key;
-          if ("$type" in record) {
-            out.set(path, record);
-          } else {
-            collectLeaves(record, path, out);
+    toFigmaTokens() {
+      // Derives the DTCG token tree from the flat variable list.
+      // The flat list (buildFigmaVariables) is the primary data source;
+      // this reconstructs the nested tree for JSON/DTCG export.
+
+      const variables = buildFigmaVariables();
+
+      function rgbToHex(r: number, g: number, b: number): string {
+        const toHex = (c: number) =>
+          Math.round(c * 255)
+            .toString(16)
+            .padStart(2, "0");
+        return `#${toHex(r)}${toHex(g)}${toHex(b)}`.toUpperCase();
+      }
+
+      function buildModeFile(modeName: string) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const tree: Record<string, any> = {};
+
+        for (const v of variables) {
+          const modeValue = v.values[modeName];
+          if (!modeValue) continue;
+
+          // Build nested path
+          const parts = v.path.split("/");
+          let current = tree;
+          for (let i = 0; i < parts.length - 1; i++) {
+            const part = parts[i]!;
+            if (!(part in current)) current[part] = {};
+            current = current[part];
           }
+
+          const leafKey = parts[parts.length - 1]!;
+          const isRefPalette = v.path.startsWith("ref/palette/");
+
+          // Build DTCG token
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const token: Record<string, any> = { $type: "color" };
+
+          if ("alias" in modeValue) {
+            // "ref/palette/Primary/80" → "{ref.palette.Primary.80}"
+            token.$value = `{${modeValue.alias.replaceAll("/", ".")}}`;
+          } else {
+            token.$value = {
+              colorSpace: "srgb",
+              components: [modeValue.r, modeValue.g, modeValue.b],
+              alpha: modeValue.a,
+              hex: rgbToHex(modeValue.r, modeValue.g, modeValue.b),
+            };
+          }
+
+          if (v.description) token.$description = v.description;
+
+          if (isRefPalette) {
+            token.$extensions = {
+              "com.figma.scopes": v.scopes ?? ["ALL_SCOPES"],
+              "com.figma.isOverride": true,
+            };
+          } else {
+            // sys/color — compute css.variable from path
+            const tokenName = kebabCase(parts[parts.length - 1]);
+            token.$extensions = {
+              "com.figma.scopes": v.scopes ?? ["ALL_SCOPES"],
+              "css.variable": `--${prefix}-sys-color-${tokenName}`,
+            };
+          }
+
+          current[leafKey] = token;
         }
-        return out;
+
+        tree.$extensions = { "com.figma.modeName": modeName };
+        return tree;
       }
 
-      function toVariableValue(
-        value: unknown,
-      ): FigmaVariableColor | FigmaVariableAlias {
-        if (typeof value === "string") {
-          return { alias: value.replace(/^\{|\}$/g, "").replaceAll(".", "/") };
-        }
-        const c = value as {
-          components: [number, number, number];
-          alpha: number;
-        };
-        return {
-          r: c.components[0],
-          g: c.components[1],
-          b: c.components[2],
-          a: c.alpha,
-        };
-      }
-
-      const lightMap = collectLeaves(
-        tokens["Light.tokens.json"] as unknown as Record<string, unknown>,
-        "",
-        new Map(),
-      );
-      const darkMap = collectLeaves(
-        tokens["Dark.tokens.json"] as unknown as Record<string, unknown>,
-        "",
-        new Map(),
-      );
-
-      const variables: FigmaVariable[] = [];
-
-      for (const [path, lightToken] of lightMap) {
-        let darkToken = darkMap.get(path);
-        if (!darkToken) {
-          console.warn(`Dark mode token missing for ${path}, using light value`);
-          darkToken = lightToken;
-        }
-        const scopes = (
-          lightToken.$extensions as Record<string, unknown> | undefined
-        )?.["com.figma.scopes"] as string[] | undefined;
-
-        variables.push({
-          path,
-          ...(typeof lightToken.$description === "string"
-            ? { description: lightToken.$description }
-            : {}),
-          ...(scopes ? { scopes } : {}),
-          values: {
-            Light: toVariableValue(lightToken.$value),
-            Dark: toVariableValue(darkToken.$value),
-          },
-        });
-      }
-
-      return variables;
+      return {
+        "Light.tokens.json": buildModeFile("Light"),
+        "Dark.tokens.json": buildModeFile("Dark"),
+      };
     },
 
     //
@@ -1067,214 +1065,118 @@ export function builder(
     allPalettes,
   };
 
-  // ── buildFigmaTokens ─────────────────────────────────────────────────
-  // Extracted as a named function so toFigmaVariables() can reuse it.
+  // ── buildFigmaVariables ───────────────────────────────────────────────
+  // Primary data source: builds a flat FigmaVariable[] directly from
+  // allPalettes + mergedColors. toFigmaTokens() derives the DTCG tree
+  // from this list.
 
-  function buildFigmaTokens() {
+  function buildFigmaVariables(): FigmaVariable[] {
     // Figma Variables compatible format using M3 token architecture:
-    //   ref.palette.* — Reference Tokens (Tier 1): raw tonal palette values
-    //   sys.color.*   — System Tokens (Tier 2): semantic roles referencing palette tones
-    //
-    // System tokens use DTCG alias syntax {ref.palette.<name>.<tone>} to link
-    // to the reference palette, enabling Figma to create linked variables and
-    // making the relationship between roles and tones explicit for AI/dev tools.
+    //   ref/palette/* — Reference Tokens (Tier 1): raw tonal palette values
+    //   sys/color/*   — System Tokens (Tier 2): semantic roles referencing palette tones
     //
     // see: https://m3.material.io/foundations/design-tokens/overview
-    // see: https://www.figma.com/plugin-docs/api/properties/variables-importVariablesByKeyAsync/
 
-    // tokenToPalette and schemePalettes are defined at builder scope
-    // and shared with toCss() for var() resolution.
+    const variables: FigmaVariable[] = [];
 
-    function argbToFigmaColorValue(argb: number) {
-      return {
-        colorSpace: "srgb" as const,
-        components: [
-          redFromArgb(argb) / 255,
-          greenFromArgb(argb) / 255,
-          blueFromArgb(argb) / 255,
-        ],
-        alpha: 1,
-        hex: hexFromArgb(argb).toUpperCase(),
-      };
-    }
+    // ── ref/palette/* — direct color values, mode-independent ──
 
-    function figmaToken(argb: number) {
-      return {
-        $type: "color" as const,
-        $value: argbToFigmaColorValue(argb),
-        $extensions: {
-          "com.figma.scopes": ["ALL_SCOPES"],
-          "com.figma.isOverride": true,
-        },
-      };
-    }
+    // hex→path lookup grouped by palette, for alias resolution
+    const paletteHexMap: Record<string, Record<string, string>> = {};
 
-    // Build ref.palette.* — Reference Tokens (Tier 1)
-    // Raw tonal palette values with direct color data (mode-independent)
-    function buildRefPaletteTokens() {
-      const palettes: Record<
-        string,
-        Record<string, ReturnType<typeof figmaToken>>
-      > = {};
+    for (const [name, palette] of Object.entries(allPalettes)) {
+      const paletteName = startCase(name);
+      paletteHexMap[paletteName] = {};
 
-      for (const [name, palette] of Object.entries(allPalettes)) {
-        const tones: Record<string, ReturnType<typeof figmaToken>> = {};
+      for (const tone of STANDARD_TONES) {
+        const argb = palette.tone(tone);
+        const path = `ref/palette/${paletteName}/${tone}`;
+        const hex = hexFromArgb(argb).toUpperCase();
 
-        for (const tone of STANDARD_TONES) {
-          const argb = palette.tone(tone);
-          tones[tone.toString()] = figmaToken(argb);
-        }
+        paletteHexMap[paletteName][hex] = path;
 
-        palettes[startCase(name)] = tones;
-      }
-
-      return palettes;
-    }
-
-    type RefPalettes = Record<
-      string,
-      Record<string, ReturnType<typeof figmaToken>>
-    >;
-
-    // Find a hex match in a single palette group, returning the alias path
-    function findToneInPalette(
-      hex: string,
-      paletteName: string,
-      tones: Record<string, ReturnType<typeof figmaToken>>,
-    ) {
-      for (const [tone, token] of Object.entries(tones)) {
-        if (token.$value.hex === hex) {
-          return `{ref.palette.${paletteName}.${tone}}`;
-        }
-      }
-      return null;
-    }
-
-    // deriveCustomPaletteName is defined at builder scope
-
-    // Resolve a scheme token's hex to a DTCG alias reference {ref.palette.<name>.<tone>}
-    // Prefers the semantically correct palette via tokenToPalette, falls back to any match
-    function findAlias(
-      hex: string,
-      tokenName: string,
-      refPalettes: RefPalettes,
-    ) {
-      const preferredPaletteKebab =
-        tokenToPalette[tokenName] ?? deriveCustomPaletteName(tokenName);
-      const preferredPalette = preferredPaletteKebab
-        ? startCase(preferredPaletteKebab)
-        : undefined;
-
-      // Search preferred palette first
-      if (preferredPalette && refPalettes[preferredPalette]) {
-        const match = findToneInPalette(
-          hex,
-          preferredPalette,
-          refPalettes[preferredPalette],
-        );
-        if (match) return match;
-      }
-
-      // Fall back to any palette
-      for (const [palName, tones] of Object.entries(refPalettes)) {
-        const match = findToneInPalette(hex, palName, tones);
-        if (match) return match;
-      }
-
-      return null;
-    }
-
-    // Resolve a mode value: DTCG alias string if a palette match is found,
-    // otherwise falls back to a direct color value object
-    function resolveModeValue(
-      argb: number,
-      tokenName: string,
-      refPalettes: RefPalettes,
-    ) {
-      const hex = hexFromArgb(argb).toUpperCase();
-      return (
-        findAlias(hex, tokenName, refPalettes) ?? argbToFigmaColorValue(argb)
-      );
-    }
-
-    // Build sys.color.* — System Tokens (Tier 2)
-    // Semantic role tokens for a single mode (Light or Dark)
-    type SysColorToken = {
-      $type: "color";
-      $value: ReturnType<typeof resolveModeValue>;
-      $description?: string;
-      $extensions: Record<string, unknown>;
-    };
-
-    function buildSysColorTokens(
-      mergedColors: typeof mergedColorsLight,
-      refPalettes: RefPalettes,
-    ) {
-      const tokens: Record<string, SysColorToken> = {};
-
-      for (const [name, argb] of Object.entries(mergedColors)) {
-        const description = tokenDescriptions[name as TokenName];
-        const cssVar = `--${prefix}-sys-color-${kebabCase(name)}`;
-
-        const value = resolveModeValue(argb, name, refPalettes);
-
-        tokens[startCase(name)] = {
-          $type: "color" as const,
-          $value: value,
-          ...(description ? { $description: description } : {}),
-          $extensions: {
-            "com.figma.scopes": ["ALL_SCOPES"],
-            "css.variable": cssVar,
-          },
+        const color: FigmaVariableColor = {
+          r: redFromArgb(argb) / 255,
+          g: greenFromArgb(argb) / 255,
+          b: blueFromArgb(argb) / 255,
+          a: 1,
         };
+        variables.push({
+          path,
+          scopes: ["ALL_SCOPES"],
+          values: { Light: color, Dark: color },
+        });
       }
-      return tokens;
     }
 
-    const refPalettes = buildRefPaletteTokens();
+    // ── Alias resolution ──
+    // Prefers the semantically correct palette via tokenToPalette,
+    // falls back to any palette match
+    function findAlias(hex: string, tokenName: string): string | null {
+      const preferredKebab =
+        tokenToPalette[tokenName] ?? deriveCustomPaletteName(tokenName);
+      const preferred = preferredKebab ? startCase(preferredKebab) : undefined;
 
-    function buildModeFile(
-      modeName: string,
-      mergedColors: typeof mergedColorsLight,
-    ) {
+      if (preferred && paletteHexMap[preferred]?.[hex]) {
+        return paletteHexMap[preferred][hex];
+      }
+
+      for (const palHexes of Object.values(paletteHexMap)) {
+        if (palHexes[hex]) return palHexes[hex];
+      }
+
+      return null;
+    }
+
+    function resolveValue(argb: number, tokenName: string): FigmaVariableValue {
+      const hex = hexFromArgb(argb).toUpperCase();
+      const aliasPath = findAlias(hex, tokenName);
+      if (aliasPath) return { alias: aliasPath };
       return {
-        ref: {
-          palette: refPalettes,
-        },
-        sys: {
-          color: buildSysColorTokens(mergedColors, refPalettes),
-        },
-        $extensions: {
-          "com.figma.modeName": modeName,
-        },
+        r: redFromArgb(argb) / 255,
+        g: greenFromArgb(argb) / 255,
+        b: blueFromArgb(argb) / 255,
+        a: 1,
       };
     }
 
-    return {
-      "Light.tokens.json": buildModeFile("Light", mergedColorsLight),
-      "Dark.tokens.json": buildModeFile("Dark", mergedColorsDark),
-    };
+    // ── sys/color/* — aliases or direct colors, mode-specific ──
+
+    for (const [name, lightArgb] of Object.entries(mergedColorsLight)) {
+      const darkArgb =
+        mergedColorsDark[name as keyof typeof mergedColorsDark] ?? lightArgb;
+      const description = tokenDescriptions[name as TokenName];
+
+      variables.push({
+        path: `sys/color/${startCase(name)}`,
+        ...(description ? { description } : {}),
+        scopes: ["ALL_SCOPES"],
+        values: {
+          Light: resolveValue(lightArgb, name),
+          Dark: resolveValue(darkArgb, name),
+        },
+      });
+    }
+
+    return variables;
   }
 }
 
-// ─── Figma token types (derived from toFigmaTokens output) ──────────────
-
-/** Return type of builder().toFigmaTokens() */
-export type FigmaTokens = ReturnType<
-  ReturnType<typeof builder>["toFigmaTokens"]
->;
-
-/** A single mode file (Light/Dark) from FigmaTokens */
-export type FigmaModeFile = FigmaTokens["Light.tokens.json"];
-
-/** A ref.palette color token */
-export type FigmaRefToken = FigmaModeFile["ref"]["palette"][string][string];
-
-/** A sys.color token (value is alias string or direct color) */
-export type FigmaSysToken = FigmaModeFile["sys"]["color"][string];
+// ─── Figma token types ───────────────────────────────────────────────────
 
 /** Figma color value object with sRGB components */
-export type FigmaColorValue = FigmaRefToken["$value"];
+export type FigmaColorValue = {
+  colorSpace: string;
+  components: number[];
+  alpha: number;
+  hex: string;
+};
+
+/** Return type of builder().toFigmaTokens() */
+export type FigmaTokens = {
+  "Light.tokens.json": Record<string, unknown>;
+  "Dark.tokens.json": Record<string, unknown>;
+};
 
 // ─── Figma variable types (derived from toFigmaVariables output) ────────
 
