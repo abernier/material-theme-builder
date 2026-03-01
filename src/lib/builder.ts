@@ -999,7 +999,7 @@ export function builder(
           const modeValue = v.values[modeName];
           if (!modeValue) continue;
 
-          // Build nested path
+          // Build nested path (paths are always "ref/palette/X/N" or "sys/color/X")
           const parts = v.path.split("/");
           let current = tree;
           for (let i = 0; i < parts.length - 1; i++) {
@@ -1008,7 +1008,7 @@ export function builder(
             current = current[part];
           }
 
-          const leafKey = parts[parts.length - 1]!;
+          const leafKey = parts[parts.length - 1]!; // safe: split always has ≥1 element;
           const isRefPalette = v.path.startsWith("ref/palette/");
 
           // Build DTCG token
