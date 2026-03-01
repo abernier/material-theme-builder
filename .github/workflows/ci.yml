@@ -45,8 +45,6 @@ jobs:
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: changesets/action@v1
         with:
-          title: "chore: release"
-          commit: "chore: release"
           publish: pnpm run release
           createGithubReleases: true
         env:
