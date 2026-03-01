@@ -8,10 +8,71 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   ci:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      pull-requests: write
+      id-token: write
+
+    outputs:
+      version: ${{ steps.get-version.outputs.version }}
+      changed: ${{ steps.check.outputs.changed }}
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: ".nvmrc"
+          cache: "pnpm"
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm run lgtm
+
+      #
+      # Changeset
+      #
+
+      - name: Create Release Pull Request or Publish
+        id: changesets
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: changesets/action@v1
+        with:
+          publish: pnpm run release
+          createGithubReleases: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Check version bump
+        id: check
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: EndBug/version-check@v2
+        with:
+          diff-search: true
+
+      - name: Get version
+        id: get-version
+        if: steps.check.outputs.changed == 'true'
+        run: |
+          VERSION="${{ steps.check.outputs.version }}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Released version: $VERSION"
+
+  #
+  # Figma plugin publish — only on version bump (release merge)
+  #
+
+  figma-plugin:
+    needs: ci
+    if: needs.ci.outputs.changed == 'true'
     runs-on: ubuntu-latest
 
     steps:
@@ -23,4 +84,42 @@ jobs:
           cache: "pnpm"
       - run: pnpm install --frozen-lockfile
 
-      - run: pnpm run lgtm
+      - name: Build Figma plugin
+        run: pnpm run build-figma
+
+      - name: Publish Figma plugin
+        env:
+          FIGMA_ACCESS_TOKEN: ${{ secrets.FIGMA_ACCESS_TOKEN }}
+          FIGMA_PLUGIN_ID: ${{ vars.FIGMA_PLUGIN_ID }}
+        run: |
+          set -euo pipefail
+
+          VERSION="${{ needs.ci.outputs.version }}"
+          PLUGIN_DIR="figma-plugin"
+
+          echo "Publishing Figma plugin v${VERSION} (plugin id: ${FIGMA_PLUGIN_ID})"
+
+          FORM_ARGS=(
+            -F "manifest=@${PLUGIN_DIR}/manifest.json;type=application/json"
+            -F "code.js=@${PLUGIN_DIR}/code.js;type=application/javascript"
+            -F "dist/index.html=@${PLUGIN_DIR}/dist/index.html;type=text/html"
+          )
+
+          RESPONSE=$(curl -s -w "\n%{http_code}" \
+            -X POST \
+            -H "Authorization: Bearer ${FIGMA_ACCESS_TOKEN}" \
+            "${FORM_ARGS[@]}" \
+            "https://api.figma.com/v1/plugins/${FIGMA_PLUGIN_ID}/versions")
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+
+          echo "Response (HTTP ${HTTP_CODE}):"
+          echo "$BODY" | jq . 2>/dev/null || echo "$BODY"
+
+          if [[ "$HTTP_CODE" -lt 200 || "$HTTP_CODE" -ge 300 ]]; then
+            echo "::error::Figma API returned HTTP ${HTTP_CODE}"
+            exit 1
+          fi
+
+          echo "Figma plugin v${VERSION} published successfully"

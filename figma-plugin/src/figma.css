@@ -1,0 +1,14 @@
+html {
+  --sb-background: #eee;
+  --sb-foreground: black;
+
+  &.dark {
+    --sb-background: #252525;
+    --sb-foreground: white;
+  }
+}
+
+html {
+  background: var(--sb-background);
+  color: var(--sb-foreground);
+}

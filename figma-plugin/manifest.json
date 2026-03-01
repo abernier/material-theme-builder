@@ -1,0 +1,8 @@
+{
+  "name": "Material Theme Builder",
+  "id": "material-theme-builder",
+  "api": "1.0.0",
+  "main": "code.js",
+  "ui": "dist/index.html",
+  "editorType": ["figma"]
+}

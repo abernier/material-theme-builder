@@ -73,6 +73,8 @@
     "tsup": "^8.2.4",
     "typescript": "^5.5.4",
     "typescript-eslint": "^8.55.0",
+    "vite": "^7.3.1",
+    "vite-plugin-singlefile": "2.3.0",
     "vitest": "^4.0.16"
   },
   "scripts": {
@@ -89,6 +91,7 @@
     "local-release": "pnpm run lgtm && changeset version && changeset publish",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
+    "build-figma": "vite build --config figma-plugin/vite.config.ts",
     "chromatic": "chromatic --project-token $CHROMATIC_PROJECT_TOKEN",
     "prepare": "pnpm run pretest && husky",
     "changeset": "pnpm exec changeset"
