@@ -6,7 +6,7 @@ import { useMcu } from "../../src/Mcu.context";
 import { Layout, Scheme, Shades } from "../../src/Mcu.stories.helpers";
 
 import "../../src/tailwind.css";
-import "./figma.css";
+import "./main.css";
 
 function SyncButton() {
   const { figmaTokens } = useMcu();
