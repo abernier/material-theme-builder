@@ -495,7 +495,7 @@ export function builder(
   // Since source is always required, we always have a base to work from
   const variant = schemeToVariant[scheme];
   const schemeConfig = {
-    sourceColorArgb: effectiveSourceArgb,
+    sourceColorHct: Hct.fromInt(effectiveSourceArgb),
     variant,
     contrastLevel: contrast,
     primaryPalette: colorPalettes["primary"] || baseScheme.primaryPalette,
@@ -867,7 +867,7 @@ export function builder(
 
           // Compose scheme: override palette where specified, base default otherwise
           const composedScheme = new DynamicScheme({
-            sourceColorArgb: effectiveSourceArgb,
+            sourceColorHct: Hct.fromInt(effectiveSourceArgb),
             variant: schemeToVariant[scheme],
             contrastLevel: contrast,
             isDark,
