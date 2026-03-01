@@ -115,7 +115,7 @@ export function buildFigmaVariables(ctx: BuilderContext) {
 
       paletteHexMap[paletteName][hex] = path;
 
-      const color: FigmaVariableColor = {
+      const color = {
         r: redFromArgb(argb) / 255,
         g: greenFromArgb(argb) / 255,
         b: blueFromArgb(argb) / 255,
@@ -228,35 +228,31 @@ export function buildFigmaTokens(ctx: BuilderContext) {
     };
   }
 
-  function buildToken(
-    v: FigmaVariable,
-    modeValue: FigmaVariableValue,
-  ): DtcgColorToken {
+  function buildToken(v: FigmaVariable, modeValue: FigmaVariableValue) {
     return {
-      $type: "color",
+      $type: "color" as const,
       $value: toDtcgValue(modeValue),
       ...(v.description ? { $description: v.description } : {}),
       $extensions: toDtcgExtensions(v),
     };
   }
 
-  type ParsedPath =
-    | { kind: "palette"; paletteName: string; tone: string }
-    | { kind: "color"; tokenName: string }
-    | null;
-
-  function parsePath(path: string): ParsedPath {
+  function parsePath(path: string) {
     const parts = path.split("/");
     if (parts[0] === "ref" && parts[1] === "palette" && parts[2] && parts[3]) {
-      return { kind: "palette", paletteName: parts[2], tone: parts[3] };
+      return {
+        kind: "palette" as const,
+        paletteName: parts[2],
+        tone: parts[3],
+      };
     }
     if (parts[0] === "sys" && parts[1] === "color" && parts[2]) {
-      return { kind: "color", tokenName: parts[2] };
+      return { kind: "color" as const, tokenName: parts[2] };
     }
     return null;
   }
 
-  function buildModeFile(modeName: string): FigmaTokenModeFile {
+  function buildModeFile(modeName: string) {
     const palette: Record<string, DtcgPaletteGroup> = {};
     const color: Record<string, DtcgColorToken> = {};
 

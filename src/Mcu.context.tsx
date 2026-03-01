@@ -39,7 +39,7 @@ export const McuProvider = ({
   /** Content to render inside the provider. */
   children?: React.ReactNode;
 }) => {
-  const [initials] = useState<McuConfig>(() => configProps);
+  const [initials] = useState(() => configProps);
   // console.log("McuProvider initials", initials);
 
   const [mcuConfig, setMcuConfig] = useState(initials);

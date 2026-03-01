@@ -60,7 +60,7 @@ export const schemeNames = [
 ] as const;
 type SchemeName = (typeof schemeNames)[number];
 
-const schemesMap: Record<SchemeName, SchemeConstructor> = {
+const schemesMap = {
   tonalSpot: SchemeTonalSpot,
   monochrome: SchemeMonochrome,
   neutral: SchemeNeutral,
@@ -68,7 +68,7 @@ const schemesMap: Record<SchemeName, SchemeConstructor> = {
   expressive: SchemeExpressive,
   fidelity: SchemeFidelity,
   content: SchemeContent,
-};
+} satisfies Record<SchemeName, SchemeConstructor>;
 
 /** Configuration for the Material Color Utilities builder. */
 export type McuConfig = {
@@ -115,7 +115,7 @@ export type McuConfig = {
 // ─── Constants ───────────────────────────────────────────────────────────
 
 /** Default color scheme variant. */
-export const DEFAULT_SCHEME: SchemeName = "tonalSpot";
+export const DEFAULT_SCHEME = "tonalSpot" satisfies SchemeName;
 /** Default contrast level (standard). */
 export const DEFAULT_CONTRAST = 0;
 /** Default custom colors (none). */
@@ -145,7 +145,7 @@ const Variant = {
 } as const;
 
 /** Maps each scheme name to its Material You variant number. */
-export const schemeToVariant: Record<SchemeName, number> = {
+export const schemeToVariant = {
   monochrome: Variant.MONOCHROME,
   neutral: Variant.NEUTRAL,
   tonalSpot: Variant.TONAL_SPOT,
@@ -153,7 +153,7 @@ export const schemeToVariant: Record<SchemeName, number> = {
   expressive: Variant.EXPRESSIVE,
   fidelity: Variant.FIDELITY,
   content: Variant.CONTENT,
-};
+} satisfies Record<SchemeName, number>;
 
 // ─── Token descriptions ──────────────────────────────────────────────────
 
@@ -669,7 +669,7 @@ export function builder(
   const allPaletteNamesKebab = new Set(Object.keys(allPalettes).map(kebabCase));
 
   // ── Build context ─────────────────────────────────────────────────────
-  const ctx: BuilderContext = {
+  const ctx = {
     hexSource,
     prefix,
     scheme,
@@ -689,7 +689,7 @@ export function builder(
     mergedColorsDark,
     tokenToPalette,
     allPaletteNamesKebab,
-  };
+  } satisfies BuilderContext;
 
   return {
     toCss: () => buildCss(ctx),
