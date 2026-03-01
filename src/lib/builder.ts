@@ -1033,7 +1033,11 @@ export function builder(
       const variables: FigmaVariable[] = [];
 
       for (const [path, lightToken] of lightMap) {
-        const darkToken = darkMap.get(path) ?? lightToken;
+        let darkToken = darkMap.get(path);
+        if (!darkToken) {
+          console.warn(`Dark mode token missing for ${path}, using light value`);
+          darkToken = lightToken;
+        }
         const scopes = (
           lightToken.$extensions as Record<string, unknown> | undefined
         )?.["com.figma.scopes"] as string[] | undefined;
