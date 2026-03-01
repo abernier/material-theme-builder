@@ -81,7 +81,6 @@
   },
   "scripts": {
     "build": "tsup",
-    "dev": "pnpm run storybook & pnpm run dev-figma",
     "lint": "eslint .",
     "lgtm": "pnpm run build && pnpm run lint && pnpm run check-format && pnpm run check-exports && pnpm run typecheck && pnpm run test",
     "typecheck": "tsc",
@@ -95,7 +94,6 @@
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "build-figma": "vite build --config figma-plugin/vite.config.ts && tsup --config figma-plugin/tsup.config.ts",
-    "dev-figma": "vite build --config figma-plugin/vite.config.ts --watch & tsup --config figma-plugin/tsup.config.ts --watch",
     "chromatic": "chromatic --project-token $CHROMATIC_PROJECT_TOKEN",
     "prepare": "pnpm run pretest && husky",
     "changeset": "pnpm exec changeset"
