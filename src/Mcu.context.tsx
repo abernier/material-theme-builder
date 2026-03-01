@@ -11,6 +11,7 @@ import React, {
 import {
   builder,
   type FigmaTokens,
+  type FigmaVariable,
   type McuConfig,
   type TokenName,
 } from "./lib/builder";
@@ -22,19 +23,25 @@ type Api = {
   getMcuColor: (colorName: TokenName, theme?: string) => string;
   allPalettes: Record<string, TonalPalette>;
   figmaTokens: FigmaTokens;
+  figmaVariables: FigmaVariable[];
 };
 
 const [useMcu, Provider, McuContext] = createRequiredContext<Api>();
 
+/**
+ * Provider that computes the Material You theme and exposes it via context.
+ */
 export const McuProvider = ({
   styleId,
   children,
   ...configProps
 }: McuConfig & {
+  /** The `id` attribute applied to the injected `<style>` element. */
   styleId: string;
+  /** Content to render inside the provider. */
   children?: React.ReactNode;
 }) => {
-  const [initials] = useState<McuConfig>(() => configProps);
+  const [initials] = useState(() => configProps);
   // console.log("McuProvider initials", initials);
 
   const [mcuConfig, setMcuConfig] = useState(initials);
@@ -47,21 +54,32 @@ export const McuProvider = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [configKey]);
 
-  const { css, mergedColorsLight, mergedColorsDark, allPalettes, figmaTokens } =
-    useMemo(() => {
-      const { toCss, toFigmaTokens, ...rest } = builder(
-        mcuConfig.source,
-        mcuConfig,
-      );
-      return { css: toCss(), figmaTokens: toFigmaTokens(), ...rest };
-    }, [mcuConfig]);
+  const {
+    css,
+    mergedColorsLight,
+    mergedColorsDark,
+    allPalettes,
+    figmaTokens,
+    figmaVariables,
+  } = useMemo(() => {
+    const { toCss, toFigmaTokens, toFigmaVariables, ...rest } = builder(
+      mcuConfig.source,
+      mcuConfig,
+    );
+    return {
+      css: toCss(),
+      figmaTokens: toFigmaTokens(),
+      figmaVariables: toFigmaVariables(),
+      ...rest,
+    };
+  }, [mcuConfig]);
 
   //
   // <style>
   //
 
   useInsertionEffect(() => {
-    let tag = document.getElementById(styleId) as HTMLStyleElement | null;
+    let tag = document.getElementById(styleId);
     if (!tag) {
       tag = document.createElement("style");
       tag.id = styleId;
@@ -102,8 +120,9 @@ export const McuProvider = ({
         getMcuColor,
         allPalettes,
         figmaTokens,
+        figmaVariables,
       }) satisfies Api,
-    [getMcuColor, initials, allPalettes, figmaTokens],
+    [getMcuColor, initials, allPalettes, figmaTokens, figmaVariables],
   );
 
   return <Provider value={value}>{children}</Provider>;

@@ -99,10 +99,15 @@ jobs:
 
           echo "Publishing Figma plugin v${VERSION} (plugin id: ${FIGMA_PLUGIN_ID})"
 
+          # Read file paths from manifest.json so CI stays in sync automatically
+          MANIFEST="${PLUGIN_DIR}/manifest.json"
+          MAIN=$(jq -r '.main' "$MANIFEST")
+          UI=$(jq -r '.ui' "$MANIFEST")
+
           FORM_ARGS=(
-            -F "manifest=@${PLUGIN_DIR}/manifest.json;type=application/json"
-            -F "code.js=@${PLUGIN_DIR}/code.js;type=application/javascript"
-            -F "dist/index.html=@${PLUGIN_DIR}/dist/index.html;type=text/html"
+            -F "manifest=@${MANIFEST};type=application/json"
+            -F "${MAIN}=@${PLUGIN_DIR}/${MAIN};type=application/javascript"
+            -F "${UI}=@${PLUGIN_DIR}/${UI};type=text/html"
           )
 
           RESPONSE=$(curl -s -w "\n%{http_code}" \

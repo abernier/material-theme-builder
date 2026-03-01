@@ -57,6 +57,7 @@
     "clsx": "^2.1.1",
     "culori": "^4.0.2",
     "eslint": "^10.0.0",
+    "eslint-plugin-jsdoc": "^62.7.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-sonarjs": "^4.0.0",
     "globals": "^17.3.0",
@@ -82,7 +83,7 @@
   "scripts": {
     "build": "tsup",
     "lint": "eslint .",
-    "lgtm": "pnpm run build && pnpm run lint && pnpm run check-format && pnpm run check-exports && pnpm run typecheck && pnpm run test",
+    "lgtm": "pnpm run build && pnpm run build-figma && pnpm run lint && pnpm run check-format && pnpm run check-exports && pnpm run typecheck && pnpm run test",
     "typecheck": "tsc",
     "test": "vitest run",
     "pretest": "bash scripts/download-dtcg-schemas.sh",
@@ -105,6 +106,7 @@
   "dependencies": {
     "@material/material-color-utilities": "^0.3.0",
     "commander": "^14.0.3",
-    "lodash-es": "^4.17.22"
+    "lodash-es": "^4.17.22",
+    "zod": "^4.3.6"
   }
 }

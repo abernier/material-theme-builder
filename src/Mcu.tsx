@@ -13,6 +13,9 @@ import { McuProvider } from "./Mcu.context";
 const mcuStyleId = "mcu-styles";
 const DEFAULT_COLOR_MATCH = false;
 
+/**
+ * Root component that generates and injects a Material You color theme into the page.
+ */
 export function Mcu({
   source,
   scheme = DEFAULT_SCHEME,
@@ -27,7 +30,10 @@ export function Mcu({
   customColors = DEFAULT_CUSTOM_COLORS,
   prefix = DEFAULT_PREFIX,
   children,
-}: McuConfig & { children?: React.ReactNode }) {
+}: McuConfig & {
+  /** Content to render inside the themed scope. */
+  children?: React.ReactNode;
+}) {
   const config = useMemo(
     () => ({
       source,

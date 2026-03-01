@@ -49,9 +49,13 @@ const fabVariants = cva(
   },
 );
 
+/** Props for the Material 3 Floating Action Button. */
 export type FabProps = ComponentProps<"button"> &
   VariantProps<typeof fabVariants>;
 
+/**
+ * Material 3 Floating Action Button.
+ */
 export function Fab({ className, size, color, children, ...props }: FabProps) {
   return (
     <button

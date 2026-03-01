@@ -3,9 +3,13 @@ import type { McuConfig } from "./lib/builder";
 import { builder } from "./lib/builder";
 
 interface ExportButtonProps {
+  /** Current theme configuration used to generate the exported tokens. */
   config: McuConfig;
 }
 
+/**
+ * FAB that exports the current theme as Figma DTCG token JSON files.
+ */
 export function ExportButton({ config }: ExportButtonProps) {
   const handleExport = () => {
     try {
@@ -32,7 +36,10 @@ export function ExportButton({ config }: ExportButtonProps) {
       console.log("Figma tokens exported successfully");
     } catch (error) {
       console.error("Failed to export Figma tokens:", error);
-      alert("Failed to export: " + (error as Error).message);
+      alert(
+        "Failed to export: " +
+          (error instanceof Error ? error.message : String(error)),
+      );
     }
   };
 
