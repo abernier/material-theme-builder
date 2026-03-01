@@ -3,6 +3,9 @@ set -euo pipefail
 
 # Download DTCG 2025.10 JSON Schemas for validation tests
 # Source: https://www.designtokens.org/schemas/2025.10/
+#
+# These schemas are vendored in the repo so tests work without network access.
+# To refresh them, delete src/fixtures/.dtcg-schemas/format.json and re-run this script.
 
 DIR="src/fixtures/.dtcg-schemas"
 BASE_URL="https://www.designtokens.org/schemas/2025.10"

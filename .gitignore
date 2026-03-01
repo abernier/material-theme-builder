@@ -4,7 +4,7 @@ dist
 storybook-static
 package-lock.json
 material-theme
-src/fixtures/.dtcg-schemas
+
 
 src/stories
 .DS_Store
