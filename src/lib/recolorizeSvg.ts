@@ -26,6 +26,8 @@ type CandidateInfo = {
   isNeutral: boolean;
 };
 
+type ToneMatch = { token: string; score: number };
+
 /**
  * Score all candidate palettes against a target color using CIEDE2000.
  * Returns the best matching token and score, or null if no match found.
@@ -36,34 +38,39 @@ function scoreCandidates(
   candidates: CandidateInfo[],
   tolerance: number,
   deltaE: (colorA: Color | string, colorB: Color | string) => number,
-  rgbToLab: (color: Color | string) => Lab65,
-): { token: string; score: number } | null {
-  let bestToken: string | null = null;
-  let bestScore = Infinity;
+  rgbToLab: (color: Color | string) => Lab65 | undefined,
+): ToneMatch | null {
+  let best: ToneMatch | null = null;
   const targetIsNeutral = targetHct.chroma < 8;
+
+  function matchTone(candidate: CandidateInfo, tone: number): ToneMatch | null {
+    const toneHct = Hct.fromInt(candidate.palette.tone(tone));
+    if (Math.abs(targetHct.tone - toneHct.tone) > tolerance) return null;
+
+    const toneRgb = parseHex(hexFromArgb(toneHct.toInt()));
+    if (!toneRgb) return null;
+    const toneLab = rgbToLab(toneRgb);
+    if (!toneLab) return null;
+
+    const distance = deltaE(targetLab, toneLab);
+    const neutralMultiplier =
+      targetIsNeutral === candidate.isNeutral ? 0.8 : 1.5;
+    return {
+      token: `var(--md-ref-palette-${candidate.prefix}-${tone})`,
+      score: distance * neutralMultiplier,
+    };
+  }
 
   for (const c of candidates) {
     for (const tone of STANDARD_TONES) {
-      const toneHct = Hct.fromInt(c.palette.tone(tone));
-      const toneDist = Math.abs(targetHct.tone - toneHct.tone);
-      if (toneDist > tolerance) continue;
-
-      const toneHex = hexFromArgb(toneHct.toInt());
-      const toneRgb = parseHex(toneHex)!;
-      const toneLab = rgbToLab(toneRgb);
-      const distance = deltaE(targetLab, toneLab);
-
-      const neutralMultiplier = targetIsNeutral === c.isNeutral ? 0.8 : 1.5;
-      const score = distance * neutralMultiplier;
-
-      if (score < bestScore) {
-        bestScore = score;
-        bestToken = `var(--md-ref-palette-${c.prefix}-${tone})`;
+      const result = matchTone(c, tone);
+      if (result && (!best || result.score < best.score)) {
+        best = result;
       }
     }
   }
 
-  return bestToken ? { token: bestToken, score: bestScore } : null;
+  return best;
 }
 
 /**
@@ -151,7 +158,7 @@ export function recolorizeSvg(
   const findBestToken = (hexInput: string) => {
     if (!hexInput || hexInput === "none" || hexInput.startsWith("url"))
       return null;
-    if (tokenCache.has(hexInput)) return tokenCache.get(hexInput)!;
+    if (tokenCache.has(hexInput)) return tokenCache.get(hexInput);
 
     let targetHct;
     try {
@@ -162,7 +169,8 @@ export function recolorizeSvg(
 
     // CIEDE2000-based matching for perceptually accurate color matching
     const targetHex = hexFromArgb(targetHct.toInt());
-    const targetRgb = parseHex(targetHex)!;
+    const targetRgb = parseHex(targetHex);
+    if (!targetRgb) return null;
     const targetLab = rgbToLab(targetRgb);
 
     const match = scoreCandidates(
@@ -171,7 +179,7 @@ export function recolorizeSvg(
       candidates,
       tolerance,
       deltaE,
-      rgbToLab as (color: Color | string) => Lab65,
+      rgbToLab,
     );
     const bestToken =
       match?.token ??

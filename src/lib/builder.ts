@@ -21,7 +21,7 @@ import {
 } from "@material/material-color-utilities";
 import { kebabCase, startCase, upperFirst } from "lodash-es";
 
-type HexCustomColor = Omit<CustomColor, "value"> & {
+export type HexCustomColor = Omit<CustomColor, "value"> & {
   hex: string;
 };
 
@@ -222,9 +222,11 @@ export const tokenDescriptions = {
     "Dimmed variant of the fixed tertiary color for lower emphasis.",
 } as const;
 
-export const tokenNames = Object.keys(
-  tokenDescriptions,
-) as (keyof typeof tokenDescriptions)[];
+function isTokenName(key: string): key is keyof typeof tokenDescriptions {
+  return key in tokenDescriptions;
+}
+
+export const tokenNames = Object.keys(tokenDescriptions).filter(isTokenName);
 
 export type TokenName = keyof typeof tokenDescriptions;
 
@@ -311,37 +313,31 @@ function mergeBaseAndCustomColors(
     const colorname = color.name;
 
     // Helper to get palette for this color
-    const getPaletteForColor = (s: DynamicScheme) =>
-      getPalette(colorPalettes, colorname);
-
-    // Helper to get tone for this color
-    const getTone = (baseTone: number) => (_s: DynamicScheme) => {
-      return baseTone;
-    };
+    const getPaletteForColor = () => getPalette(colorPalettes, colorname);
 
     // Create DynamicColor objects for all 4 color roles
     const colorDynamicColor = new DynamicColor(
       colorname,
       getPaletteForColor,
-      (s) => getTone(s.isDark ? 80 : 40)(s), // Main color: lighter in dark mode, darker in light mode
+      (s) => (s.isDark ? 80 : 40), // Main color: lighter in dark mode, darker in light mode
       true, // background
     );
     const onColorDynamicColor = new DynamicColor(
       `on${upperFirst(colorname)}`,
       getPaletteForColor,
-      (s) => getTone(s.isDark ? 20 : 100)(s), // Text on main color: high contrast (dark on light, light on dark)
+      (s) => (s.isDark ? 20 : 100), // Text on main color: high contrast (dark on light, light on dark)
       false,
     );
     const containerDynamicColor = new DynamicColor(
       `${colorname}Container`,
       getPaletteForColor,
-      (s) => getTone(s.isDark ? 30 : 90)(s), // Container: subtle variant (darker in dark mode, lighter in light mode)
+      (s) => (s.isDark ? 30 : 90), // Container: subtle variant (darker in dark mode, lighter in light mode)
       true, // background
     );
     const onContainerDynamicColor = new DynamicColor(
       `on${upperFirst(colorname)}Container`,
       getPaletteForColor,
-      (s) => getTone(s.isDark ? 90 : 30)(s), // Text on container: high contrast against container background
+      (s) => (s.isDark ? 90 : 30), // Text on container: high contrast against container background
       false,
     );
 
@@ -574,8 +570,10 @@ export function builder(
   ) {
     const result: Record<string, string> = {};
     for (const propName of Object.getOwnPropertyNames(MaterialDynamicColors)) {
-      const dc =
-        MaterialDynamicColors[propName as keyof typeof MaterialDynamicColors];
+      const dc = Object.getOwnPropertyDescriptor(
+        MaterialDynamicColors,
+        propName,
+      )?.value;
       if (!(dc instanceof DynamicColor)) continue;
       const palette = dc.palette(scheme);
       for (const [palName, pal] of schemePalettes) {
@@ -652,8 +650,10 @@ export function builder(
           const match =
             (preferred
               ? matches.find((m) => m.paletteName === preferred)
-              : undefined) ?? matches[0]!;
-          return `${name}:var(--${prefix}-ref-palette-${match.paletteName}-${match.tone});`;
+              : undefined) ?? matches[0];
+          if (match) {
+            return `${name}:var(--${prefix}-ref-palette-${match.paletteName}-${match.tone});`;
+          }
         }
         return `${name}:${hex};`;
       }
@@ -959,22 +959,14 @@ export function builder(
     },
 
     //
-    // ██    ██  █████  ██████  ██  █████  ██████  ██      ███████ ███████
-    // ██    ██ ██   ██ ██   ██ ██ ██   ██ ██   ██ ██      ██      ██
-    // ██    ██ ███████ ██████  ██ ███████ ██████  ██      █████   ███████
-    //  ██  ██  ██   ██ ██   ██ ██ ██   ██ ██   ██ ██      ██           ██
-    //   ████   ██   ██ ██   ██ ██ ██   ██ ██████  ███████ ███████ ███████
-    //
-
-    toFigmaVariables: buildFigmaVariables,
-
-    //
     // ███████ ██  ██████  ███    ███  █████
     // ██      ██ ██       ████  ████ ██   ██
     // █████   ██ ██   ███ ██ ████ ██ ███████
     // ██      ██ ██    ██ ██  ██  ██ ██   ██
     // ██      ██  ██████  ██      ██ ██   ██
     //
+
+    toFigmaVariables: buildFigmaVariables,
 
     toFigmaTokens() {
       // Derives the DTCG token tree from the flat variable list.
@@ -983,7 +975,7 @@ export function builder(
 
       const variables = buildFigmaVariables();
 
-      function rgbToHex(r: number, g: number, b: number): string {
+      function rgbToHex(r: number, g: number, b: number) {
         const toHex = (c: number) =>
           Math.round(c * 255)
             .toString(16)
@@ -1011,39 +1003,73 @@ export function builder(
             "com.figma.isOverride": true,
           };
         }
-        const tokenName = kebabCase(v.path.split("/").at(-1)!);
+        const lastSegment = v.path.split("/").at(-1);
+        if (!lastSegment)
+          return { "com.figma.scopes": v.scopes ?? ["ALL_SCOPES"] };
+        const tokenName = kebabCase(lastSegment);
         return {
           "com.figma.scopes": v.scopes ?? ["ALL_SCOPES"],
           "css.variable": `--${prefix}-sys-color-${tokenName}`,
         };
       }
 
-      function buildModeFile(modeName: string) {
-        const tree: Record<string, Record<string, unknown>> = {};
+      function buildToken(
+        v: FigmaVariable,
+        modeValue: FigmaVariableValue,
+      ): DtcgColorToken {
+        return {
+          $type: "color",
+          $value: toDtcgValue(modeValue),
+          ...(v.description ? { $description: v.description } : {}),
+          $extensions: toDtcgExtensions(v),
+        };
+      }
+
+      type ParsedPath =
+        | { kind: "palette"; paletteName: string; tone: string }
+        | { kind: "color"; tokenName: string }
+        | null;
+
+      function parsePath(path: string): ParsedPath {
+        const parts = path.split("/");
+        if (
+          parts[0] === "ref" &&
+          parts[1] === "palette" &&
+          parts[2] &&
+          parts[3]
+        ) {
+          return { kind: "palette", paletteName: parts[2], tone: parts[3] };
+        }
+        if (parts[0] === "sys" && parts[1] === "color" && parts[2]) {
+          return { kind: "color", tokenName: parts[2] };
+        }
+        return null;
+      }
+
+      function buildModeFile(modeName: string): FigmaTokenModeFile {
+        const palette: Record<string, DtcgPaletteGroup> = {};
+        const color: Record<string, DtcgColorToken> = {};
 
         for (const v of variables) {
           const modeValue = v.values[modeName];
           if (!modeValue) continue;
 
-          // Build nested path (paths are always "ref/palette/X/N" or "sys/color/X")
-          const parts = v.path.split("/");
-          let current = tree;
-          for (let i = 0; i < parts.length - 1; i++) {
-            const part = parts[i]!;
-            if (!(part in current)) current[part] = {};
-            current = current[part] as typeof tree;
-          }
+          const parsed = parsePath(v.path);
+          if (!parsed) continue;
 
-          current[parts[parts.length - 1]!] = {
-            $type: "color",
-            $value: toDtcgValue(modeValue),
-            ...(v.description ? { $description: v.description } : {}),
-            $extensions: toDtcgExtensions(v),
-          };
+          if (parsed.kind === "palette") {
+            const group = (palette[parsed.paletteName] ??= {});
+            group[parsed.tone] = buildToken(v, modeValue);
+          } else {
+            color[parsed.tokenName] = buildToken(v, modeValue);
+          }
         }
 
-        tree.$extensions = { "com.figma.modeName": modeName };
-        return tree;
+        return {
+          $extensions: { "com.figma.modeName": modeName },
+          ref: { palette },
+          sys: { color },
+        };
       }
 
       return {
@@ -1066,7 +1092,7 @@ export function builder(
   // allPalettes + mergedColors. toFigmaTokens() derives the DTCG tree
   // from this list.
 
-  function buildFigmaVariables(): FigmaVariable[] {
+  function buildFigmaVariables() {
     // Figma Variables compatible format using M3 token architecture:
     //   ref/palette/* — Reference Tokens (Tier 1): raw tonal palette values
     //   sys/color/*   — System Tokens (Tier 2): semantic roles referencing palette tones
@@ -1139,9 +1165,10 @@ export function builder(
     // ── sys/color/* — aliases or direct colors, mode-specific ──
 
     for (const [name, lightArgb] of Object.entries(mergedColorsLight)) {
-      const darkArgb =
-        mergedColorsDark[name as keyof typeof mergedColorsDark] ?? lightArgb;
-      const description = tokenDescriptions[name as TokenName];
+      const darkArgb = mergedColorsDark[name] ?? lightArgb;
+      const description = isTokenName(name)
+        ? tokenDescriptions[name]
+        : undefined;
 
       variables.push({
         path: `sys/color/${startCase(name)}`,
@@ -1160,18 +1187,40 @@ export function builder(
 
 // ─── Figma token types ───────────────────────────────────────────────────
 
-/** Figma color value object with sRGB components */
-export type FigmaColorValue = {
+/** DTCG color value (direct, non-alias) */
+export type DtcgColorValue = {
   colorSpace: string;
   components: number[];
   alpha: number;
   hex: string;
 };
 
+/** A single DTCG color token */
+export type DtcgColorToken = {
+  $type: "color";
+  $value: string | DtcgColorValue;
+  $description?: string;
+  $extensions: Record<string, unknown>;
+};
+
+/** A palette group: tone number → token */
+export type DtcgPaletteGroup = Record<string, DtcgColorToken>;
+
+/** Structure of a single mode file (Light or Dark) */
+export type FigmaTokenModeFile = {
+  $extensions: { "com.figma.modeName": string };
+  ref: {
+    palette: Record<string, DtcgPaletteGroup>;
+  };
+  sys: {
+    color: Record<string, DtcgColorToken>;
+  };
+};
+
 /** Return type of builder().toFigmaTokens() */
 export type FigmaTokens = {
-  "Light.tokens.json": Record<string, unknown>;
-  "Dark.tokens.json": Record<string, unknown>;
+  "Light.tokens.json": FigmaTokenModeFile;
+  "Dark.tokens.json": FigmaTokenModeFile;
 };
 
 // ─── Figma variable types (derived from toFigmaVariables output) ────────

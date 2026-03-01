@@ -11,13 +11,13 @@ export default defineConfig([
     ...reactHooks.configs.flat.recommended,
     files: ["src/**/*.{ts,tsx}", ".storybook/**/*.{ts,tsx}"],
   },
+  ...tseslint.configs.strict.map((config) => ({
+    ...config,
+    files: ["src/**/*.{ts,tsx}", ".storybook/**/*.{ts,tsx}"],
+  })),
   {
     files: ["src/**/*.{ts,tsx}", ".storybook/**/*.{ts,tsx}"],
-    languageOptions: {
-      parser: tseslint.parser,
-    },
     plugins: {
-      "@typescript-eslint": tseslint.plugin,
       sonarjs,
     },
     rules: {
@@ -25,7 +25,6 @@ export default defineConfig([
       "sonarjs/cyclomatic-complexity": "error",
       "sonarjs/expression-complexity": "warn",
       "sonarjs/regex-complexity": "warn",
-      "@typescript-eslint/no-inferrable-types": "error",
     },
   },
 ]);

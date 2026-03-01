@@ -17,6 +17,9 @@ importers:
       lodash-es:
         specifier: ^4.17.22
         version: 4.17.22
+      zod:
+        specifier: ^4.3.6
+        version: 4.3.6
     devDependencies:
       '@arethetypeswrong/cli':
         specifier: ^0.18.2

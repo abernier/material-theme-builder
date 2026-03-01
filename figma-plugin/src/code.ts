@@ -1,6 +1,7 @@
 /// <reference types="@figma/plugin-typings" />
 
 import type { FigmaVariable } from "../../src/lib/builder";
+import { COLLECTION_NAME } from "./constants";
 
 // ─── Plugin entry point ─────────────────────────────────────────────────
 
@@ -64,7 +65,7 @@ async function findOrCreateVariable(
 // ─── Sync logic ─────────────────────────────────────────────────────────
 
 async function syncVariables(variables: FigmaVariable[]) {
-  const collection = await findOrCreateCollection("Material Theme");
+  const collection = await findOrCreateCollection(COLLECTION_NAME);
   const modes = ensureModes(collection, "Light", "Dark");
 
   // Create all variables first so aliases can reference them

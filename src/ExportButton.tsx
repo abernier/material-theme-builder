@@ -32,7 +32,10 @@ export function ExportButton({ config }: ExportButtonProps) {
       console.log("Figma tokens exported successfully");
     } catch (error) {
       console.error("Failed to export Figma tokens:", error);
-      alert("Failed to export: " + (error as Error).message);
+      alert(
+        "Failed to export: " +
+          (error instanceof Error ? error.message : String(error)),
+      );
     }
   };
 

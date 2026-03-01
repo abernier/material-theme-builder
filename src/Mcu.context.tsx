@@ -74,7 +74,7 @@ export const McuProvider = ({
   //
 
   useInsertionEffect(() => {
-    let tag = document.getElementById(styleId) as HTMLStyleElement | null;
+    let tag = document.getElementById(styleId);
     if (!tag) {
       tag = document.createElement("style");
       tag.id = styleId;

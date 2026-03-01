@@ -13,14 +13,24 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 
 import { Command, Option } from "commander";
+import { z } from "zod";
 import {
   builder,
   DEFAULT_BLEND,
   DEFAULT_CONTRAST,
   DEFAULT_PREFIX,
   DEFAULT_SCHEME,
+  type HexCustomColor,
   schemeNames,
 } from "./lib/builder";
+
+const customColorSchema = z.array(
+  z.object({
+    name: z.string(),
+    hex: z.string(),
+    blend: z.boolean().default(DEFAULT_BLEND),
+  }),
+) satisfies z.ZodType<HexCustomColor[]>;
 
 const program = new Command();
 
@@ -57,23 +67,14 @@ program
     DEFAULT_PREFIX,
   )
   .action((source: string, opts) => {
-    let customColors: { name: string; hex: string; blend: boolean }[] = [];
+    let customColors: HexCustomColor[] = [];
     if (opts.customColors) {
-      try {
-        const parsed = JSON.parse(opts.customColors) as {
-          name: string;
-          hex: string;
-          blend?: boolean;
-        }[];
-        customColors = parsed.map((c) => ({
-          name: c.name,
-          hex: c.hex,
-          blend: c.blend ?? DEFAULT_BLEND,
-        }));
-      } catch {
+      const result = customColorSchema.safeParse(JSON.parse(opts.customColors));
+      if (!result.success) {
         console.error("Error: --custom-colors must be valid JSON");
         process.exit(1);
       }
+      customColors = result.data;
     }
 
     const result = builder(source, {
