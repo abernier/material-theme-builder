@@ -94,6 +94,7 @@ export function Flowfield({
   smoothing = 0,
   cursorRadius = 200,
   cursorStrength = 800,
+  cursorTrail = 0.95,
 }: {
   /** SVG viewBox width. */
   width?: number;
@@ -119,6 +120,8 @@ export function Flowfield({
   cursorRadius?: number;
   /** Maximum elevation added at the cursor position. */
   cursorStrength?: number;
+  /** Fraction of cursor influence retained per frame (0 = no trail, 0.99 = long trail). */
+  cursorTrail?: number;
 }) {
   const svgRef = useRef<SVGSVGElement>(null);
   const noise2DRef = useRef<ReturnType<typeof createNoise2D>>(null);
@@ -213,6 +216,7 @@ export function Flowfield({
       new Array<number>(gridW * gridH).fill(0),
     );
     const rawElev = new Array<number>(runtimePeaks.length).fill(0);
+    const cursorHeat = new Array<number>(gridW * gridH).fill(0);
     const baseThresholds = Object.keys(baseColors)
       .map(Number)
       .sort((a, b) => a - b);
@@ -224,6 +228,43 @@ export function Flowfield({
       isPeakBase: boolean;
     }
 
+    function updateCursorHeat() {
+      for (let i = 0; i < cursorHeat.length; i++) {
+        cursorHeat[i] = (cursorHeat[i] ?? 0) * cursorTrail;
+      }
+      for (const pos of pointersRef.current.values()) {
+        const minI = Math.max(
+          0,
+          Math.floor((pos.x - cursorRadius) / gridScale),
+        );
+        const maxI = Math.min(
+          gridW - 1,
+          Math.ceil((pos.x + cursorRadius) / gridScale),
+        );
+        const minJ = Math.max(
+          0,
+          Math.floor((pos.y - cursorRadius) / gridScale),
+        );
+        const maxJ = Math.min(
+          gridH - 1,
+          Math.ceil((pos.y + cursorRadius) / gridScale),
+        );
+        for (let j = minJ; j <= maxJ; ++j) {
+          for (let i = minI; i <= maxI; ++i) {
+            const dx = i * gridScale - pos.x;
+            const dy = j * gridScale - pos.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < cursorRadius) {
+              const factor = 1 - dist / cursorRadius;
+              const influence = cursorStrength * factor * factor;
+              const idx = j * gridW + i;
+              cursorHeat[idx] = Math.max(cursorHeat[idx] ?? 0, influence);
+            }
+          }
+        }
+      }
+    }
+
     function computeGrid() {
       for (const p of runtimePeaks) {
         p.x = p.baseX + noise2D(p.seed, timeRef.current * 0.3) * driftAmplitude;
@@ -231,6 +272,8 @@ export function Flowfield({
           p.baseY +
           noise2D(p.seed + 100, timeRef.current * 0.3) * driftAmplitude;
       }
+
+      updateCursorHeat();
 
       for (let j = 0; j < gridH; ++j) {
         for (let i = 0; i < gridW; ++i) {
@@ -248,18 +291,15 @@ export function Flowfield({
         if (elev > maxElev) maxElev = elev;
       }
 
-      // Cursor influence: each active pointer adds a radial elevation bump
-      let cursorElev = 0;
-      for (const pos of pointersRef.current.values()) {
-        const dx = realX - pos.x;
-        const dy = realY - pos.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < cursorRadius) {
-          const factor = 1 - dist / cursorRadius;
-          cursorElev = Math.max(cursorElev, cursorStrength * factor * factor);
+      const heat = cursorHeat[idx] as number;
+      baseValues[idx] = maxElev + heat;
+
+      // Boost each peak's raw elevation by cursor heat so peaks are affected
+      if (heat > 0) {
+        for (let k = 0; k < runtimePeaks.length; k++) {
+          rawElev[k] = (rawElev[k] ?? 0) + heat;
         }
       }
-      baseValues[idx] = maxElev + cursorElev;
 
       const pow = 8;
       let sum = 0.1;
@@ -367,6 +407,7 @@ export function Flowfield({
     smoothing,
     cursorRadius,
     cursorStrength,
+    cursorTrail,
   ]);
 
   return (
