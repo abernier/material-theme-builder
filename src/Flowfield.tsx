@@ -1,5 +1,4 @@
 import * as d3 from "d3";
-import { damp } from "maath/easing";
 import { useCallback, useEffect, useRef } from "react";
 import { createNoise2D, createNoise3D } from "simplex-noise";
 
@@ -95,7 +94,7 @@ export function Flowfield({
   smoothing = 0,
   cursorRadius = 200,
   cursorStrength = 800,
-  cursorSmoothTime = 0.5,
+  cursorTrail = 0.95,
 }: {
   /** SVG viewBox width. */
   width?: number;
@@ -121,14 +120,13 @@ export function Flowfield({
   cursorRadius?: number;
   /** Maximum elevation added at the cursor position. */
   cursorStrength?: number;
-  /** Approximate time in seconds for cursor influence to dissipate (uses `maath` critically-damped spring). Smaller = faster fade. */
-  cursorSmoothTime?: number;
+  /** Dissipation factor per frame for the cursor trail (0 = no trail / instant, 0.99 = long trail). When `0`, the heat grid is skipped entirely for zero overhead. */
+  cursorTrail?: number;
 }) {
   const svgRef = useRef<SVGSVGElement>(null);
   const noise2DRef = useRef<ReturnType<typeof createNoise2D>>(null);
   const noise3DRef = useRef<ReturnType<typeof createNoise3D>>(null);
   const timeRef = useRef(0);
-  const lastFrameRef = useRef(0);
   const pointersRef = useRef<Map<number, { x: number; y: number }>>(new Map());
 
   const toViewBox = useCallback((clientX: number, clientY: number) => {
@@ -218,7 +216,9 @@ export function Flowfield({
       new Array<number>(gridW * gridH).fill(0),
     );
     const rawElev = new Array<number>(runtimePeaks.length).fill(0);
-    const cursorHeat = new Array<number>(gridW * gridH).fill(0);
+    const cursorHeat = cursorTrail > 0
+      ? new Array<number>(gridW * gridH).fill(0)
+      : null;
     const baseThresholds = Object.keys(baseColors)
       .map(Number)
       .sort((a, b) => a - b);
@@ -230,11 +230,10 @@ export function Flowfield({
       isPeakBase: boolean;
     }
 
-    function updateCursorHeat(delta: number) {
+    function updateCursorHeat() {
+      if (!cursorHeat) return;
       for (let i = 0; i < cursorHeat.length; i++) {
-        if ((cursorHeat[i] ?? 0) > 0) {
-          damp(cursorHeat, String(i), 0, cursorSmoothTime, delta);
-        }
+        cursorHeat[i] = (cursorHeat[i] ?? 0) * cursorTrail;
       }
       for (const pos of pointersRef.current.values()) {
         const minI = Math.max(
@@ -269,7 +268,7 @@ export function Flowfield({
       }
     }
 
-    function computeGrid(delta: number) {
+    function computeGrid() {
       for (const p of runtimePeaks) {
         p.x = p.baseX + noise2D(p.seed, timeRef.current * 0.3) * driftAmplitude;
         p.y =
@@ -277,7 +276,7 @@ export function Flowfield({
           noise2D(p.seed + 100, timeRef.current * 0.3) * driftAmplitude;
       }
 
-      updateCursorHeat(delta);
+      updateCursorHeat();
 
       for (let j = 0; j < gridH; ++j) {
         for (let i = 0; i < gridW; ++i) {
@@ -295,7 +294,7 @@ export function Flowfield({
         if (elev > maxElev) maxElev = elev;
       }
 
-      const heat = cursorHeat[idx] as number;
+      const heat = cursorHeat ? (cursorHeat[idx] as number) : 0;
       baseValues[idx] = maxElev + heat;
 
       // Boost each peak's raw elevation by cursor heat so peaks are affected
@@ -366,14 +365,9 @@ export function Flowfield({
       return pathData.sort((a, b) => a.value - b.value);
     }
 
-    function renderFrame(now: DOMHighResTimeStamp) {
-      const delta = lastFrameRef.current
-        ? Math.min((now - lastFrameRef.current) / 1000, 0.1)
-        : 1 / 60;
-      lastFrameRef.current = now;
-
+    function renderFrame() {
       timeRef.current += timeSpeed;
-      computeGrid(delta);
+      computeGrid();
       const pathData = buildContours();
 
       const paths = pathGroup
@@ -397,7 +391,7 @@ export function Flowfield({
       animId = requestAnimationFrame(renderFrame);
     }
 
-    animId = requestAnimationFrame(renderFrame);
+    renderFrame();
 
     return () => {
       cancelAnimationFrame(animId);
@@ -416,7 +410,7 @@ export function Flowfield({
     smoothing,
     cursorRadius,
     cursorStrength,
-    cursorSmoothTime,
+    cursorTrail,
   ]);
 
   return (
