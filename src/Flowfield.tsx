@@ -296,10 +296,12 @@ export function Flowfield({
       const heat = cursorHeat ? (cursorHeat[idx] as number) : 0;
       baseValues[idx] = maxElev + heat;
 
-      // Boost each peak's raw elevation by cursor heat so peaks are affected
-      if (heat > 0) {
+      // Distribute cursor heat proportionally to each peak's natural share
+      // so peaks that have no natural elevation stay at zero → no overlap
+      if (heat > 0 && maxElev > 0) {
         for (let k = 0; k < runtimePeaks.length; k++) {
-          rawElev[k] = (rawElev[k] ?? 0) + heat;
+          const e = rawElev[k] as number;
+          rawElev[k] = e + heat * (e / maxElev);
         }
       }
 
