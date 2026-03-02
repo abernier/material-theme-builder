@@ -39,33 +39,6 @@ const CORE_PALETTES = [
 ] as const;
 
 /**
- * Parse the CSS string produced by `builder().toCss()` into a `CssInJs`
- * record keyed by selector (e.g. `":root"`, `".dark"`).
- */
-function parseCssRules(css: string) {
-  const result: Record<string, Record<string, string>> = {};
-  const ruleRegex = /([^{]+)\{([^}]+)\}/g;
-  let match;
-  while ((match = ruleRegex.exec(css)) !== null) {
-    const selector = match[1]?.trim();
-    const body = match[2]?.trim();
-    if (!selector || !body) continue;
-    const props: Record<string, string> = {};
-    for (const decl of body.split(";")) {
-      const d = decl.trim();
-      if (!d) continue;
-      const colonIdx = d.indexOf(":");
-      if (colonIdx === -1) continue;
-      const prop = d.slice(0, colonIdx).trim();
-      const value = d.slice(colonIdx + 1).trim();
-      if (prop && value) props[prop] = value;
-    }
-    result[selector] = props;
-  }
-  return result;
-}
-
-/**
  * Build the Tailwind `theme.extend.colors` mapping from `--color-*` names
  * to `var(--{prefix}-sys-color-*)` / `var(--{prefix}-ref-palette-*-<tone>)`.
  */
@@ -189,7 +162,7 @@ export function materialTheme(options: MaterialThemeOptions) {
 
   // Build the actual color values via the builder
   const theme = builder(options.source, options);
-  const cssRules = parseCssRules(theme.toCss());
+  const cssRules = theme.toCssInJs();
 
   return plugin(
     ({ addBase }) => {
