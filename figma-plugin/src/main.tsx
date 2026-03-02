@@ -3,7 +3,8 @@ import { createRoot } from "react-dom/client";
 import { Fab } from "../../src/components/m3/Fab";
 import { Mcu } from "../../src/Mcu";
 import { useMcu } from "../../src/Mcu.context";
-import { FlowfieldScene, FlowfieldSt } from "../../src/Mcu.stories";
+import { FlowfieldSt } from "../../src/Mcu.stories";
+import { FlowfieldScene } from "../../src/Mcu.stories.helpers";
 
 import { TooltipProvider } from "../../src/components/ui/tooltip";
 import "../../src/styles/globals.css";
