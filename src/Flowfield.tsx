@@ -293,17 +293,15 @@ export function Flowfield({
         if (elev > maxElev) maxElev = elev;
       }
 
+      // Apply cursor heat globally to the field before base/peak decomposition
       const heat = cursorHeat ? (cursorHeat[idx] as number) : 0;
-      baseValues[idx] = maxElev + heat;
-
-      // Distribute cursor heat proportionally to each peak's natural share
-      // so peaks that have no natural elevation stay at zero → no overlap
-      if (heat > 0 && maxElev > 0) {
+      if (heat > 0) {
         for (let k = 0; k < runtimePeaks.length; k++) {
-          const e = rawElev[k] as number;
-          rawElev[k] = e + heat * (e / maxElev);
+          rawElev[k] = (rawElev[k] as number) + heat;
         }
+        maxElev += heat;
       }
+      baseValues[idx] = maxElev;
 
       const pow = 8;
       let sum = 0.1;
