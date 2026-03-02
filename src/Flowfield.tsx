@@ -93,7 +93,7 @@ export function Flowfield({
   driftAmplitude = 150,
   smoothing = 0,
   cursorRadius = 200,
-  cursorStrength = 800,
+  cursorStrength = 50,
   cursorTrail = 0.95,
 }: {
   /** SVG viewBox width. */
@@ -118,16 +118,18 @@ export function Flowfield({
   smoothing?: number;
   /** Influence radius of cursor interactions in viewBox units. */
   cursorRadius?: number;
-  /** Maximum elevation added at the cursor position. */
+  /** Maximum displacement strength applied at the cursor position. */
   cursorStrength?: number;
-  /** Dissipation factor per frame for the cursor trail (0 = no trail / instant, 0.99 = long trail). When `0`, the heat grid is skipped entirely for zero overhead. */
+  /** Dissipation factor per frame for the cursor trail (0 = no trail / instant, 0.99 = long trail). When `0`, the displacement grid is skipped entirely for zero overhead. */
   cursorTrail?: number;
 }) {
   const svgRef = useRef<SVGSVGElement>(null);
   const noise2DRef = useRef<ReturnType<typeof createNoise2D>>(null);
   const noise3DRef = useRef<ReturnType<typeof createNoise3D>>(null);
   const timeRef = useRef(0);
-  const pointersRef = useRef<Map<number, { x: number; y: number }>>(new Map());
+  const pointersRef = useRef<
+    Map<number, { x: number; y: number; vx: number; vy: number }>
+  >(new Map());
 
   const toViewBox = useCallback((clientX: number, clientY: number) => {
     const svg = svgRef.current;
@@ -144,7 +146,11 @@ export function Flowfield({
   const handlePointerMove = useCallback(
     (e: React.PointerEvent<SVGSVGElement>) => {
       const pos = toViewBox(e.clientX, e.clientY);
-      if (pos) pointersRef.current.set(e.pointerId, pos);
+      if (!pos) return;
+      const prev = pointersRef.current.get(e.pointerId);
+      const vx = prev ? pos.x - prev.x : 0;
+      const vy = prev ? pos.y - prev.y : 0;
+      pointersRef.current.set(e.pointerId, { ...pos, vx, vy });
     },
     [toViewBox],
   );
@@ -216,7 +222,9 @@ export function Flowfield({
       new Array<number>(gridW * gridH).fill(0),
     );
     const rawElev = new Array<number>(runtimePeaks.length).fill(0);
-    const cursorHeat =
+    const displaceX =
+      cursorTrail > 0 ? new Array<number>(gridW * gridH).fill(0) : null;
+    const displaceY =
       cursorTrail > 0 ? new Array<number>(gridW * gridH).fill(0) : null;
     const baseThresholds = Object.keys(baseColors)
       .map(Number)
@@ -229,41 +237,51 @@ export function Flowfield({
       isPeakBase: boolean;
     }
 
-    function updateCursorHeat() {
-      if (!cursorHeat) return;
-      for (let i = 0; i < cursorHeat.length; i++) {
-        cursorHeat[i] = (cursorHeat[i] ?? 0) * cursorTrail;
-      }
-      for (const pos of pointersRef.current.values()) {
-        const minI = Math.max(
-          0,
-          Math.floor((pos.x - cursorRadius) / gridScale),
-        );
-        const maxI = Math.min(
-          gridW - 1,
-          Math.ceil((pos.x + cursorRadius) / gridScale),
-        );
-        const minJ = Math.max(
-          0,
-          Math.floor((pos.y - cursorRadius) / gridScale),
-        );
-        const maxJ = Math.min(
-          gridH - 1,
-          Math.ceil((pos.y + cursorRadius) / gridScale),
-        );
-        for (let j = minJ; j <= maxJ; ++j) {
-          for (let i = minI; i <= maxI; ++i) {
-            const dx = i * gridScale - pos.x;
-            const dy = j * gridScale - pos.y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            if (dist < cursorRadius) {
-              const factor = 1 - dist / cursorRadius;
-              const influence = cursorStrength * factor * factor;
-              const idx = j * gridW + i;
-              cursorHeat[idx] = Math.max(cursorHeat[idx] ?? 0, influence);
-            }
+    function applyPointerDisplacement(
+      pos: { x: number; y: number; vx: number; vy: number },
+      dx: number[],
+      dy: number[],
+    ) {
+      const speed = Math.sqrt(pos.vx * pos.vx + pos.vy * pos.vy);
+      if (speed < 0.01) return;
+      const nx = pos.vx / speed;
+      const ny = pos.vy / speed;
+      const minI = Math.max(0, Math.floor((pos.x - cursorRadius) / gridScale));
+      const maxI = Math.min(
+        gridW - 1,
+        Math.ceil((pos.x + cursorRadius) / gridScale),
+      );
+      const minJ = Math.max(0, Math.floor((pos.y - cursorRadius) / gridScale));
+      const maxJ = Math.min(
+        gridH - 1,
+        Math.ceil((pos.y + cursorRadius) / gridScale),
+      );
+      for (let j = minJ; j <= maxJ; ++j) {
+        for (let i = minI; i <= maxI; ++i) {
+          const cx = i * gridScale - pos.x;
+          const cy = j * gridScale - pos.y;
+          const dist = Math.sqrt(cx * cx + cy * cy);
+          if (dist < cursorRadius) {
+            const factor = 1 - dist / cursorRadius;
+            const strength = cursorStrength * factor * factor;
+            const idx = j * gridW + i;
+            dx[idx] = (dx[idx] ?? 0) + nx * strength;
+            dy[idx] = (dy[idx] ?? 0) + ny * strength;
           }
         }
+      }
+      pos.vx = 0;
+      pos.vy = 0;
+    }
+
+    function updateCursorHeat() {
+      if (!displaceX || !displaceY) return;
+      for (let i = 0; i < displaceX.length; i++) {
+        displaceX[i] = (displaceX[i] ?? 0) * cursorTrail;
+        displaceY[i] = (displaceY[i] ?? 0) * cursorTrail;
+      }
+      for (const pos of pointersRef.current.values()) {
+        applyPointerDisplacement(pos, displaceX, displaceY);
       }
     }
 
@@ -285,22 +303,18 @@ export function Flowfield({
     }
 
     function computeCell(realX: number, realY: number, idx: number) {
+      // Apply cursor displacement to sampling coordinates
+      const sampleX = displaceX ? realX - (displaceX[idx] as number) : realX;
+      const sampleY = displaceY ? realY - (displaceY[idx] as number) : realY;
+
       let maxElev = 0;
       for (let k = 0; k < runtimePeaks.length; k++) {
         const peak = runtimePeaks[k] as RuntimePeak;
-        const elev = getRawElevation(peak, realX, realY, timeRef.current);
+        const elev = getRawElevation(peak, sampleX, sampleY, timeRef.current);
         rawElev[k] = elev;
         if (elev > maxElev) maxElev = elev;
       }
 
-      // Apply cursor heat globally to the field before base/peak decomposition
-      const heat = cursorHeat ? (cursorHeat[idx] as number) : 0;
-      if (heat > 0) {
-        for (let k = 0; k < runtimePeaks.length; k++) {
-          rawElev[k] = (rawElev[k] as number) + heat;
-        }
-        maxElev += heat;
-      }
       baseValues[idx] = maxElev;
 
       const pow = 8;

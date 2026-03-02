@@ -157,7 +157,7 @@ export const FlowfieldSt: StoryObj<
     timeSpeed: 0.002,
     scheme: "expressive",
     cursorRadius: 200,
-    cursorStrength: 800,
+    cursorStrength: 50,
     cursorTrail: 0.95,
   },
   argTypes: {
@@ -175,7 +175,7 @@ export const FlowfieldSt: StoryObj<
       control: { type: "range", min: 0, max: 500, step: 10 },
     },
     cursorStrength: {
-      control: { type: "range", min: 0, max: 2000, step: 50 },
+      control: { type: "range", min: 0, max: 200, step: 5 },
     },
     cursorTrail: {
       control: { type: "range", min: 0, max: 0.99, step: 0.01 },
