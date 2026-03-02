@@ -1,4 +1,4 @@
-import { Fab } from "./components/ui/Fab";
+import { Fab } from "./components/m3/Fab";
 import type { McuConfig } from "./lib/builder";
 import { builder } from "./lib/builder";
 

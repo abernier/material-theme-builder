@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { Fab } from "../../src/components/ui/Fab";
+import { Fab } from "../../src/components/m3/Fab";
 import { Mcu } from "../../src/Mcu";
 import { useMcu } from "../../src/Mcu.context";
 import { Layout, Scheme, Shades } from "../../src/Mcu.stories.helpers";
