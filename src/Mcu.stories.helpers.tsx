@@ -2,9 +2,10 @@ import { hexFromArgb } from "@material/material-color-utilities";
 import { cva, type VariantProps } from "class-variance-authority";
 import { kebabCase, upperFirst } from "lodash-es";
 import { X } from "lucide-react";
-import { type ComponentProps, useMemo, useRef } from "react";
+import { useMemo, useRef, type ComponentProps } from "react";
 import { useDebounceCallback } from "usehooks-ts";
 import { Button } from "./components/ui/button";
+import { ButtonGroup } from "./components/ui/button-group";
 import {
   Tooltip,
   TooltipContent,
@@ -12,7 +13,7 @@ import {
 } from "./components/ui/tooltip";
 import { ExportButton } from "./ExportButton";
 import { Flowfield, type Peak } from "./Flowfield";
-import { STANDARD_TONES } from "./lib/builder";
+import { STANDARD_TONES, schemeNames } from "./lib/builder";
 import { cn } from "./lib/utils";
 import type { Mcu } from "./Mcu";
 import { useMcu } from "./Mcu.context";
@@ -1117,151 +1118,195 @@ export function FlowfieldScene({ ...props }: ComponentProps<typeof Flowfield>) {
   return (
     <>
       <Flowfield peaks={peaks} baseColors={baseColors} {...props} />
-      <div className="fixed bottom-0 left-0 m-6 flex flex-col-reverse">
-        {(
-          [
-            {
-              key: "primary",
-              label: "Primary",
-              color: mcuConfig.primary ?? initials.source,
-            },
-            {
-              key: "secondary",
-              label: "Secondary",
-              color: mcuConfig.secondary,
-            },
-            { key: "tertiary", label: "Tertiary", color: mcuConfig.tertiary },
-            { key: "error", label: "Error", color: mcuConfig.error },
-            { key: "neutral", label: "Neutral", color: mcuConfig.neutral },
-            {
-              key: "neutralVariant",
-              label: "Neutral variant",
-              color: mcuConfig.neutralVariant,
-            },
-          ] as const
-        ).map(({ key, label, color }) => {
-          const paletteKey = kebabCase(key);
-          const isInferred = mcuConfig[key] === undefined;
-          const inferredHex = isInferred
-            ? hexFromArgb(allPalettes[paletteKey]?.keyColor.toInt() ?? 0)
-            : undefined;
+      <div className={cn("fixed bottom-0 left-0 m-6", "flex items-end gap-2")}>
+        <div className="flex flex-col-reverse">
+          {(
+            [
+              {
+                key: "primary",
+                label: "Primary",
+                color: mcuConfig.primary ?? initials.source,
+              },
+              {
+                key: "secondary",
+                label: "Secondary",
+                color: mcuConfig.secondary,
+              },
+              { key: "tertiary", label: "Tertiary", color: mcuConfig.tertiary },
+              { key: "error", label: "Error", color: mcuConfig.error },
+              { key: "neutral", label: "Neutral", color: mcuConfig.neutral },
+              {
+                key: "neutralVariant",
+                label: "Neutral variant",
+                color: mcuConfig.neutralVariant,
+              },
+            ] as const
+          ).map(({ key, label, color }) => {
+            const paletteKey = kebabCase(key);
+            const isInferred = mcuConfig[key] === undefined;
+            const inferredHex = isInferred
+              ? hexFromArgb(allPalettes[paletteKey]?.keyColor.toInt() ?? 0)
+              : undefined;
 
-          return (
-            <Tooltip key={key}>
+            return (
+              <Tooltip key={key}>
+                <TooltipTrigger asChild>
+                  <ButtonPill
+                    color={color}
+                    onChange={(hex) => {
+                      setMcuConfig({
+                        ...mcuConfig,
+                        [key]: hex,
+                      });
+                    }}
+                  />
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  <span className="flex items-center gap-1">
+                    {!isInferred && (
+                      <Button
+                        variant="ghost"
+                        size="icon-xs"
+                        onClick={() =>
+                          setMcuConfig({ ...mcuConfig, [key]: undefined })
+                        }
+                        className="-ml-1"
+                      >
+                        <X />
+                      </Button>
+                    )}
+                    {label}
+                    {inferredHex && (
+                      <Pill color={inferredHex} className="size-3" />
+                    )}
+                  </span>
+                </TooltipContent>
+              </Tooltip>
+            );
+          })}
+
+          {/* Custom color */}
+
+          <hr className="my-1 border-t border-outline-variant w-6 mx-auto" />
+
+          {(mcuConfig.customColors ?? []).map(({ name, hex }, i) => (
+            <Tooltip key={name}>
               <TooltipTrigger asChild>
                 <ButtonPill
-                  color={color}
-                  onChange={(hex) => {
+                  color={hex}
+                  onChange={(newHex) => {
+                    const updated = (mcuConfig.customColors ?? []).map(
+                      (c, j) => (j === i ? { ...c, hex: newHex } : c),
+                    );
                     setMcuConfig({
                       ...mcuConfig,
-                      [key]: hex,
+                      customColors: updated,
                     });
                   }}
                 />
               </TooltipTrigger>
               <TooltipContent side="right">
                 <span className="flex items-center gap-1">
-                  {!isInferred && (
-                    <Button
-                      variant="ghost"
-                      size="icon-xs"
-                      onClick={() =>
-                        setMcuConfig({ ...mcuConfig, [key]: undefined })
-                      }
-                      className="-ml-1"
-                    >
-                      <X />
-                    </Button>
-                  )}
-                  {label}
-                  {inferredHex && (
-                    <Pill color={inferredHex} className="size-3" />
-                  )}
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
+                    onClick={() => {
+                      const updated = (mcuConfig.customColors ?? []).filter(
+                        (_, j) => j !== i,
+                      );
+                      setMcuConfig({ ...mcuConfig, customColors: updated });
+                    }}
+                    className="-ml-1"
+                  >
+                    <X />
+                  </Button>
+                  {name}
                 </span>
               </TooltipContent>
             </Tooltip>
-          );
-        })}
+          ))}
 
-        {/* Custom color */}
+          {/* Add new custom color */}
 
-        <hr className="my-1 border-t border-outline-variant w-6 mx-auto" />
-
-        {(mcuConfig.customColors ?? []).map(({ name, hex }, i) => (
-          <Tooltip key={name}>
+          <Tooltip>
             <TooltipTrigger asChild>
               <ButtonPill
-                color={hex}
-                onChange={(newHex) => {
-                  const updated = (mcuConfig.customColors ?? []).map((c, j) =>
-                    j === i ? { ...c, hex: newHex } : c,
-                  );
-                  setMcuConfig({
-                    ...mcuConfig,
-                    customColors: updated,
-                  });
+                onClick={() => {
+                  pendingAddIndexRef.current = null;
+                }}
+                onChange={(hex) => {
+                  const existing = mcuConfig.customColors ?? [];
+                  const idx = pendingAddIndexRef.current;
+
+                  if (idx !== null && idx < existing.length) {
+                    // update the color being picked
+                    const updated = existing.map((c, j) =>
+                      j === idx ? { ...c, hex } : c,
+                    );
+                    setMcuConfig({ ...mcuConfig, customColors: updated });
+                  } else {
+                    // first change of this pick session — add a new color
+                    pendingAddIndexRef.current = existing.length;
+                    setMcuConfig({
+                      ...mcuConfig,
+                      customColors: [
+                        ...existing,
+                        {
+                          name: `customColor${existing.length + 1}`,
+                          hex,
+                          blend: true,
+                        },
+                      ],
+                    });
+                  }
                 }}
               />
             </TooltipTrigger>
-            <TooltipContent side="right">
-              <span className="flex items-center gap-1">
-                <Button
-                  variant="ghost"
-                  size="icon-xs"
-                  onClick={() => {
-                    const updated = (mcuConfig.customColors ?? []).filter(
-                      (_, j) => j !== i,
-                    );
-                    setMcuConfig({ ...mcuConfig, customColors: updated });
-                  }}
-                  className="-ml-1"
-                >
-                  <X />
-                </Button>
-                {name}
-              </span>
-            </TooltipContent>
+            <TooltipContent side="right">Add custom color</TooltipContent>
           </Tooltip>
-        ))}
-
-        {/* Add new custom color */}
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <ButtonPill
+        </div>
+        <div>
+          <ButtonGroup>
+            <Button
+              size="sm"
+              variant="outline"
+              className="capitalize"
               onClick={() => {
-                pendingAddIndexRef.current = null;
+                const currentScheme = mcuConfig.scheme ?? "tonalSpot";
+                const idx = schemeNames.indexOf(currentScheme);
+                const next = schemeNames[(idx + 1) % schemeNames.length];
+                setMcuConfig({ ...mcuConfig, scheme: next });
               }}
-              onChange={(hex) => {
-                const existing = mcuConfig.customColors ?? [];
-                const idx = pendingAddIndexRef.current;
-
-                if (idx !== null && idx < existing.length) {
-                  // update the color being picked
-                  const updated = existing.map((c, j) =>
-                    j === idx ? { ...c, hex } : c,
-                  );
-                  setMcuConfig({ ...mcuConfig, customColors: updated });
-                } else {
-                  // first change of this pick session — add a new color
-                  pendingAddIndexRef.current = existing.length;
-                  setMcuConfig({
-                    ...mcuConfig,
-                    customColors: [
-                      ...existing,
-                      {
-                        name: `customColor${existing.length + 1}`,
-                        hex,
-                        blend: true,
-                      },
-                    ],
-                  });
-                }
-              }}
-            />
-          </TooltipTrigger>
-          <TooltipContent side="right">Add custom color</TooltipContent>
-        </Tooltip>
+            >
+              {mcuConfig.scheme ?? "tonalSpot"}
+            </Button>
+            {/* <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="pl-2!" size="sm">
+                  <ChevronDownIcon />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-44">
+                <DropdownMenuGroup>
+                  {schemeNames.map((name) => (
+                    <DropdownMenuItem
+                      key={name}
+                      className="capitalize"
+                      onClick={() =>
+                        setMcuConfig({ ...mcuConfig, scheme: name })
+                      }
+                    >
+                      {(mcuConfig.scheme ?? "tonalSpot") === name && (
+                        <CheckIcon />
+                      )}
+                      {name}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuGroup>
+              </DropdownMenuContent>
+            </DropdownMenu> */}
+          </ButtonGroup>
+        </div>
       </div>
     </>
   );
