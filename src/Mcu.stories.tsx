@@ -158,7 +158,7 @@ export const FlowfieldSt: StoryObj<
     scheme: "expressive",
     cursorRadius: 200,
     cursorStrength: 800,
-    cursorTrail: 0.95,
+    cursorSmoothTime: 0.5,
   },
   argTypes: {
     gridScale: { control: { type: "range", min: 2, max: 50, step: 1 } },
@@ -177,8 +177,8 @@ export const FlowfieldSt: StoryObj<
     cursorStrength: {
       control: { type: "range", min: 0, max: 2000, step: 50 },
     },
-    cursorTrail: {
-      control: { type: "range", min: 0, max: 0.99, step: 0.01 },
+    cursorSmoothTime: {
+      control: { type: "range", min: 0.05, max: 3, step: 0.05 },
     },
   },
   render: (args) => {
@@ -191,7 +191,7 @@ export const FlowfieldSt: StoryObj<
       smoothing,
       cursorRadius,
       cursorStrength,
-      cursorTrail,
+      cursorSmoothTime,
       ...mcuArgs
     } = args as Record<string, unknown>;
 
@@ -207,7 +207,7 @@ export const FlowfieldSt: StoryObj<
             smoothing={smoothing as number}
             cursorRadius={cursorRadius as number}
             cursorStrength={cursorStrength as number}
-            cursorTrail={cursorTrail as number}
+            cursorSmoothTime={cursorSmoothTime as number}
           />
         </div>
       </Mcu>

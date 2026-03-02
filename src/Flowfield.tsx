@@ -1,4 +1,5 @@
 import * as d3 from "d3";
+import { damp } from "maath/easing";
 import { useCallback, useEffect, useRef } from "react";
 import { createNoise2D, createNoise3D } from "simplex-noise";
 
@@ -94,7 +95,7 @@ export function Flowfield({
   smoothing = 0,
   cursorRadius = 200,
   cursorStrength = 800,
-  cursorTrail = 0.95,
+  cursorSmoothTime = 0.5,
 }: {
   /** SVG viewBox width. */
   width?: number;
@@ -120,13 +121,14 @@ export function Flowfield({
   cursorRadius?: number;
   /** Maximum elevation added at the cursor position. */
   cursorStrength?: number;
-  /** Fraction of cursor influence retained per frame (0 = no trail, 0.99 = long trail). */
-  cursorTrail?: number;
+  /** Approximate time in seconds for cursor influence to dissipate (uses `maath` critically-damped spring). Smaller = faster fade. */
+  cursorSmoothTime?: number;
 }) {
   const svgRef = useRef<SVGSVGElement>(null);
   const noise2DRef = useRef<ReturnType<typeof createNoise2D>>(null);
   const noise3DRef = useRef<ReturnType<typeof createNoise3D>>(null);
   const timeRef = useRef(0);
+  const lastFrameRef = useRef(0);
   const pointersRef = useRef<Map<number, { x: number; y: number }>>(new Map());
 
   const toViewBox = useCallback((clientX: number, clientY: number) => {
@@ -228,9 +230,11 @@ export function Flowfield({
       isPeakBase: boolean;
     }
 
-    function updateCursorHeat() {
+    function updateCursorHeat(delta: number) {
       for (let i = 0; i < cursorHeat.length; i++) {
-        cursorHeat[i] = (cursorHeat[i] ?? 0) * cursorTrail;
+        if ((cursorHeat[i] ?? 0) > 0) {
+          damp(cursorHeat, String(i), 0, cursorSmoothTime, delta);
+        }
       }
       for (const pos of pointersRef.current.values()) {
         const minI = Math.max(
@@ -265,7 +269,7 @@ export function Flowfield({
       }
     }
 
-    function computeGrid() {
+    function computeGrid(delta: number) {
       for (const p of runtimePeaks) {
         p.x = p.baseX + noise2D(p.seed, timeRef.current * 0.3) * driftAmplitude;
         p.y =
@@ -273,7 +277,7 @@ export function Flowfield({
           noise2D(p.seed + 100, timeRef.current * 0.3) * driftAmplitude;
       }
 
-      updateCursorHeat();
+      updateCursorHeat(delta);
 
       for (let j = 0; j < gridH; ++j) {
         for (let i = 0; i < gridW; ++i) {
@@ -362,9 +366,14 @@ export function Flowfield({
       return pathData.sort((a, b) => a.value - b.value);
     }
 
-    function renderFrame() {
+    function renderFrame(now: DOMHighResTimeStamp) {
+      const delta = lastFrameRef.current
+        ? Math.min((now - lastFrameRef.current) / 1000, 0.1)
+        : 1 / 60;
+      lastFrameRef.current = now;
+
       timeRef.current += timeSpeed;
-      computeGrid();
+      computeGrid(delta);
       const pathData = buildContours();
 
       const paths = pathGroup
@@ -388,7 +397,7 @@ export function Flowfield({
       animId = requestAnimationFrame(renderFrame);
     }
 
-    renderFrame();
+    animId = requestAnimationFrame(renderFrame);
 
     return () => {
       cancelAnimationFrame(animId);
@@ -407,7 +416,7 @@ export function Flowfield({
     smoothing,
     cursorRadius,
     cursorStrength,
-    cursorTrail,
+    cursorSmoothTime,
   ]);
 
   return (

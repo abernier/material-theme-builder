@@ -67,6 +67,7 @@
     "husky": "^9.1.7",
     "jsdom": "^28.1.0",
     "lint-staged": "^16.2.7",
+    "maath": "^0.10.8",
     "postcss": "^8.5.6",
     "prettier": "^3.3.3",
     "prettier-plugin-organize-imports": "^4.3.0",
