@@ -259,7 +259,7 @@ export function Flowfield({
           cursorElev = Math.max(cursorElev, cursorStrength * factor * factor);
         }
       }
-      baseValues[idx] = Math.max(maxElev, cursorElev);
+      baseValues[idx] = maxElev + cursorElev;
 
       const pow = 8;
       let sum = 0.1;
@@ -380,6 +380,7 @@ export function Flowfield({
         display: "block",
         touchAction: "none",
       }}
+      onPointerDown={handlePointerMove}
       onPointerMove={handlePointerMove}
       onPointerLeave={handlePointerLeave}
     />
