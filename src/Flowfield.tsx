@@ -216,9 +216,8 @@ export function Flowfield({
       new Array<number>(gridW * gridH).fill(0),
     );
     const rawElev = new Array<number>(runtimePeaks.length).fill(0);
-    const cursorHeat = cursorTrail > 0
-      ? new Array<number>(gridW * gridH).fill(0)
-      : null;
+    const cursorHeat =
+      cursorTrail > 0 ? new Array<number>(gridW * gridH).fill(0) : null;
     const baseThresholds = Object.keys(baseColors)
       .map(Number)
       .sort((a, b) => a - b);
