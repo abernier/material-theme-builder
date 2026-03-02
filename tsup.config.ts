@@ -21,6 +21,14 @@ export default defineConfig([
     },
   },
   {
+    entryPoints: ["src/tailwind-plugin.ts"],
+    format: ["esm"],
+    dts: true,
+    outDir: "dist",
+    clean: false,
+    external: ["tailwindcss", "tailwindcss/plugin"],
+  },
+  {
     entryPoints: ["src/cli.ts"],
     format: ["esm"],
     dts: false,
