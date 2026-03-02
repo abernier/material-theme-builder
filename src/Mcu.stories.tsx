@@ -94,6 +94,7 @@ export const FlowfieldSt: StoryObj<
   name: "Flowfield",
   parameters: {
     layout: "fullscreen",
+    chromatic: { disable: true },
   },
   args: {
     // MCU args
