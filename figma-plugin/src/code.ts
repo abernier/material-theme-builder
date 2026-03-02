@@ -5,7 +5,7 @@ import { COLLECTION_NAME } from "./constants";
 
 // ─── Plugin entry point ─────────────────────────────────────────────────
 
-figma.showUI(__html__, { width: 400, height: 600 });
+figma.showUI(__html__, { width: 360, height: 600 });
 
 figma.ui.onmessage = async (msg: {
   type: string;

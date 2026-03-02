@@ -19,6 +19,7 @@ import { createRequiredContext } from "./lib/createRequiredContext";
 
 type Api = {
   initials: McuConfig;
+  mcuConfig: McuConfig;
   setMcuConfig: (config: McuConfig) => void;
   getMcuColor: (colorName: TokenName, theme?: string) => string;
   allPalettes: Record<string, TonalPalette>;
@@ -116,13 +117,21 @@ export const McuProvider = ({
     () =>
       ({
         initials,
+        mcuConfig,
         setMcuConfig,
         getMcuColor,
         allPalettes,
         figmaTokens,
         figmaVariables,
       }) satisfies Api,
-    [getMcuColor, initials, allPalettes, figmaTokens, figmaVariables],
+    [
+      getMcuColor,
+      initials,
+      mcuConfig,
+      allPalettes,
+      figmaTokens,
+      figmaVariables,
+    ],
   );
 
   return <Provider value={value}>{children}</Provider>;
