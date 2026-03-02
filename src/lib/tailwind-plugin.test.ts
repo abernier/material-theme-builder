@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { materialTheme } from "../tailwind-plugin";
+import { default as defaultExport, materialTheme } from "../tailwind-plugin";
 
 type CssInJs = Record<string, Record<string, string>>;
 
@@ -9,6 +9,41 @@ describe("materialTheme()", () => {
     expect(result).toHaveProperty("handler");
     expect(result).toHaveProperty("config");
     expect(typeof result.handler).toBe("function");
+  });
+
+  it("should be a withOptions plugin (has __isOptionsFunction)", () => {
+    expect(materialTheme).toHaveProperty("__isOptionsFunction", true);
+  });
+
+  it("should be the default export", () => {
+    expect(defaultExport).toBe(materialTheme);
+  });
+
+  it("should work with no options (for @plugin without block)", () => {
+    const result = materialTheme();
+    expect(result).toHaveProperty("handler");
+    expect(result).toHaveProperty("config");
+
+    const colors = result.config?.theme?.extend?.colors as Record<
+      string,
+      string
+    >;
+    expect(colors["primary"]).toBe("var(--md-sys-color-primary)");
+  });
+
+  it("should normalize kebab-case keys from @plugin blocks", () => {
+    const result = materialTheme({
+      source: "#6750A4",
+      "neutral-variant": "#789ABC",
+    } as Record<string, unknown>);
+    expect(result).toHaveProperty("handler");
+
+    const calls: CssInJs[] = [];
+    result.handler({
+      addBase: (base: CssInJs) => calls.push(base),
+    } as unknown as Parameters<typeof result.handler>[0]);
+
+    expect(calls.length).toBe(1);
   });
 
   it("should register standard m3 colors in theme.extend.colors", () => {

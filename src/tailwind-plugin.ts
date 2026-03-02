@@ -1,5 +1,5 @@
 import { hexFromArgb } from "@material/material-color-utilities";
-import { kebabCase } from "lodash-es";
+import { camelCase, kebabCase } from "lodash-es";
 import plugin from "tailwindcss/plugin";
 
 import {
@@ -9,6 +9,9 @@ import {
   type McuConfig,
   STANDARD_TONES,
 } from "./lib/builder";
+
+/** Default source color (Material Design purple). */
+const DEFAULT_SOURCE = "#6750A4";
 
 /**
  * Tailwind shade → Material You tonal palette mapping.
@@ -128,10 +131,22 @@ function buildShadcnVars(prefix: string) {
 }
 
 /** Options accepted by the Tailwind v4 plugin. */
-export type MaterialThemeOptions = McuConfig & {
+export type MaterialThemeOptions = Partial<McuConfig> & {
   /** When true, inject shadcn CSS variable overrides mapped to Material You tokens. */
   shadcn?: boolean;
 };
+
+/**
+ * Normalize CSS `@plugin` block options (kebab-case keys) to camelCase
+ * to match `McuConfig` property names.
+ */
+function normalizeOptions(raw: Record<string, unknown>) {
+  const normalized: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(raw)) {
+    normalized[camelCase(key)] = value;
+  }
+  return normalized as MaterialThemeOptions;
+}
 
 /**
  * Tailwind v4 plugin that generates Material You color theme variables.
@@ -139,6 +154,8 @@ export type MaterialThemeOptions = McuConfig & {
  * Injects `--md-sys-color-*` and `--md-ref-palette-*` CSS custom properties
  * (via `builder()`) and registers them as Tailwind theme colors so utility
  * classes like `bg-primary` or `text-on-surface` work out of the box.
+ *
+ * Compatible with both JS configuration and the CSS `@plugin` directive.
  *
  * @example
  * ```ts
@@ -158,52 +175,66 @@ export type MaterialThemeOptions = McuConfig & {
  *   ],
  * };
  * ```
+ *
+ * @example
+ * ```css
+ * /@plugin "material-theme-builder/tailwind-plugin" {
+ *   source: "#6750A4";
+ *   scheme: vibrant;
+ *   shadcn: true;
+ * }
+ * ```
  */
-export function materialTheme(options: MaterialThemeOptions) {
-  const prefix = options.prefix ?? DEFAULT_PREFIX;
+export const materialTheme = plugin.withOptions<MaterialThemeOptions>(
+  (options = {}) => {
+    const opts = normalizeOptions(options);
+    const source = opts.source ?? DEFAULT_SOURCE;
+    const prefix = opts.prefix ?? DEFAULT_PREFIX;
 
-  // Build the actual color values via the builder
-  const theme = builder(options.source, options);
+    const theme = builder(source, opts);
 
-  // Build addBase rules directly from the builder's structured data
-  const sysVars = (merged: Record<string, number>) => {
-    const vars: Record<string, string> = {};
-    for (const [name, argb] of Object.entries(merged)) {
-      vars[`--${prefix}-sys-color-${kebabCase(name)}`] = hexFromArgb(argb);
+    const sysVars = (merged: Record<string, number>) => {
+      const vars: Record<string, string> = {};
+      for (const [name, argb] of Object.entries(merged)) {
+        vars[`--${prefix}-sys-color-${kebabCase(name)}`] = hexFromArgb(argb);
+      }
+      return vars;
+    };
+
+    const paletteVars: Record<string, string> = {};
+    for (const [name, palette] of Object.entries(theme.allPalettes)) {
+      const paletteName = kebabCase(name);
+      for (const tone of STANDARD_TONES) {
+        paletteVars[`--${prefix}-ref-palette-${paletteName}-${tone}`] =
+          hexFromArgb(palette.tone(tone));
+      }
     }
-    return vars;
-  };
 
-  const paletteVars: Record<string, string> = {};
-  for (const [name, palette] of Object.entries(theme.allPalettes)) {
-    const paletteName = kebabCase(name);
-    for (const tone of STANDARD_TONES) {
-      paletteVars[`--${prefix}-ref-palette-${paletteName}-${tone}`] =
-        hexFromArgb(palette.tone(tone));
-    }
-  }
+    const cssRules = {
+      ":root": { ...sysVars(theme.mergedColorsLight), ...paletteVars },
+      ".dark": { ...sysVars(theme.mergedColorsDark), ...paletteVars },
+    };
 
-  const cssRules = {
-    ":root": { ...sysVars(theme.mergedColorsLight), ...paletteVars },
-    ".dark": { ...sysVars(theme.mergedColorsDark), ...paletteVars },
-  };
-
-  return plugin(
-    ({ addBase }) => {
-      // Inject the builder-generated CSS custom properties
+    return ({ addBase }) => {
       addBase(cssRules);
 
-      // Inject shadcn CSS variable overrides when requested
-      if (options.shadcn) {
+      if (opts.shadcn) {
         addBase({ ":root, .dark": buildShadcnVars(prefix) });
       }
-    },
-    {
+    };
+  },
+  (options = {}) => {
+    const opts = normalizeOptions(options);
+    const source = opts.source ?? DEFAULT_SOURCE;
+
+    return {
       theme: {
         extend: {
-          colors: buildThemeColors(options),
+          colors: buildThemeColors({ ...opts, source }),
         },
       },
-    },
-  );
-}
+    };
+  },
+);
+
+export default materialTheme;
