@@ -1002,10 +1002,33 @@ export function TailwindScheme() {
 // ██      ███████  ██████   ███ ███  ██      ██ ███████ ███████ ██████
 //
 
+function Pill({
+  color,
+  children,
+  className,
+  ...props
+}: {
+  /** Background color (hex string). */
+  color?: string;
+} & ComponentProps<"span">) {
+  return (
+    <span
+      className={cn(
+        "size-6 rounded-full border overflow-hidden shrink-0",
+        className,
+      )}
+      style={{ backgroundColor: color ?? "transparent" }}
+      {...props}
+    >
+      {children}
+    </span>
+  );
+}
+
 /**
- * Color pill
+ * Color button
  */
-function ColorButton({
+function ButtonPill({
   color,
   onChange,
   ...rest
@@ -1027,12 +1050,7 @@ function ColorButton({
       }}
       {...rest}
     >
-      <span
-        className="size-6 rounded-full border overflow-hidden shrink-0"
-        style={{
-          backgroundColor: color ?? "transparent",
-        }}
-      >
+      <Pill color={color}>
         <input
           tabIndex={-1}
           ref={inputColorRef}
@@ -1041,7 +1059,7 @@ function ColorButton({
           onChange={(e) => onChange(e.target.value)}
           className="opacity-0"
         />
-      </span>
+      </Pill>
     </Button>
   );
 }
@@ -1131,7 +1149,7 @@ export function FlowfieldScene({ ...props }: ComponentProps<typeof Flowfield>) {
           return (
             <Tooltip key={key}>
               <TooltipTrigger asChild>
-                <ColorButton
+                <ButtonPill
                   color={color}
                   onChange={(hex) => {
                     setMcuConfig({
@@ -1157,10 +1175,7 @@ export function FlowfieldScene({ ...props }: ComponentProps<typeof Flowfield>) {
                   )}
                   {label}
                   {inferredHex && (
-                    <span
-                      className="inline-block size-3 rounded-full ring-1 ring-white/20 shrink-0"
-                      style={{ backgroundColor: inferredHex }}
-                    />
+                    <Pill color={inferredHex} className="size-3" />
                   )}
                 </span>
               </TooltipContent>
@@ -1175,7 +1190,7 @@ export function FlowfieldScene({ ...props }: ComponentProps<typeof Flowfield>) {
         {(mcuConfig.customColors ?? []).map(({ name, hex }, i) => (
           <Tooltip key={name}>
             <TooltipTrigger asChild>
-              <ColorButton
+              <ButtonPill
                 color={hex}
                 onChange={(newHex) => {
                   const updated = (mcuConfig.customColors ?? []).map((c, j) =>
@@ -1213,7 +1228,7 @@ export function FlowfieldScene({ ...props }: ComponentProps<typeof Flowfield>) {
 
         <Tooltip>
           <TooltipTrigger asChild>
-            <ColorButton
+            <ButtonPill
               onClick={() => {
                 pendingAddIndexRef.current = null;
               }}
