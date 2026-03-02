@@ -850,6 +850,8 @@ export const FlowfieldSt: StoryObj<
     noiseFrequency: 0.002,
     timeSpeed: 0.002,
     scheme: "expressive",
+    cursorRadius: 200,
+    cursorStrength: 800,
   },
   argTypes: {
     gridScale: { control: { type: "range", min: 2, max: 50, step: 1 } },
@@ -862,6 +864,12 @@ export const FlowfieldSt: StoryObj<
       control: { type: "range", min: 0, max: 2000, step: 10 },
     },
     smoothing: { control: { type: "range", min: 0, max: 10, step: 1 } },
+    cursorRadius: {
+      control: { type: "range", min: 0, max: 500, step: 10 },
+    },
+    cursorStrength: {
+      control: { type: "range", min: 0, max: 2000, step: 50 },
+    },
   },
   render: (args) => {
     const {
@@ -871,6 +879,8 @@ export const FlowfieldSt: StoryObj<
       timeSpeed,
       driftAmplitude,
       smoothing,
+      cursorRadius,
+      cursorStrength,
       ...mcuArgs
     } = args as Record<string, unknown>;
 
@@ -884,6 +894,8 @@ export const FlowfieldSt: StoryObj<
             timeSpeed={timeSpeed as number}
             driftAmplitude={driftAmplitude as number}
             smoothing={smoothing as number}
+            cursorRadius={cursorRadius as number}
+            cursorStrength={cursorStrength as number}
           />
         </div>
       </Mcu>

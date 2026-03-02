@@ -1,5 +1,5 @@
 import * as d3 from "d3";
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { createNoise2D, createNoise3D } from "simplex-noise";
 
 export interface Peak {
@@ -92,6 +92,8 @@ export function Flowfield({
   timeSpeed = 0.0025,
   driftAmplitude = 150,
   smoothing = 0,
+  cursorRadius = 200,
+  cursorStrength = 800,
 }: {
   /** SVG viewBox width. */
   width?: number;
@@ -113,11 +115,43 @@ export function Flowfield({
   driftAmplitude?: number;
   /** Number of blur passes applied to the grid before contouring (0 = no smoothing). */
   smoothing?: number;
+  /** Influence radius of cursor interactions in viewBox units. */
+  cursorRadius?: number;
+  /** Maximum elevation added at the cursor position. */
+  cursorStrength?: number;
 }) {
   const svgRef = useRef<SVGSVGElement>(null);
   const noise2DRef = useRef<ReturnType<typeof createNoise2D>>(null);
   const noise3DRef = useRef<ReturnType<typeof createNoise3D>>(null);
   const timeRef = useRef(0);
+  const pointersRef = useRef<Map<number, { x: number; y: number }>>(new Map());
+
+  const toViewBox = useCallback((clientX: number, clientY: number) => {
+    const svg = svgRef.current;
+    if (!svg) return null;
+    const pt = svg.createSVGPoint();
+    pt.x = clientX;
+    pt.y = clientY;
+    const ctm = svg.getScreenCTM();
+    if (!ctm) return null;
+    const svgPt = pt.matrixTransform(ctm.inverse());
+    return { x: svgPt.x, y: svgPt.y };
+  }, []);
+
+  const handlePointerMove = useCallback(
+    (e: React.PointerEvent<SVGSVGElement>) => {
+      const pos = toViewBox(e.clientX, e.clientY);
+      if (pos) pointersRef.current.set(e.pointerId, pos);
+    },
+    [toViewBox],
+  );
+
+  const handlePointerLeave = useCallback(
+    (e: React.PointerEvent<SVGSVGElement>) => {
+      pointersRef.current.delete(e.pointerId);
+    },
+    [],
+  );
 
   useEffect(() => {
     const svgEl = svgRef.current;
@@ -213,7 +247,19 @@ export function Flowfield({
         rawElev[k] = elev;
         if (elev > maxElev) maxElev = elev;
       }
-      baseValues[idx] = maxElev;
+
+      // Cursor influence: each active pointer adds a radial elevation bump
+      let cursorElev = 0;
+      for (const pos of pointersRef.current.values()) {
+        const dx = realX - pos.x;
+        const dy = realY - pos.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < cursorRadius) {
+          const factor = 1 - dist / cursorRadius;
+          cursorElev = Math.max(cursorElev, cursorStrength * factor * factor);
+        }
+      }
+      baseValues[idx] = Math.max(maxElev, cursorElev);
 
       const pow = 8;
       let sum = 0.1;
@@ -287,7 +333,7 @@ export function Flowfield({
       paths
         .enter()
         .append("path")
-        // .style("pointer-events", "none")
+        .style("pointer-events", "none")
         .style("stroke-linejoin", "round")
         .merge(paths)
         .attr("d", (d) =>
@@ -319,6 +365,8 @@ export function Flowfield({
     timeSpeed,
     driftAmplitude,
     smoothing,
+    cursorRadius,
+    cursorStrength,
   ]);
 
   return (
@@ -326,7 +374,14 @@ export function Flowfield({
       ref={svgRef}
       viewBox={`0 0 ${width} ${height}`}
       preserveAspectRatio="xMidYMid slice"
-      style={{ width: "100%", height: "100%", display: "block" }}
+      style={{
+        width: "100%",
+        height: "100%",
+        display: "block",
+        touchAction: "none",
+      }}
+      onPointerMove={handlePointerMove}
+      onPointerLeave={handlePointerLeave}
     />
   );
 }
