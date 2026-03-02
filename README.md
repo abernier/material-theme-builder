@@ -117,8 +117,6 @@ return (
 Compatible through [theme variables](https://tailwindcss.com/docs/theme):
 
 ```css
-@import "tailwindcss";
-
 @theme inline {
   --color-background: var(--md-sys-color-background);
   --color-on-background: var(--md-sys-color-on-background);

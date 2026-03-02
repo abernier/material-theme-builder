@@ -1,15 +1,18 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { kebabCase } from "lodash-es";
-import { useMemo } from "react";
+import { type ComponentProps, useMemo } from "react";
 import { allModes } from "../.storybook/modes";
-import { Flowfield, type Peak } from "./Flowfield";
 import { type McuConfig, schemeNames } from "./lib/builder";
 import { recolorizeSvg } from "./lib/recolorizeSvg";
 import { Mcu } from "./Mcu";
 import { useMcu } from "./Mcu.context";
-import { Layout, Scheme, Shades, TailwindScheme } from "./Mcu.stories.helpers";
+import {
+  FlowfieldScene,
+  Layout,
+  Scheme,
+  Shades,
+  TailwindScheme,
+} from "./Mcu.stories.helpers";
 
-import type { ComponentProps } from "react";
 import exampleSvg from "./assets/example.svg?raw";
 
 // More on how to set up stories at: https://storybook.js.org/docs/writing-stories#default-export
@@ -85,61 +88,13 @@ type Story = StoryObj<typeof meta>;
 const customColor1 = "#00D68A";
 const customColor2 = "#FFE16B";
 
-//
-// ███████ ██       ██████  ██     ██ ███████ ██ ███████ ██      ██████
-// ██      ██      ██    ██ ██     ██ ██      ██ ██      ██      ██   ██
-// █████   ██      ██    ██ ██  █  ██ █████   ██ █████   ██      ██   ██
-// ██      ██      ██    ██ ██ ███ ██ ██      ██ ██      ██      ██   ██
-// ██      ███████  ██████   ███ ███  ██      ██ ███████ ███████ ██████
-//
-
-function FlowfieldScene(props: ComponentProps<typeof Flowfield>) {
-  const { allPalettes } = useMcu();
-
-  const baseColors = useMemo<Record<number, string>>(
-    () => ({
-      100: "var(--md-sys-color-surface-container-lowest)",
-      200: "var(--md-sys-color-surface-container-low)",
-      300: "var(--md-sys-color-surface-container)",
-      400: "var(--md-sys-color-surface-container-high)",
-      500: "var(--md-sys-color-surface-container-highest)",
-    }),
-    [],
-  );
-
-  const peaks = useMemo<Peak[]>(() => {
-    const peakKeys = Object.keys(allPalettes).filter(
-      (k) => k !== "neutral" && k !== "neutral-variant",
-    );
-
-    return peakKeys.flatMap((key) => {
-      const palette = allPalettes[key];
-      if (!palette) return [];
-
-      const kebab = kebabCase(key);
-      const colors: Record<number, string> = {
-        600: `var(--md-sys-color-on-${kebab})`,
-        700: `var(--md-sys-color-${kebab}-container)`,
-        800: `var(--md-sys-color-${kebab})`,
-        900: `var(--md-sys-color-on-${kebab}-container)`,
-      };
-
-      return {
-        id: key,
-        colors,
-      };
-    });
-  }, [allPalettes]);
-
-  return <Flowfield peaks={peaks} baseColors={baseColors} {...props} />;
-}
-
 export const FlowfieldSt: StoryObj<
   Meta<typeof Mcu & ((props: ComponentProps<typeof FlowfieldScene>) => void)>
 > = {
   name: "Flowfield",
   parameters: {
     layout: "fullscreen",
+    chromatic: { disable: true },
   },
   args: {
     // MCU args
@@ -155,7 +110,6 @@ export const FlowfieldSt: StoryObj<
     driftAmplitude: 1100,
     noiseFrequency: 0.002,
     timeSpeed: 0.002,
-    scheme: "expressive",
   },
   argTypes: {
     gridScale: { control: { type: "range", min: 2, max: 50, step: 1 } },
@@ -181,21 +135,36 @@ export const FlowfieldSt: StoryObj<
     } = args as Record<string, unknown>;
 
     return (
-      <Mcu {...(mcuArgs as ComponentProps<typeof Mcu>)}>
-        <div className="h-dvh">
-          <FlowfieldScene
-            gridScale={gridScale as number}
-            defaultWeight={defaultWeight as number}
-            noiseFrequency={noiseFrequency as number}
-            timeSpeed={timeSpeed as number}
-            driftAmplitude={driftAmplitude as number}
-            smoothing={smoothing as number}
-          />
-        </div>
-      </Mcu>
+      <FlowfieldStory
+        mcuArgs={mcuArgs as ComponentProps<typeof Mcu>}
+        gridScale={gridScale as number}
+        defaultWeight={defaultWeight as number}
+        noiseFrequency={noiseFrequency as number}
+        timeSpeed={timeSpeed as number}
+        driftAmplitude={driftAmplitude as number}
+        smoothing={smoothing as number}
+      />
     );
   },
 };
+
+/**
+ * Wrapper component for the Flowfield story so we can use hooks (useState).
+ */
+function FlowfieldStory({
+  mcuArgs,
+  ...flowfieldProps
+}: {
+  mcuArgs: ComponentProps<typeof Mcu>;
+} & ComponentProps<typeof FlowfieldScene>) {
+  return (
+    <Mcu {...mcuArgs}>
+      <div className="h-dvh">
+        <FlowfieldScene {...flowfieldProps} />
+      </div>
+    </Mcu>
+  );
+}
 
 export const St2: Story = {
   name: "Minimal",

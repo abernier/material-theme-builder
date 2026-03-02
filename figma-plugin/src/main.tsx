@@ -3,9 +3,11 @@ import { createRoot } from "react-dom/client";
 import { Fab } from "../../src/components/m3/Fab";
 import { Mcu } from "../../src/Mcu";
 import { useMcu } from "../../src/Mcu.context";
-import { Layout, Scheme, Shades } from "../../src/Mcu.stories.helpers";
+import { FlowfieldSt } from "../../src/Mcu.stories";
+import { FlowfieldScene } from "../../src/Mcu.stories.helpers";
 
-import "../../src/tailwind.css";
+import { TooltipProvider } from "../../src/components/ui/tooltip";
+import "../../src/styles/globals.css";
 import "./main.css";
 
 function SyncButton() {
@@ -59,14 +61,15 @@ function SyncButton() {
 
 function App() {
   return (
-    <Mcu source="#769CDF" contrast={0}>
-      <Layout notext noExport>
+    <TooltipProvider>
+      <Mcu source="#769CDF" contrast={0}>
+        <FlowfieldScene {...FlowfieldSt.args} />
         <SyncButton />
-        <Scheme>
-          <Shades noTitle />
-        </Scheme>
-      </Layout>
-    </Mcu>
+        {/* <Layout notext noExport>
+          <Scheme />
+        </Layout> */}
+      </Mcu>
+    </TooltipProvider>
   );
 }
 
