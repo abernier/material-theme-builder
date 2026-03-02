@@ -32,6 +32,7 @@ describe("materialTheme()", () => {
   });
 
   it("should normalize kebab-case keys from @plugin blocks", () => {
+    // Simulates @plugin { source: "#6750A4"; neutral-variant: "#789ABC"; }
     const result = materialTheme({
       source: "#6750A4",
       "neutral-variant": "#789ABC",
@@ -43,7 +44,10 @@ describe("materialTheme()", () => {
       addBase: (base: CssInJs) => calls.push(base),
     } as unknown as Parameters<typeof result.handler>[0]);
 
+    // Plugin should process successfully and inject CSS vars
     expect(calls.length).toBe(1);
+    const rootVars = (calls[0] as CssInJs)[":root"] as Record<string, string>;
+    expect(rootVars).toHaveProperty("--md-ref-palette-neutral-variant-50");
   });
 
   it("should register standard m3 colors in theme.extend.colors", () => {
