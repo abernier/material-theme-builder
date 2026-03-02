@@ -1,4 +1,5 @@
 import type { StorybookConfig } from "@storybook/react-vite";
+import tsconfigPaths from "vite-tsconfig-paths";
 
 const config: StorybookConfig = {
   framework: "@storybook/react-vite",
@@ -8,5 +9,10 @@ const config: StorybookConfig = {
     "@storybook/addon-themes",
     "@chromatic-com/storybook",
   ],
+  viteFinal(config) {
+    config.plugins ??= [];
+    config.plugins.push(tsconfigPaths());
+    return config;
+  },
 };
 export default config;

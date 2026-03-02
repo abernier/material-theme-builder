@@ -29,7 +29,11 @@ export default defineConfig([
   },
   {
     files: SOURCE_FILES,
-    ignores: ["src/**/*.stories.{ts,tsx}", ".storybook/**"],
+    ignores: [
+      "src/**/*.stories.{ts,tsx}",
+      ".storybook/**",
+      "src/components/ui/**/*.tsx",
+    ],
     plugins: {
       jsdoc,
     },

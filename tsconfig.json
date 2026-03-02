@@ -1,5 +1,10 @@
 {
   "compilerOptions": {
+    /* Path aliases (shadcn) */
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    },
     /* Base Options: */
     "esModuleInterop": true,
     "skipLibCheck": true,

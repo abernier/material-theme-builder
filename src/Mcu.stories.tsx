@@ -11,6 +11,7 @@ import { Layout, Scheme, Shades, TailwindScheme } from "./Mcu.stories.helpers";
 
 import type { ComponentProps } from "react";
 import exampleSvg from "./assets/example.svg?raw";
+import { Button } from "./components/ui/button";
 
 // More on how to set up stories at: https://storybook.js.org/docs/writing-stories#default-export
 const meta = {
@@ -155,7 +156,6 @@ export const FlowfieldSt: StoryObj<
     driftAmplitude: 1100,
     noiseFrequency: 0.002,
     timeSpeed: 0.002,
-    scheme: "expressive",
   },
   argTypes: {
     gridScale: { control: { type: "range", min: 2, max: 50, step: 1 } },
@@ -191,6 +191,9 @@ export const FlowfieldSt: StoryObj<
             driftAmplitude={driftAmplitude as number}
             smoothing={smoothing as number}
           />
+        </div>
+        <div className="fixed bottom-0 left-0 m-4">
+          <Button>coucou</Button>
         </div>
       </Mcu>
     );
