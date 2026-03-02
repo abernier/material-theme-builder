@@ -330,8 +330,8 @@ export function TopographieOrganique({
     <svg
       ref={svgRef}
       viewBox={`0 0 ${width} ${height}`}
-      preserveAspectRatio="xMidYMid meet"
-      style={{ width: "100%", height: "auto", display: "block" }}
+      preserveAspectRatio="xMidYMid slice"
+      style={{ width: "100%", height: "100%", display: "block" }}
     />
   );
 }

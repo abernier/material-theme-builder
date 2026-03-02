@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 
+import { Mcu } from "./Mcu";
 import { TopographieOrganique } from "./TopographieOrganique";
 
 const meta = {
@@ -7,6 +8,15 @@ const meta = {
   parameters: {
     layout: "fullscreen",
   },
+  decorators: [
+    (Story) => (
+      <Mcu source="#769CDF">
+        <div style={{ width: "100vw", height: "100vh" }}>
+          <Story />
+        </div>
+      </Mcu>
+    ),
+  ],
 } satisfies Meta<typeof TopographieOrganique>;
 
 export default meta;
