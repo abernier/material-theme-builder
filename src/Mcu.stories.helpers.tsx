@@ -1,11 +1,25 @@
 import { hexFromArgb } from "@material/material-color-utilities";
 import { cva, type VariantProps } from "class-variance-authority";
 import { kebabCase, upperFirst } from "lodash-es";
-import { X } from "lucide-react";
-import { useMemo, useRef, type ComponentProps } from "react";
+import { CheckIcon, ChevronDownIcon, MoonIcon, SunIcon, X } from "lucide-react";
+import {
+  useCallback,
+  useMemo,
+  useRef,
+  useState,
+  type ComponentProps,
+} from "react";
 import { useDebounceCallback } from "usehooks-ts";
 import { Button } from "./components/ui/button";
 import { ButtonGroup } from "./components/ui/button-group";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "./components/ui/dropdown-menu";
+import { Toggle } from "./components/ui/toggle";
 import {
   Tooltip,
   TooltipContent,
@@ -1027,6 +1041,32 @@ function Pill({
 }
 
 /**
+ * Toggle that adds/removes the `dark` class on the closest `<html>` element.
+ */
+function DarkModeToggle() {
+  const [dark, setDark] = useState(() =>
+    document.documentElement.classList.contains("dark"),
+  );
+
+  const toggle = useCallback((pressed: boolean) => {
+    document.documentElement.classList.toggle("dark", pressed);
+    setDark(pressed);
+  }, []);
+
+  return (
+    <Toggle
+      variant="outline"
+      size="sm"
+      pressed={dark}
+      onPressedChange={toggle}
+      aria-label="Toggle dark mode"
+    >
+      {dark ? <MoonIcon /> : <SunIcon />}
+    </Toggle>
+  );
+}
+
+/**
  * Color button
  */
 function ButtonPill({
@@ -1280,13 +1320,13 @@ export function FlowfieldScene({ ...props }: ComponentProps<typeof Flowfield>) {
             >
               {mcuConfig.scheme ?? "tonalSpot"}
             </Button>
-            {/* <DropdownMenu>
+            <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="pl-2!" size="sm">
                   <ChevronDownIcon />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-44">
+              <DropdownMenuContent align="center" className="w-44">
                 <DropdownMenuGroup>
                   {schemeNames.map((name) => (
                     <DropdownMenuItem
@@ -1304,9 +1344,30 @@ export function FlowfieldScene({ ...props }: ComponentProps<typeof Flowfield>) {
                   ))}
                 </DropdownMenuGroup>
               </DropdownMenuContent>
-            </DropdownMenu> */}
+            </DropdownMenu>
           </ButtonGroup>
         </div>
+        <DarkModeToggle />
+        <ButtonGroup>
+          {(
+            [
+              { label: "Std", value: 0 },
+              { label: "Med", value: 0.5 },
+              { label: "Hi", value: 1 },
+            ] as const
+          ).map(({ label, value }) => (
+            <Button
+              key={value}
+              size="sm"
+              variant={
+                (mcuConfig.contrast ?? 0) === value ? "default" : "outline"
+              }
+              onClick={() => setMcuConfig({ ...mcuConfig, contrast: value })}
+            >
+              {label}
+            </Button>
+          ))}
+        </ButtonGroup>
       </div>
     </>
   );
