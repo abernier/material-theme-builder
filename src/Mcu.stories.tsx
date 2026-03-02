@@ -847,7 +847,7 @@ export const FlowfieldSt: StoryObj<
     defaultWeight: 0.65,
     smoothing: 2,
     driftAmplitude: 1100,
-    noiseFrequency: 0.001,
+    noiseFrequency: 0.002,
     timeSpeed: 0.002,
     scheme: "expressive",
   },
