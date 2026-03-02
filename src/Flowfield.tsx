@@ -5,52 +5,53 @@ import { createNoise2D, createNoise3D } from "simplex-noise";
 export interface Peak {
   /** Unique identifier for the peak. */
   id: string;
-  /** Base X position in SVG units. */
-  baseX: number;
-  /** Base Y position in SVG units. */
-  baseY: number;
-  /** Maximum elevation value. */
-  h: number;
-  /** Radius of influence. */
-  r: number;
-  /** Seed offset for noise variation. */
-  seed: number;
-  /** Gradient color range from light to dark. */
-  colorRange: [string, string];
-  /** Label and marker color. */
-  labelColor: string;
+  /** Normalized size weight (0–1). 1 means the peak covers the full viewport diagonal. Defaults to `0.5`. */
+  weight?: number;
+  /** Elevation-to-color mapping. Keys are altitude thresholds, values are colors. */
+  colors: Record<number, string>;
 }
 
 const DEFAULT_PEAKS: Peak[] = [
   {
     id: "Bleu",
-    baseX: 350,
-    baseY: 350,
-    h: 920,
-    r: 650,
-    seed: 10,
-    colorRange: ["#bae6fd", "#0284c7"],
-    labelColor: "#0369a1",
+    weight: 0.1,
+    colors: {
+      500: "#bae6fd",
+      600: "#8ecae6",
+      700: "#62afd0",
+      800: "#3694ba",
+      900: "#0284c7",
+    },
   },
   {
     id: "Vert",
-    baseX: 700,
-    baseY: 250,
-    h: 1220,
-    r: 700,
-    seed: 20,
-    colorRange: ["#bbf7d0", "#16a34a"],
-    labelColor: "#15803d",
+    weight: 0.55,
+    colors: {
+      500: "#bbf7d0",
+      600: "#8eecb0",
+      700: "#61e090",
+      800: "#3bcd6f",
+      900: "#27b858",
+      1000: "#1ea647",
+      1100: "#16a34a",
+      1200: "#16a34a",
+    },
   },
   {
     id: "Rose",
-    baseX: 600,
-    baseY: 550,
-    h: 1420,
-    r: 750,
-    seed: 30,
-    colorRange: ["#fbcfe8", "#db2777"],
-    labelColor: "#be185d",
+    weight: 0.6,
+    colors: {
+      500: "#fbcfe8",
+      600: "#f9b0d8",
+      700: "#f591c7",
+      800: "#f172b6",
+      900: "#ec4899",
+      1000: "#e63d8e",
+      1100: "#e03283",
+      1200: "#db2777",
+      1300: "#db2777",
+      1400: "#db2777",
+    },
   },
 ];
 
@@ -62,6 +63,14 @@ const DEFAULT_BASE_COLORS: Record<number, string> = {
 };
 
 interface RuntimePeak extends Peak {
+  /** Derived from the highest key in `colors`. */
+  h: number;
+  /** Absolute radius derived from `weight` and viewport diagonal. */
+  r: number;
+  /** Derived from the array index. */
+  seed: number;
+  baseX: number;
+  baseY: number;
   x: number;
   y: number;
 }
@@ -72,16 +81,17 @@ interface RuntimePeak extends Peak {
  * Returns only an `<svg>` element. All visual parameters are exposed as props
  * so the component can be tuned from Storybook controls or consuming code.
  */
-export function TopographieOrganique({
+export function Flowfield({
   width = 1100,
   height = 750,
   gridScale = 5,
   peaks = DEFAULT_PEAKS,
   baseColors = DEFAULT_BASE_COLORS,
+  defaultWeight = 0.5,
   noiseFrequency = 0.0025,
   timeSpeed = 0.0025,
   driftAmplitude = 150,
-  labelStrokeColor = "#fefce8",
+  smoothing = 0,
 }: {
   /** SVG viewBox width. */
   width?: number;
@@ -93,16 +103,21 @@ export function TopographieOrganique({
   peaks?: Peak[];
   /** Color lookup keyed by base-elevation threshold. */
   baseColors?: Record<number, string>;
+  /** Fallback weight applied to peaks that don't specify one (0–1). */
+  defaultWeight?: number;
   /** Spatial noise sampling frequency. */
   noiseFrequency?: number;
   /** Time increment per animation frame. */
   timeSpeed?: number;
   /** Maximum drift distance for peak centres. */
   driftAmplitude?: number;
-  /** Stroke color behind peak labels for readability. */
-  labelStrokeColor?: string;
+  /** Number of blur passes applied to the grid before contouring (0 = no smoothing). */
+  smoothing?: number;
 }) {
   const svgRef = useRef<SVGSVGElement>(null);
+  const noise2DRef = useRef<ReturnType<typeof createNoise2D>>(null);
+  const noise3DRef = useRef<ReturnType<typeof createNoise3D>>(null);
+  const timeRef = useRef(0);
 
   useEffect(() => {
     const svgEl = svgRef.current;
@@ -111,20 +126,33 @@ export function TopographieOrganique({
     const gridW = Math.ceil(width / gridScale);
     const gridH = Math.ceil(height / gridScale);
 
-    const noise2D = createNoise2D();
-    const noise3D = createNoise3D();
-    let time = 0;
+    if (!noise2DRef.current) noise2DRef.current = createNoise2D();
+    if (!noise3DRef.current) noise3DRef.current = createNoise3D();
+    const noise2D = noise2DRef.current;
+    const noise3D = noise3DRef.current;
     let animId = 0;
 
-    const runtimePeaks: RuntimePeak[] = peaks.map((p) => ({
-      ...p,
-      x: p.baseX,
-      y: p.baseY,
-    }));
+    // Derive deterministic base positions from each peak's seed
+    function seededRandom(s: number) {
+      const x = Math.sin(s * 9301 + 49297) * 233280;
+      return x - Math.floor(x);
+    }
+
+    const diagonal = Math.hypot(width, height);
+
+    const runtimePeaks = peaks.map((p, i) => {
+      const seed = (i + 1) * 10;
+      const margin = 0.15;
+      const bx = (margin + seededRandom(seed) * (1 - 2 * margin)) * width;
+      const by = (margin + seededRandom(seed + 1) * (1 - 2 * margin)) * height;
+      const weight = p.weight ?? defaultWeight;
+      const h = Math.max(...Object.keys(p.colors).map(Number));
+      const r = weight * diagonal;
+      return { ...p, weight, h, r, seed, baseX: bx, baseY: by, x: bx, y: by };
+    });
 
     const svg = d3.select(svgEl);
     const pathGroup = svg.append("g");
-    const labelGroup = svg.append("g");
     const pathGenerator = d3.geoPath(d3.geoIdentity().scale(gridScale));
 
     function getRawElevation(p: RuntimePeak, x: number, y: number, t: number) {
@@ -164,8 +192,10 @@ export function TopographieOrganique({
 
     function computeGrid() {
       for (const p of runtimePeaks) {
-        p.x = p.baseX + noise2D(p.seed, time * 0.3) * driftAmplitude;
-        p.y = p.baseY + noise2D(p.seed + 100, time * 0.3) * driftAmplitude;
+        p.x = p.baseX + noise2D(p.seed, timeRef.current * 0.3) * driftAmplitude;
+        p.y =
+          p.baseY +
+          noise2D(p.seed + 100, timeRef.current * 0.3) * driftAmplitude;
       }
 
       for (let j = 0; j < gridH; ++j) {
@@ -179,7 +209,7 @@ export function TopographieOrganique({
       let maxElev = 0;
       for (let k = 0; k < runtimePeaks.length; k++) {
         const peak = runtimePeaks[k] as RuntimePeak;
-        const elev = getRawElevation(peak, realX, realY, time);
+        const elev = getRawElevation(peak, realX, realY, timeRef.current);
         rawElev[k] = elev;
         if (elev > maxElev) maxElev = elev;
       }
@@ -196,12 +226,19 @@ export function TopographieOrganique({
       }
     }
 
+    function blurGrid(values: number[]) {
+      if (smoothing <= 0) return values;
+      const copy = Float64Array.from(values);
+      d3.blur2({ data: copy, width: gridW }, smoothing);
+      return Array.from(copy);
+    }
+
     function buildContours() {
       const pathData: ContourDatum[] = [];
 
       d3.contours()
         .size([gridW, gridH])
-        .thresholds(baseThresholds)(baseValues)
+        .thresholds(baseThresholds)(blurGrid(baseValues))
         .forEach((contour) => {
           for (const poly of contour.coordinates) {
             pathData.push({
@@ -214,23 +251,23 @@ export function TopographieOrganique({
         });
 
       runtimePeaks.forEach((p, pIdx) => {
-        const peakThresholds = d3.range(500, p.h, 100);
-        const colorScale = d3
-          .scaleLinear<string>()
-          .domain([500, p.h - 20])
-          .range(p.colorRange);
+        const peakThresholds = Object.keys(p.colors)
+          .map(Number)
+          .sort((a, b) => a - b);
+        const lowestThreshold = peakThresholds[0] ?? 500;
+        const fallbackColor = p.colors[lowestThreshold] ?? "#ccc";
         const values = peakValues[pIdx] as number[];
 
         d3.contours()
           .size([gridW, gridH])
-          .thresholds(peakThresholds)(values)
+          .thresholds(peakThresholds)(blurGrid(values))
           .forEach((contour) => {
             for (const poly of contour.coordinates) {
               pathData.push({
                 coordinates: poly,
                 value: contour.value,
-                color: colorScale(contour.value),
-                isPeakBase: contour.value === 500,
+                color: p.colors[contour.value] ?? fallbackColor,
+                isPeakBase: contour.value === lowestThreshold,
               });
             }
           });
@@ -240,7 +277,7 @@ export function TopographieOrganique({
     }
 
     function renderFrame() {
-      time += timeSpeed;
+      timeRef.current += timeSpeed;
       computeGrid();
       const pathData = buildContours();
 
@@ -250,7 +287,7 @@ export function TopographieOrganique({
       paths
         .enter()
         .append("path")
-        .style("pointer-events", "none")
+        // .style("pointer-events", "none")
         .style("stroke-linejoin", "round")
         .merge(paths)
         .attr("d", (d) =>
@@ -259,50 +296,8 @@ export function TopographieOrganique({
             coordinates: d.coordinates,
           }),
         )
-        .attr("fill", (d) => d.color)
-        .attr("stroke", (d) =>
-          d.isPeakBase ? "rgba(0,0,0,0.5)" : "rgba(0,0,0,0.08)",
-        )
-        .attr("stroke-width", (d) => (d.isPeakBase ? 1.5 : 0.8));
+        .attr("fill", (d) => d.color);
       paths.exit().remove();
-
-      const circles = labelGroup
-        .selectAll<SVGCircleElement, RuntimePeak>(".peak-marker")
-        .data(runtimePeaks);
-      circles
-        .enter()
-        .append("circle")
-        .attr("class", "peak-marker")
-        .attr("r", 4)
-        .attr("stroke", "#ffffff")
-        .attr("stroke-width", 1.5)
-        .merge(circles)
-        .attr("fill", (d) => d.labelColor)
-        .attr("cx", (d) => d.x)
-        .attr("cy", (d) => d.y);
-
-      const labels = labelGroup
-        .selectAll<SVGTextElement, RuntimePeak>(".peak-label")
-        .data(runtimePeaks);
-      labels
-        .enter()
-        .append("text")
-        .attr("class", "peak-label")
-        .attr("text-anchor", "middle")
-        .style("font-family", "system-ui, -apple-system, sans-serif")
-        .style("font-size", "14px")
-        .style("font-weight", "800")
-        .style("paint-order", "stroke")
-        .style("stroke", labelStrokeColor)
-        .style("stroke-width", "4px")
-        .style("stroke-linecap", "round")
-        .style("stroke-linejoin", "round")
-        .style("pointer-events", "none")
-        .text((d) => `${d.h - 20}m`)
-        .merge(labels)
-        .attr("fill", (d) => d.labelColor)
-        .attr("x", (d) => d.x)
-        .attr("y", (d) => d.y - 12);
 
       animId = requestAnimationFrame(renderFrame);
     }
@@ -312,7 +307,6 @@ export function TopographieOrganique({
     return () => {
       cancelAnimationFrame(animId);
       pathGroup.remove();
-      labelGroup.remove();
     };
   }, [
     width,
@@ -320,10 +314,11 @@ export function TopographieOrganique({
     gridScale,
     peaks,
     baseColors,
+    defaultWeight,
     noiseFrequency,
     timeSpeed,
     driftAmplitude,
-    labelStrokeColor,
+    smoothing,
   ]);
 
   return (

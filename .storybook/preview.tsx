@@ -1,6 +1,9 @@
 import type { Preview } from "@storybook/react-vite";
+import seedrandom from "seedrandom";
 import "../src/tailwind.css";
 import "./preview.css";
+
+seedrandom("deterministic-random-for-storybook", { global: true }); // deterministic Math.random()
 
 import { withThemeByClassName } from "@storybook/addon-themes";
 
