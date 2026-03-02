@@ -17,7 +17,7 @@ import {
 } from "@material/material-color-utilities";
 import { kebabCase, upperFirst } from "lodash-es";
 
-import { buildCss, buildCssInJs } from "./builder.css";
+import { buildCss } from "./builder.css";
 import { buildFigmaTokens, buildFigmaVariables } from "./builder.figma";
 import { buildJson } from "./builder.json";
 
@@ -697,7 +697,6 @@ export function builder(
 
   return {
     toCss: () => buildCss(ctx),
-    toCssInJs: () => buildCssInJs(ctx),
     toJson: () => buildJson(ctx),
     toFigmaVariables: () => buildFigmaVariables(ctx),
     toFigmaTokens: () => buildFigmaTokens(ctx),

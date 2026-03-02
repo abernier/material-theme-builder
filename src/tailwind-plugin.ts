@@ -1,3 +1,4 @@
+import { hexFromArgb } from "@material/material-color-utilities";
 import { kebabCase } from "lodash-es";
 import plugin from "tailwindcss/plugin";
 
@@ -6,6 +7,7 @@ import {
   DEFAULT_CUSTOM_COLORS,
   DEFAULT_PREFIX,
   type McuConfig,
+  STANDARD_TONES,
 } from "./lib/builder";
 
 /**
@@ -162,7 +164,29 @@ export function materialTheme(options: MaterialThemeOptions) {
 
   // Build the actual color values via the builder
   const theme = builder(options.source, options);
-  const cssRules = theme.toCssInJs();
+
+  // Build addBase rules directly from the builder's structured data
+  const sysVars = (merged: Record<string, number>) => {
+    const vars: Record<string, string> = {};
+    for (const [name, argb] of Object.entries(merged)) {
+      vars[`--${prefix}-sys-color-${kebabCase(name)}`] = hexFromArgb(argb);
+    }
+    return vars;
+  };
+
+  const paletteVars: Record<string, string> = {};
+  for (const [name, palette] of Object.entries(theme.allPalettes)) {
+    const paletteName = kebabCase(name);
+    for (const tone of STANDARD_TONES) {
+      paletteVars[`--${prefix}-ref-palette-${paletteName}-${tone}`] =
+        hexFromArgb(palette.tone(tone));
+    }
+  }
+
+  const cssRules = {
+    ":root": { ...sysVars(theme.mergedColorsLight), ...paletteVars },
+    ".dark": { ...sysVars(theme.mergedColorsDark), ...paletteVars },
+  };
 
   return plugin(
     ({ addBase }) => {
