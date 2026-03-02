@@ -1,7 +1,7 @@
 import { hexFromArgb } from "@material/material-color-utilities";
 import { cva, type VariantProps } from "class-variance-authority";
 import { kebabCase, upperFirst } from "lodash-es";
-import { CheckIcon, ChevronDownIcon, MoonIcon, SunIcon, X } from "lucide-react";
+import { MoonIcon, SunIcon, X } from "lucide-react";
 import {
   useCallback,
   useMemo,
@@ -12,13 +12,6 @@ import {
 import { useDebounceCallback } from "usehooks-ts";
 import { Button } from "./components/ui/button";
 import { ButtonGroup } from "./components/ui/button-group";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "./components/ui/dropdown-menu";
 import { Toggle } from "./components/ui/toggle";
 import {
   Tooltip,
@@ -1305,6 +1298,31 @@ export function FlowfieldScene({ ...props }: ComponentProps<typeof Flowfield>) {
             <TooltipContent side="right">Add custom color</TooltipContent>
           </Tooltip>
         </div>
+        <DarkModeToggle />
+
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => {
+            const levels = [
+              { label: "Std", value: 0 },
+              { label: "Med", value: 0.5 },
+              { label: "Hi", value: 1 },
+            ] as const;
+            const current = mcuConfig.contrast ?? 0;
+            const idx = levels.findIndex((l) => l.value === current);
+            const next = levels[(idx + 1) % levels.length] ?? levels[0];
+            setMcuConfig({ ...mcuConfig, contrast: next.value });
+          }}
+        >
+          {(
+            [
+              { label: "Std", value: 0 },
+              { label: "Med", value: 0.5 },
+              { label: "Hi", value: 1 },
+            ] as const
+          ).find((l) => l.value === (mcuConfig.contrast ?? 0))?.label ?? "Std"}
+        </Button>
         <div>
           <ButtonGroup>
             <Button
@@ -1320,7 +1338,7 @@ export function FlowfieldScene({ ...props }: ComponentProps<typeof Flowfield>) {
             >
               {mcuConfig.scheme ?? "tonalSpot"}
             </Button>
-            <DropdownMenu>
+            {/* <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="pl-2!" size="sm">
                   <ChevronDownIcon />
@@ -1344,30 +1362,9 @@ export function FlowfieldScene({ ...props }: ComponentProps<typeof Flowfield>) {
                   ))}
                 </DropdownMenuGroup>
               </DropdownMenuContent>
-            </DropdownMenu>
+            </DropdownMenu> */}
           </ButtonGroup>
         </div>
-        <DarkModeToggle />
-        <ButtonGroup>
-          {(
-            [
-              { label: "Std", value: 0 },
-              { label: "Med", value: 0.5 },
-              { label: "Hi", value: 1 },
-            ] as const
-          ).map(({ label, value }) => (
-            <Button
-              key={value}
-              size="sm"
-              variant={
-                (mcuConfig.contrast ?? 0) === value ? "default" : "outline"
-              }
-              onClick={() => setMcuConfig({ ...mcuConfig, contrast: value })}
-            >
-              {label}
-            </Button>
-          ))}
-        </ButtonGroup>
       </div>
     </>
   );
