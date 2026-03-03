@@ -361,14 +361,6 @@ Or simply:
 
 ## shadcn
 
-```js
-builder("#6750A4").toTailwind({ shadcn: true });
-```
-
-```sh
-npx material-theme-builder '#6750A4' --format tailwind --shadcn
-```
-
 Pre-requisites:
 
 - You should use
