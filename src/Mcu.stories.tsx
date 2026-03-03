@@ -1,17 +1,11 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { type ComponentProps, useMemo } from "react";
+import { useMemo } from "react";
 import { allModes } from "../.storybook/modes";
 import { type McuConfig, schemeNames } from "./lib/builder";
 import { recolorizeSvg } from "./lib/recolorizeSvg";
 import { Mcu } from "./Mcu";
 import { useMcu } from "./Mcu.context";
-import {
-  FlowfieldScene,
-  Layout,
-  Scheme,
-  Shades,
-  TailwindScheme,
-} from "./Mcu.stories.helpers";
+import { Layout, Scheme, Shades, TailwindScheme } from "./Mcu.stories.helpers";
 
 import exampleSvg from "./assets/example.svg?raw";
 
@@ -87,84 +81,6 @@ type Story = StoryObj<typeof meta>;
 
 const customColor1 = "#00D68A";
 const customColor2 = "#FFE16B";
-
-export const FlowfieldSt: StoryObj<
-  Meta<typeof Mcu & ((props: ComponentProps<typeof FlowfieldScene>) => void)>
-> = {
-  name: "Flowfield",
-  parameters: {
-    layout: "fullscreen",
-    chromatic: { disable: true },
-  },
-  args: {
-    // MCU args
-    source: "#769CDF",
-    customColors: [
-      { name: "myCustomColor1", hex: customColor1, blend: true },
-      { name: "myCustomColor2", hex: customColor2, blend: true },
-    ],
-    // Flowfield args
-    gridScale: 15,
-    defaultWeight: 0.65,
-    smoothing: 2,
-    driftAmplitude: 1100,
-    noiseFrequency: 0.002,
-    timeSpeed: 0.002,
-  },
-  argTypes: {
-    gridScale: { control: { type: "range", min: 2, max: 50, step: 1 } },
-    defaultWeight: {
-      control: { type: "range", min: 0, max: 2, step: 0.05 },
-    },
-    noiseFrequency: { control: { type: "number", step: 0.0001 } },
-    timeSpeed: { control: { type: "number", step: 0.0001 } },
-    driftAmplitude: {
-      control: { type: "range", min: 0, max: 2000, step: 10 },
-    },
-    smoothing: { control: { type: "range", min: 0, max: 10, step: 1 } },
-  },
-  render: (args) => {
-    const {
-      gridScale,
-      defaultWeight,
-      noiseFrequency,
-      timeSpeed,
-      driftAmplitude,
-      smoothing,
-      ...mcuArgs
-    } = args as Record<string, unknown>;
-
-    return (
-      <FlowfieldStory
-        mcuArgs={mcuArgs as ComponentProps<typeof Mcu>}
-        gridScale={gridScale as number}
-        defaultWeight={defaultWeight as number}
-        noiseFrequency={noiseFrequency as number}
-        timeSpeed={timeSpeed as number}
-        driftAmplitude={driftAmplitude as number}
-        smoothing={smoothing as number}
-      />
-    );
-  },
-};
-
-/**
- * Wrapper component for the Flowfield story so we can use hooks (useState).
- */
-function FlowfieldStory({
-  mcuArgs,
-  ...flowfieldProps
-}: {
-  mcuArgs: ComponentProps<typeof Mcu>;
-} & ComponentProps<typeof FlowfieldScene>) {
-  return (
-    <Mcu {...mcuArgs}>
-      <div className="h-dvh">
-        <FlowfieldScene {...flowfieldProps} />
-      </div>
-    </Mcu>
-  );
-}
 
 export const St2: Story = {
   name: "Minimal",
