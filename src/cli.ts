@@ -61,7 +61,7 @@ program
   )
   .option(
     "--format <type>",
-    "Output format: json, css, figma, tailwind, or flutter",
+    "Output format: json, css, figma, tailwind, flutter, or shadcn",
     "figma",
   )
   .option("--output <dir>", "Output directory (required for figma format)")
@@ -100,6 +100,8 @@ program
       process.stdout.write(result.toTailwind());
     } else if (opts.format === "flutter") {
       process.stdout.write(result.toFlutter());
+    } else if (opts.format === "shadcn") {
+      process.stdout.write(result.toShadcn());
     } else if (opts.format === "figma") {
       const outputDir = opts.output ?? "material-theme";
       fs.mkdirSync(outputDir, { recursive: true });

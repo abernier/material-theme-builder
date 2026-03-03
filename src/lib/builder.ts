@@ -21,6 +21,7 @@ import { buildCss } from "./builder.css";
 import { buildFigmaTokens, buildFigmaVariables } from "./builder.figma";
 import { buildFlutter } from "./builder.flutter";
 import { buildJson } from "./builder.json";
+import { buildShadcn } from "./builder.shadcn";
 import { buildTailwind } from "./builder.tailwind";
 
 // ─── Re-exports (Figma types defined in builder.figma.ts) ────────────────
@@ -704,6 +705,7 @@ export function builder(
     toFigmaTokens: () => buildFigmaTokens(ctx),
     toTailwind: () => buildTailwind(ctx),
     toFlutter: () => buildFlutter(ctx),
+    toShadcn: () => buildShadcn(ctx),
     mergedColorsLight,
     mergedColorsDark,
     allPalettes,
