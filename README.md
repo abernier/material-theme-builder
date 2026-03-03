@@ -45,6 +45,9 @@ const theme = builder("#6750A4", {
 theme.toFigmaTokens();
 theme.toJson();
 theme.toCss();
+theme.toTailwind();
+theme.toFlutter();
+theme.toShadcn();
 ```
 
 ## CLI
