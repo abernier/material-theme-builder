@@ -63,6 +63,7 @@ const SHADCN_MAPPING = [
   ["--sidebar-ring", "primary"],
 ] as const;
 
+/** Options for the Tailwind CSS exporter. */
 export type TailwindOptions = {
   /** When true, append a shadcn CSS variable block after the Tailwind theme. */
   shadcn?: boolean;
