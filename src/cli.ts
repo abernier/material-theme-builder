@@ -59,8 +59,16 @@ program
     "--custom-colors <json>",
     'Custom colors as JSON array (e.g. \'[{"name":"brand","hex":"#FF5733","blend":true}]\')',
   )
-  .option("--format <type>", "Output format: json, css, or figma", "figma")
+  .option(
+    "--format <type>",
+    "Output format: json, css, figma, tailwind, or flutter",
+    "figma",
+  )
   .option("--output <dir>", "Output directory (required for figma format)")
+  .option(
+    "--shadcn",
+    "Append shadcn CSS variable remapping (with --format tailwind)",
+  )
   .option(
     "--prefix <string>",
     "CSS variable prefix (e.g. md → --md-sys-color-*, --md-ref-palette-*)",
@@ -92,6 +100,10 @@ program
 
     if (opts.format === "css") {
       process.stdout.write(result.toCss());
+    } else if (opts.format === "tailwind") {
+      process.stdout.write(result.toTailwind({ shadcn: opts.shadcn }));
+    } else if (opts.format === "flutter") {
+      process.stdout.write(result.toFlutter());
     } else if (opts.format === "figma") {
       const outputDir = opts.output ?? "material-theme";
       fs.mkdirSync(outputDir, { recursive: true });

@@ -19,7 +19,9 @@ import { kebabCase, upperFirst } from "lodash-es";
 
 import { buildCss } from "./builder.css";
 import { buildFigmaTokens, buildFigmaVariables } from "./builder.figma";
+import { buildFlutter } from "./builder.flutter";
 import { buildJson } from "./builder.json";
+import { buildTailwind, type TailwindOptions } from "./builder.tailwind";
 
 // ─── Re-exports (Figma types defined in builder.figma.ts) ────────────────
 
@@ -700,6 +702,8 @@ export function builder(
     toJson: () => buildJson(ctx),
     toFigmaVariables: () => buildFigmaVariables(ctx),
     toFigmaTokens: () => buildFigmaTokens(ctx),
+    toTailwind: (options?: TailwindOptions) => buildTailwind(ctx, options),
+    toFlutter: () => buildFlutter(ctx),
     mergedColorsLight,
     mergedColorsDark,
     allPalettes,
