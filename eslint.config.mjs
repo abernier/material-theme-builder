@@ -8,12 +8,7 @@ const SOURCE_FILES = ["src/**/*.{ts,tsx}", ".storybook/**/*.{ts,tsx}"];
 
 export default defineConfig([
   {
-    ignores: [
-      "dist/**",
-      "storybook-static/**",
-      "node_modules/**",
-      "src/figma-plugin/**",
-    ],
+    ignores: ["dist/**", "storybook-static/**", "node_modules/**"],
   },
   {
     ...reactHooks.configs.flat.recommended,

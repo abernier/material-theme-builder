@@ -1,6 +1,6 @@
 /// <reference types="@figma/plugin-typings" />
 
-import type { FigmaVariable } from "../lib/builder";
+import type { FigmaVariable, FigmaVariableValue } from "../lib/builder";
 import { COLLECTION_NAME } from "./constants";
 
 // ─── Plugin entry point ─────────────────────────────────────────────────
@@ -37,14 +37,16 @@ async function findOrCreateCollection(name: string) {
 function ensureModes(collection: VariableCollection, ...modeNames: string[]) {
   const result: Record<string, string> = {};
   for (let i = 0; i < modeNames.length; i++) {
-    const existing = collection.modes.find((m) => m.name === modeNames[i]);
+    const name = modeNames[i] as string;
+    const existing = collection.modes.find((m) => m.name === name);
     if (existing) {
-      result[modeNames[i]] = existing.modeId;
+      result[name] = existing.modeId;
     } else if (i === 0 && collection.modes.length === 1) {
-      collection.renameMode(collection.modes[0].modeId, modeNames[i]);
-      result[modeNames[i]] = collection.modes[0].modeId;
+      const first = collection.modes[0] as { modeId: string; name: string };
+      collection.renameMode(first.modeId, name);
+      result[name] = first.modeId;
     } else {
-      result[modeNames[i]] = collection.addMode(modeNames[i]);
+      result[name] = collection.addMode(name);
     }
   }
   return result;
@@ -64,6 +66,28 @@ async function findOrCreateVariable(
 
 // ─── Sync logic ─────────────────────────────────────────────────────────
 
+function setModeValue(
+  variable: Variable,
+  modeId: string,
+  value: FigmaVariableValue,
+  varMap: Record<string, Variable>,
+) {
+  if ("alias" in value) {
+    const target = varMap[value.alias];
+    if (target) {
+      variable.setValueForMode(
+        modeId,
+        figma.variables.createVariableAlias(target),
+      );
+    } else {
+      console.warn(`Alias target not found: ${value.alias}`);
+      variable.setValueForMode(modeId, { r: 0, g: 0, b: 0, a: 1 });
+    }
+  } else {
+    variable.setValueForMode(modeId, value);
+  }
+}
+
 async function syncVariables(variables: FigmaVariable[]) {
   const collection = await findOrCreateCollection(COLLECTION_NAME);
   const modes = ensureModes(collection, "Light", "Dark");
@@ -77,28 +101,14 @@ async function syncVariables(variables: FigmaVariable[]) {
   // Set values and metadata
   for (const v of variables) {
     const variable = varMap[v.path];
+    if (!variable) continue;
 
     if (v.description) variable.description = v.description;
     if (v.scopes) variable.scopes = v.scopes as VariableScope[];
 
     for (const [modeName, modeId] of Object.entries(modes)) {
       const value = v.values[modeName];
-      if (!value) continue;
-
-      if ("alias" in value) {
-        const target = varMap[value.alias];
-        if (target) {
-          variable.setValueForMode(
-            modeId,
-            figma.variables.createVariableAlias(target),
-          );
-        } else {
-          console.warn(`Alias target not found: ${value.alias}`);
-          variable.setValueForMode(modeId, { r: 0, g: 0, b: 0, a: 1 });
-        }
-      } else {
-        variable.setValueForMode(modeId, value);
-      }
+      if (value) setModeValue(variable, modeId, value, varMap);
     }
   }
 
