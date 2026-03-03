@@ -61,10 +61,14 @@ program
   )
   .option(
     "--format <type>",
-    "Output format: json, css, figma, tailwind, flutter, or shadcn",
+    "Output format: json, css, figma, tailwind, or flutter",
     "figma",
   )
   .option("--output <dir>", "Output directory (required for figma format)")
+  .option(
+    "--shadcn",
+    "Append shadcn CSS variable remapping (with --format tailwind)",
+  )
   .option(
     "--prefix <string>",
     "CSS variable prefix (e.g. md → --md-sys-color-*, --md-ref-palette-*)",
@@ -97,11 +101,9 @@ program
     if (opts.format === "css") {
       process.stdout.write(result.toCss());
     } else if (opts.format === "tailwind") {
-      process.stdout.write(result.toTailwind());
+      process.stdout.write(result.toTailwind({ shadcn: opts.shadcn }));
     } else if (opts.format === "flutter") {
       process.stdout.write(result.toFlutter());
-    } else if (opts.format === "shadcn") {
-      process.stdout.write(result.toShadcn());
     } else if (opts.format === "figma") {
       const outputDir = opts.output ?? "material-theme";
       fs.mkdirSync(outputDir, { recursive: true });
