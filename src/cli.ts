@@ -59,7 +59,11 @@ program
     "--custom-colors <json>",
     'Custom colors as JSON array (e.g. \'[{"name":"brand","hex":"#FF5733","blend":true}]\')',
   )
-  .option("--format <type>", "Output format: json, css, or figma", "figma")
+  .option(
+    "--format <type>",
+    "Output format: json, css, figma, tailwind, or flutter",
+    "figma",
+  )
   .option("--output <dir>", "Output directory (required for figma format)")
   .option(
     "--prefix <string>",
@@ -92,6 +96,10 @@ program
 
     if (opts.format === "css") {
       process.stdout.write(result.toCss());
+    } else if (opts.format === "tailwind") {
+      process.stdout.write(result.toTailwind());
+    } else if (opts.format === "flutter") {
+      process.stdout.write(result.toFlutter());
     } else if (opts.format === "figma") {
       const outputDir = opts.output ?? "material-theme";
       fs.mkdirSync(outputDir, { recursive: true });
