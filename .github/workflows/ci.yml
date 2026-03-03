@@ -95,7 +95,7 @@ jobs:
           set -euo pipefail
 
           VERSION="${{ needs.ci.outputs.version }}"
-          PLUGIN_DIR="figma-plugin"
+          PLUGIN_DIR="src/figma-plugin"
 
           echo "Publishing Figma plugin v${VERSION} (plugin id: ${FIGMA_PLUGIN_ID})"
 

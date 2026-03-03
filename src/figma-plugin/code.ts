@@ -1,6 +1,6 @@
 /// <reference types="@figma/plugin-typings" />
 
-import type { FigmaVariable } from "../../src/lib/builder";
+import type { FigmaVariable } from "../lib/builder";
 import { COLLECTION_NAME } from "./constants";
 
 // ─── Plugin entry point ─────────────────────────────────────────────────
