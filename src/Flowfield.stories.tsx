@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import type { ComponentProps } from "react";
 import { Flowfield } from "./Flowfield";
 import { FlowfieldScene } from "./Flowfield.stories.helpers";
 import { Mcu } from "./Mcu";
@@ -18,18 +17,9 @@ const meta = {
 
 export default meta;
 
-export const FlowfieldSt: StoryObj<
-  Meta<typeof Flowfield & ((props: ComponentProps<typeof Mcu>) => void)>
-> = {
+export const FlowfieldSt: StoryObj<typeof Flowfield> = {
   name: "Default",
   args: {
-    // MCU args
-    source: "#769CDF",
-    customColors: [
-      { name: "myCustomColor1", hex: customColor1, blend: true },
-      { name: "myCustomColor2", hex: customColor2, blend: true },
-    ],
-    // Flowfield args
     gridScale: 15,
     defaultWeight: 0.65,
     smoothing: 2,
@@ -38,7 +28,6 @@ export const FlowfieldSt: StoryObj<
     timeSpeed: 0.002,
   },
   argTypes: {
-    source: { control: "color" },
     gridScale: { control: { type: "range", min: 2, max: 50, step: 1 } },
     defaultWeight: {
       control: { type: "range", min: 0, max: 2, step: 0.05 },
@@ -50,45 +39,17 @@ export const FlowfieldSt: StoryObj<
     },
     smoothing: { control: { type: "range", min: 0, max: 10, step: 1 } },
   },
-  render: (args) => {
-    const {
-      gridScale,
-      defaultWeight,
-      noiseFrequency,
-      timeSpeed,
-      driftAmplitude,
-      smoothing,
-      ...mcuArgs
-    } = args as Record<string, unknown>;
-
-    return (
-      <FlowfieldStory
-        mcuArgs={mcuArgs as ComponentProps<typeof Mcu>}
-        gridScale={gridScale as number}
-        defaultWeight={defaultWeight as number}
-        noiseFrequency={noiseFrequency as number}
-        timeSpeed={timeSpeed as number}
-        driftAmplitude={driftAmplitude as number}
-        smoothing={smoothing as number}
-      />
-    );
-  },
-};
-
-/**
- * Wrapper component for the Flowfield story so we can use hooks (useState).
- */
-function FlowfieldStory({
-  mcuArgs,
-  ...flowfieldProps
-}: {
-  mcuArgs: ComponentProps<typeof Mcu>;
-} & ComponentProps<typeof FlowfieldScene>) {
-  return (
-    <Mcu {...mcuArgs}>
+  render: (args) => (
+    <Mcu
+      source="#769CDF"
+      customColors={[
+        { name: "myCustomColor1", hex: customColor1, blend: true },
+        { name: "myCustomColor2", hex: customColor2, blend: true },
+      ]}
+    >
       <div className="h-dvh">
-        <FlowfieldScene {...flowfieldProps} />
+        <FlowfieldScene {...args} />
       </div>
     </Mcu>
-  );
-}
+  ),
+};
