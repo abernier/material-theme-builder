@@ -105,7 +105,7 @@
     "local-release": "pnpm run lgtm && changeset version && changeset publish",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "build-figma": "vite build --config figma-plugin/vite.config.ts && tsup --config figma-plugin/tsup.config.ts",
+    "build-figma": "vite build --config src/figma-plugin/vite.config.ts && tsup --config src/figma-plugin/tsup.config.ts",
     "chromatic": "chromatic --project-token $CHROMATIC_PROJECT_TOKEN",
     "prepare": "pnpm run pretest && husky",
     "changeset": "pnpm exec changeset"
