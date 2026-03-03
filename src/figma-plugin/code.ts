@@ -37,12 +37,14 @@ async function findOrCreateCollection(name: string) {
 function ensureModes(collection: VariableCollection, ...modeNames: string[]) {
   const result: Record<string, string> = {};
   for (let i = 0; i < modeNames.length; i++) {
-    const name = modeNames[i] as string;
+    const name = modeNames[i];
+    if (!name) continue;
     const existing = collection.modes.find((m) => m.name === name);
     if (existing) {
       result[name] = existing.modeId;
     } else if (i === 0 && collection.modes.length === 1) {
-      const first = collection.modes[0] as { modeId: string; name: string };
+      const first = collection.modes[0];
+      if (!first) continue;
       collection.renameMode(first.modeId, name);
       result[name] = first.modeId;
     } else {
