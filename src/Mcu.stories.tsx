@@ -8,6 +8,7 @@ import { useMcu } from "./Mcu.context";
 import { Layout, Scheme, Shades, TailwindScheme } from "./Mcu.stories.helpers";
 
 import exampleSvg from "./assets/example.svg?raw";
+import tigerSvg from "./assets/tiger.svg?raw";
 
 // More on how to set up stories at: https://storybook.js.org/docs/writing-stories#default-export
 const meta = {
@@ -770,6 +771,62 @@ export const RecolorizeSvgSt2: Story = {
         //   "secondary",
         //   "tertiary"
         // ]}
+        excludedPalettesNames={["error"]}
+      />
+    </Mcu>
+  ),
+};
+
+export const RecolorizeTigerSvgSt1: Story = {
+  name: "Recolorized Tiger SVG",
+  parameters: {
+    chromatic: {
+      modes: {
+        light: allModes["light"],
+        dark: allModes["dark"],
+      },
+    },
+  },
+  args: {
+    source: "#769CDF",
+    contrastAllColors: true,
+    adaptiveShades: true,
+  },
+  render: (args) => (
+    <Mcu {...args}>
+      <Scene
+        svgContent={tigerSvg}
+        customColors={args.customColors}
+        excludedPalettesNames={["error"]}
+      />
+    </Mcu>
+  ),
+};
+
+export const RecolorizeTigerSvgSt2: Story = {
+  name: "Recolorized Tiger SVG with custom-colors",
+  parameters: {
+    chromatic: {
+      modes: {
+        light: allModes["light"],
+        dark: allModes["dark"],
+      },
+    },
+  },
+  args: {
+    source: "#769CDF",
+    contrastAllColors: true,
+    adaptiveShades: true,
+    customColors: [
+      { name: "myCustomColor1", hex: customColor1, blend: true },
+      { name: "myCustomColor2", hex: customColor2, blend: true },
+    ],
+  },
+  render: (args) => (
+    <Mcu {...args}>
+      <Scene
+        svgContent={tigerSvg}
+        customColors={args.customColors}
         excludedPalettesNames={["error"]}
       />
     </Mcu>
