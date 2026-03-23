@@ -89,6 +89,40 @@ import { Mcu } from "material-theme-builder";
 </Mcu>
 ```
 
+## React Server Components (RSC)
+
+`react-mcu` is fully compatible with React Server Components, including Next.js App Router.
+
+The `Mcu` component is marked as a client component (with `"use client"` directive) because it uses React hooks and DOM manipulation to inject CSS variables. This means:
+
+- ✅ You can import and use `<Mcu>` in Server Components
+- ✅ The component will be rendered on the client side only
+- ✅ CSS variables are injected dynamically at runtime
+- ✅ Works seamlessly with Next.js App Router, Remix, and other RSC frameworks
+
+### Next.js App Router Example
+
+```tsx
+// app/layout.tsx (Server Component)
+import { Mcu } from "react-mcu";
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html lang="en">
+      <body>
+        <Mcu source="#6750A4" scheme="tonalSpot">
+          {children}
+        </Mcu>
+      </body>
+    </html>
+  );
+}
+```
+
 > [!TIP]
 >
 > Typically wrapping `{children}` in a

@@ -2,6 +2,12 @@ import { cleanup, render } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { Mcu } from "./Mcu";
 
+/**
+ * Basic smoke tests for Mcu component
+ *
+ * This is a simple test suite that verifies the core functionality works.
+ * For comprehensive RSC-specific tests, see Mcu.rsc.test.tsx
+ */
 describe("Mcu", () => {
   afterEach(() => {
     cleanup();
