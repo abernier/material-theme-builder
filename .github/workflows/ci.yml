@@ -5,6 +5,11 @@ on:
   push:
     branches:
       - main
+  # Lets a release be re-run from the Actions tab. The changesets bot marks
+  # its version-PR commit skip-ci so pushes to `changeset-release/main` don't
+  # spin CI; squash-merging that PR carries the marker onto `main` and the
+  # publish never fires. Without this, the only way back is an empty commit.
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
