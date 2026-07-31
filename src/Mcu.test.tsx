@@ -1,4 +1,5 @@
 import { cleanup, render } from "@testing-library/react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it } from "vitest";
 import { Mcu } from "./Mcu";
 
@@ -95,5 +96,35 @@ describe("Mcu", () => {
     styleContent = styleTag?.textContent || "";
 
     expect(styleContent).not.toContain("--md-sys-color-brand");
+  });
+
+  it("should render the CSS variables into the server markup", () => {
+    // The whole point of rendering the <style> rather than injecting it from
+    // an effect: effects don't run on the server, so anything rendered there
+    // used to reach the browser with no colors at all and paint an unthemed
+    // first frame.
+    const html = renderToStaticMarkup(
+      <Mcu source="#6750A4">
+        <div>Test content</div>
+      </Mcu>,
+    );
+
+    const open = '<style id="mcu-styles">';
+    expect(html).toContain(open);
+
+    const css = html.slice(
+      html.indexOf(open) + open.length,
+      html.indexOf("</style>"),
+    );
+    expect(css).toContain("--md-sys-color-primary");
+    expect(css).toContain("--md-sys-color-surface");
+    // Light in :root, dark in .dark -- both halves have to be there, since
+    // the scheme is picked by a class the app sets before paint.
+    expect(css).toContain(":root {");
+    expect(css).toContain(".dark {");
+    // Rendered through `dangerouslySetInnerHTML`, not as children: React
+    // escapes text children, which would turn a `&` or `>` in a selector into
+    // an entity and break the sheet.
+    expect(css).not.toMatch(/&(amp|gt|lt|quot|#x27);/);
   });
 });
