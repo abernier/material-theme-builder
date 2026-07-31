@@ -5,10 +5,8 @@ on:
   push:
     branches:
       - main
-  # Lets a release be re-run from the Actions tab. The changesets bot marks
-  # its version-PR commit skip-ci so pushes to `changeset-release/main` don't
-  # spin CI; squash-merging that PR carries the marker onto `main` and the
-  # publish never fires. Without this, the only way back is an empty commit.
+  # Escape hatch: re-run a release from the Actions tab when the push-triggered
+  # run didn't publish. Without it the only way back is an empty commit on main.
   workflow_dispatch:
 
 concurrency:
@@ -45,20 +43,23 @@ jobs:
       # Changeset
       #
 
+      # npm auth is npm trusted publishing (OIDC) — no NPM_TOKEN. The trusted
+      # publisher declared on npmjs.com names *this* workflow file, so moving or
+      # renaming it breaks publishing with ENEEDAUTH. Setting an NPM_TOKEN secret
+      # would also break it: changesets/action then writes an .npmrc and skips OIDC.
       - name: Create Release Pull Request or Publish
         id: changesets
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
         uses: changesets/action@v1
         with:
           publish: pnpm run release
           createGithubReleases: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Check version bump
         id: check
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
         uses: EndBug/version-check@v2
         with:
           diff-search: true
