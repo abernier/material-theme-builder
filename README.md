@@ -52,11 +52,23 @@ theme.toShadcn();
 
 > [!NOTE]
 >
-> `builder` is server-safe. Only the React entry points (`Mcu`, `useMcu`,
+> `builder` is server-safe: only the React entry points (`Mcu`, `useMcu`,
 > `ExportButton`) carry `"use client"`, so you can call it from a
 > [React Server Component](https://react.dev/reference/rsc/server-components)
 > — handy to emit `toCss()` into the document yourself rather than let `<Mcu>`
 > do it on the client.
+>
+> In that case import it from **`material-theme-builder/builder`**:
+>
+> ```ts
+> import { builder } from "material-theme-builder/builder";
+> ```
+>
+> The main entry re-exports the React components, and a framework that splits
+> server and client graphs registers every export of a `"use client"` module it
+> sees — so importing `builder` from `material-theme-builder` ships the React
+> bundle to the browser even in a server component that never renders `<Mcu>`.
+> The subpath doesn't reference it, and costs the client nothing.
 
 ## CLI
 
