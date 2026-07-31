@@ -2,12 +2,7 @@ import {
   hexFromArgb,
   type TonalPalette,
 } from "@material/material-color-utilities";
-import React, {
-  useCallback,
-  useInsertionEffect,
-  useMemo,
-  useState,
-} from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import {
   builder,
   type FigmaTokens,
@@ -76,20 +71,6 @@ export const McuProvider = ({
   }, [mcuConfig]);
 
   //
-  // <style>
-  //
-
-  useInsertionEffect(() => {
-    let tag = document.getElementById(styleId);
-    if (!tag) {
-      tag = document.createElement("style");
-      tag.id = styleId;
-      document.head.appendChild(tag);
-    }
-    tag.textContent = css;
-  }, [css, styleId]);
-
-  //
   // getMcuColor
   //
 
@@ -134,7 +115,26 @@ export const McuProvider = ({
     ],
   );
 
-  return <Provider value={value}>{children}</Provider>;
+  //
+  // <style>
+  //
+  // Rendered, not injected from an effect. An effect only ever runs in the
+  // browser, so a server-rendered page would ship with none of the variables
+  // defined and paint before hydration filled them in -- every color missing
+  // for that first frame. Rendering the tag puts the CSS in the HTML the
+  // server sends, and React updates its content in place when `setMcuConfig`
+  // changes the theme.
+  //
+  // Not `<style href precedence>`: React treats hoisted stylesheets as
+  // immutable and keyed by `href`, so a theme change would either be ignored
+  // or leak a new stylesheet per change.
+
+  return (
+    <Provider value={value}>
+      <style id={styleId} dangerouslySetInnerHTML={{ __html: css }} />
+      {children}
+    </Provider>
+  );
 };
 
 export { McuContext, useMcu };
