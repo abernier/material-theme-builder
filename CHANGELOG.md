@@ -1,5 +1,35 @@
 # material-theme-builder
 
+## 2.2.0
+
+### Minor Changes
+
+- 74aec64: `builder` is now callable from a React Server Component.
+
+  `dist/index.js` carried a `"use client"` banner over the whole bundle, so any
+  import from the package — `builder` included — was a client module. Calling it
+  from a server component threw `Attempted to call builder() from the server but
+builder is on the client`, which left generating the CSS at build time to the
+  CLI.
+
+  The React surface is built into its own `dist/react.js`, which is where the
+  directive lands now; `dist/index.js` re-exports it. Nothing moves in the public
+  API: `builder`, `Mcu`, `useMcu` and `ExportButton` are all still imported from
+  `material-theme-builder`, and importing `Mcu` into a server component still
+  works — it becomes a client reference, as it did before.
+
+- c7394fe: `<Mcu>` renders its `<style>` instead of injecting it from an effect, so the
+  colors are in the server-rendered HTML.
+
+  Effects only run in the browser, so on an SSR/SSG page the `<style>` used to
+  reach the client empty: every `--md-sys-color-*` was undefined for the first
+  paint, and anything reading one painted with no color at all until hydration
+  filled it in. Rendering the tag puts the CSS in the HTML the server sends, and
+  React updates its content in place when `setMcuConfig` changes the theme.
+
+  The tag now sits where `<Mcu>` is rather than in `document.head` — same `id`,
+  same cascade, but worth knowing if you were querying `head` for it.
+
 ## 2.1.2
 
 ### Patch Changes
