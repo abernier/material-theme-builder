@@ -2,16 +2,17 @@ import { copyFileSync } from "fs";
 import { defineConfig } from "tsup";
 
 // Three bundles rather than one, so that `"use client"` lands only on the
-// React surface:
+// React surface -- and so that nothing on the root entry points at it:
 //
-//   dist/index.js   no directive -- `builder` is callable from a server
-//                   component; re-exports the React entry points, which a
-//                   framework turns into client references
+//   dist/index.js   no directive -- `builder`, the package root
 //   dist/react.js   "use client" -- Mcu, useMcu, ExportButton
 //   dist/cli.js     the CLI
 //
-// `dist/index.js` keeps `./react.js` external so esbuild leaves the import
-// alone instead of inlining the module and dropping its directive.
+// The two are independent: `index.js` does not import `react.js`, which is
+// what keeps `import { builder } from "material-theme-builder"` free of React
+// in a client bundle. A framework that splits server and client graphs
+// registers every export of a client module it reaches, re-export included,
+// so a barrel spanning both surfaces cannot be tree-shaken back apart.
 
 const shared = {
   format: ["esm"] as const,
@@ -28,7 +29,6 @@ export default defineConfig([
     entryPoints: ["src/index.ts"],
     dts: true,
     clean: true,
-    external: [...shared.external, "./react.js"],
     onSuccess: async () => {
       // Copy tailwind.css to dist
       copyFileSync("src/tailwind.css", "dist/tailwind.css");
