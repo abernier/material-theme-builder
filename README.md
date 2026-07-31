@@ -50,6 +50,14 @@ theme.toFlutter();
 theme.toShadcn();
 ```
 
+> [!NOTE]
+>
+> `builder` is server-safe. Only the React entry points (`Mcu`, `useMcu`,
+> `ExportButton`) carry `"use client"`, so you can call it from a
+> [React Server Component](https://react.dev/reference/rsc/server-components)
+> — handy to emit `toCss()` into the document yourself rather than let `<Mcu>`
+> do it on the client.
+
 ## CLI
 
 ```sh
