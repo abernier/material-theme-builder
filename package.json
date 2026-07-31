@@ -12,6 +12,10 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
+    "./react": {
+      "types": "./dist/react.d.ts",
+      "import": "./dist/react.js"
+    },
     "./tailwind.css": "./dist/tailwind.css"
   },
   "homepage": "https://github.com/abernier/material-theme-builder",

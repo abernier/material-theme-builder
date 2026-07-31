@@ -52,11 +52,12 @@ theme.toShadcn();
 
 > [!NOTE]
 >
-> `builder` is server-safe. Only the React entry points (`Mcu`, `useMcu`,
-> `ExportButton`) carry `"use client"`, so you can call it from a
+> The root entry costs a client bundle nothing. It holds `builder` alone — the
+> React bindings live at [`material-theme-builder/react`](#react) and are the
+> only thing carrying `"use client"`. So you can call `builder` from a
 > [React Server Component](https://react.dev/reference/rsc/server-components)
-> — handy to emit `toCss()` into the document yourself rather than let `<Mcu>`
-> do it on the client.
+> and emit `toCss()` into the document yourself, rather than let `<Mcu>` do it
+> on the client, without shipping React components the page never renders.
 
 ## CLI
 
@@ -70,10 +71,12 @@ See `npx material-theme-builder --help` for all available options.
 
 ## React
 
+The React bindings live on their own entry point, `material-theme-builder/react`.
+
 CSS variables are injected into the page:
 
 ```tsx
-import { Mcu } from "material-theme-builder";
+import { Mcu } from "material-theme-builder/react";
 
 <Mcu
   source="#0e1216"
@@ -112,7 +115,7 @@ import { Mcu } from "material-theme-builder";
 A hook is also provided:
 
 ```tsx
-import { useMcu } from "material-theme-builder";
+import { useMcu } from "material-theme-builder/react";
 
 const { initials, setMcuConfig, getMcuColor } = useMcu();
 
