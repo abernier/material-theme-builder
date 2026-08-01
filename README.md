@@ -421,7 +421,7 @@ Measured against the 31 shadcn variables, with source `#6750A4`:
 | ---------------- | ------------------ | ---------------------------------------------------------------------------------------------------- |
 | `source`         | 30/31              | all but `destructive` — M3's error palette is fixed unless `error` overrides it                      |
 | `primary`        | 30/31              | all but `destructive`                                                                                |
-| `contrast`       | 30/31              | all but `background`                                                                                 |
+| `contrast`       | 26–30/31           | all but `background` (reduced contrast also leaves `card`, `popover`, `muted`, `sidebar` alone)      |
 | `scheme`         | 29–30/31           | all but `destructive` (`fidelity` and `content` also leave the surface-derived ones alone: 20/31)    |
 | `neutral`        | 9/31               | the surface-derived ones: `background`, `card`, `popover`, `muted`, `sidebar`, and their foregrounds |
 | `secondary`      | 8/31               | `secondary`, `accent`, `sidebar-accent` (+ foregrounds), `chart-2`, `chart-5`                        |
@@ -431,10 +431,10 @@ Measured against the 31 shadcn variables, with source `#6750A4`:
 | `customColors`   | **0/31**           | none — shadcn's variable set is fixed, so no component reads them                                    |
 | `prefix`         | **0/31**           | none — the M3 variable names it prefixes are replaced by shadcn ones                                 |
 
-`contrast` selects which M3 scheme is read, snapping to the nearest of `0`,
-`0.5` and `1.0` — standard, medium-contrast or high-contrast. M3's reduced
-contrast (negative values, which `toCss()` does honour) has no scheme of its
-own, so it snaps to standard and has no effect here.
+`toShadcn()` reads the same colors `toCss()` emits, so every option lands here
+exactly as it does there — including the full `contrast` range, from `-1.0`
+(reduced) through `0` (standard) to `1.0` (increased), at full resolution
+rather than snapped to M3's three named levels.
 
 > [!WARNING]
 >

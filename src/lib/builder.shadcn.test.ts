@@ -120,24 +120,28 @@ describe("builder › toShadcn()", () => {
     expect(vibrant.dark.primary).not.toBe(tonalSpot.dark.primary);
   });
 
-  it("should honour each of the three contrast levels", () => {
+  it("should honour each contrast level", () => {
+    const reduced = builder(SOURCE, { contrast: -1 }).toShadcn();
     const standard = builder(SOURCE, { contrast: 0 }).toShadcn();
     const medium = builder(SOURCE, { contrast: 0.5 }).toShadcn();
     const high = builder(SOURCE, { contrast: 1 }).toShadcn();
 
     // The regression test for a silently-inert `contrast` option.
-    expect(medium.light).not.toEqual(standard.light);
-    expect(high.light).not.toEqual(medium.light);
-    expect(medium.dark).not.toEqual(standard.dark);
-    expect(high.dark).not.toEqual(medium.dark);
+    for (const [a, b] of [
+      [reduced, standard],
+      [standard, medium],
+      [medium, high],
+    ] as const) {
+      expect(a.light).not.toEqual(b.light);
+      expect(a.dark).not.toEqual(b.dark);
+    }
   });
 
-  it("should snap an intermediate contrast to the nearest of the three levels", () => {
-    const medium = builder(SOURCE, { contrast: 0.5 }).toShadcn();
-    const high = builder(SOURCE, { contrast: 1 }).toShadcn();
+  it("should honour an intermediate contrast level rather than snapping", () => {
+    const between = builder(SOURCE, { contrast: 0.6 }).toShadcn();
 
-    expect(builder(SOURCE, { contrast: 0.6 }).toShadcn()).toEqual(medium);
-    expect(builder(SOURCE, { contrast: 0.9 }).toShadcn()).toEqual(high);
+    expect(between).not.toEqual(builder(SOURCE, { contrast: 0.5 }).toShadcn());
+    expect(between).not.toEqual(builder(SOURCE, { contrast: 1 }).toShadcn());
   });
 
   it("should reflect a chromatic primary override", () => {

@@ -12,4 +12,8 @@ installed with the standard `shadcn` CLI.
 
 Unlike `toTailwind({ shadcn: true })`, which emits `var()` aliases requiring the
 M3 variables to already be on the page, the output stands alone. Both now share
-a single mapping table, so they cannot drift apart.
+a single mapping table, so neither can name a variable the other doesn't.
+
+Values come from the same merged colors `toCss()` emits, so every option —
+`contrast` included, across its full `-1.0`…`1.0` range — lands identically in
+both exporters.

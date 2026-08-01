@@ -1,7 +1,6 @@
 import { camelCase } from "lodash-es";
 
 import type { BuilderContext } from "./builder";
-import { buildJson } from "./builder.json";
 
 /**
  * shadcn CSS variable → M3 sys-color token mapping.
@@ -67,26 +66,7 @@ export type ShadcnTheme = {
   dark: Record<ShadcnVarName, string>;
 };
 
-// `toJson()` emits all six schemes at fixed contrast levels, so contrast is
-// expressed here by choosing *which* scheme to read rather than by varying the
-// values within one. M3 has no reduced-contrast scheme, so negative contrast
-// snaps to standard.
-const CONTRAST_SCHEMES = [
-  { level: 0, light: "light", dark: "dark" },
-  { level: 0.5, light: "light-medium-contrast", dark: "dark-medium-contrast" },
-  { level: 1, light: "light-high-contrast", dark: "dark-high-contrast" },
-] as const;
-
-// Intermediate contrast values snap to the nearest of the three levels.
-function selectSchemeKeys(contrast: number) {
-  return CONTRAST_SCHEMES.reduce((nearest, candidate) =>
-    Math.abs(candidate.level - contrast) < Math.abs(nearest.level - contrast)
-      ? candidate
-      : nearest,
-  );
-}
-
-// ─── sRGB hex → OKLCh ────────────────────────────────────────────────────
+// ─── sRGB → OKLCh ────────────────────────────────────────────────────────
 //
 // A fixed sRGB → linear → OKLab → OKLCh pipeline, in-repo rather than via a
 // color library: the package carries no color dependency beyond Material
@@ -105,11 +85,10 @@ function round(n: number) {
   return String(Number(n.toFixed(3)));
 }
 
-function hexToOklch(hex: string) {
-  const int = Number.parseInt(hex.replace("#", ""), 16);
-  const r = srgbToLinear(((int >> 16) & 0xff) / 255);
-  const g = srgbToLinear(((int >> 8) & 0xff) / 255);
-  const b = srgbToLinear((int & 0xff) / 255);
+function argbToOklch(argb: number) {
+  const r = srgbToLinear(((argb >> 16) & 0xff) / 255);
+  const g = srgbToLinear(((argb >> 8) & 0xff) / 255);
+  const b = srgbToLinear((argb & 0xff) / 255);
 
   const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
   const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
@@ -131,26 +110,18 @@ function hexToOklch(hex: string) {
 
 // ─── Exporter ────────────────────────────────────────────────────────────
 
-// Project one M3 scheme onto shadcn's variable set, converting to oklch.
-function toShadcnVars(
-  schemes: ReturnType<typeof buildJson>["schemes"],
-  schemeKey: string,
-) {
-  const scheme = schemes[schemeKey];
-  if (!scheme) {
-    throw new Error(
-      `Scheme '${schemeKey}' is missing from the JSON export. This is likely a bug in the implementation.`,
-    );
-  }
-
+// Project one mode's M3 colors onto shadcn's variable set, in oklch.
+// The mapping spells M3 tokens kebab-case (the CSS spelling); the merged
+// colors key them camelCase. This is the one place that bridges the two.
+function toShadcnVars(mergedColors: Record<string, number>) {
   const entries = SHADCN_MAPPING.map(([cssVar, m3Token]) => {
-    const hex = scheme[camelCase(m3Token)];
-    if (!hex) {
+    const argb = mergedColors[camelCase(m3Token)];
+    if (argb === undefined) {
       throw new Error(
         `M3 token '${m3Token}' is missing from the scheme, needed by '${cssVar}'. This is likely a bug in the implementation.`,
       );
     }
-    return [cssVar.slice(2), hexToOklch(hex)];
+    return [cssVar.slice(2), argbToOklch(argb)];
   });
 
   return Object.fromEntries(entries) as Record<ShadcnVarName, string>;
@@ -164,16 +135,18 @@ function toShadcnVars(
  * so it can be served as a `registry:theme` or `registry:base` item and
  * installed with the standard `shadcn` CLI.
  *
+ * Reads the same merged colors as `toCss()`, so `contrast` — and every other
+ * option — lands here exactly as it does there, at full resolution.
+ *
  * `customColors` and `prefix` have no effect here: shadcn's variable set is
  * fixed, so no component reads a custom color, and the mapping replaces the
  * prefixed M3 variable names with shadcn ones.
  */
 export function buildShadcn(ctx: BuilderContext): ShadcnTheme {
-  const { schemes } = buildJson(ctx);
-  const keys = selectSchemeKeys(ctx.contrast);
+  const { mergedColorsLight, mergedColorsDark } = ctx;
 
   return {
-    light: toShadcnVars(schemes, keys.light),
-    dark: toShadcnVars(schemes, keys.dark),
+    light: toShadcnVars(mergedColorsLight),
+    dark: toShadcnVars(mergedColorsDark),
   };
 }
