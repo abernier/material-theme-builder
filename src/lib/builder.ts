@@ -21,9 +21,12 @@ import { buildCss } from "./builder.css";
 import { buildFigmaTokens, buildFigmaVariables } from "./builder.figma";
 import { buildFlutter } from "./builder.flutter";
 import { buildJson } from "./builder.json";
+import { buildShadcn } from "./builder.shadcn";
 import { buildTailwind, type TailwindOptions } from "./builder.tailwind";
 
-// ─── Re-exports (Figma types defined in builder.figma.ts) ────────────────
+// ─── Re-exports (types defined alongside their exporter) ─────────────────
+
+export type { ShadcnTheme, ShadcnVarName } from "./builder.shadcn";
 
 export type {
   DtcgColorToken,
@@ -287,6 +290,7 @@ export type BuilderContext = {
   hexSource: string;
   prefix: string;
   scheme: SchemeName;
+  contrast: number;
   primary?: string;
   secondary?: string;
   tertiary?: string;
@@ -679,6 +683,7 @@ export function builder(
     hexSource,
     prefix,
     scheme,
+    contrast,
     primary,
     secondary,
     tertiary,
@@ -703,6 +708,7 @@ export function builder(
     toFigmaVariables: () => buildFigmaVariables(ctx),
     toFigmaTokens: () => buildFigmaTokens(ctx),
     toTailwind: (options?: TailwindOptions) => buildTailwind(ctx, options),
+    toShadcn: () => buildShadcn(ctx),
     toFlutter: () => buildFlutter(ctx),
     mergedColorsLight,
     mergedColorsDark,
