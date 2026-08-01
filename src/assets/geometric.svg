@@ -1,0 +1,14 @@
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="200" height="200" fill="#FAFAFA"/>
+  
+  <!-- Hexagons in different shades -->
+  <polygon points="100,20 130,35 130,65 100,80 70,65 70,35" fill="#FF6B6B"/>
+  <polygon points="50,70 80,85 80,115 50,130 20,115 20,85" fill="#E84A4A"/>
+  <polygon points="150,70 180,85 180,115 150,130 120,115 120,85" fill="#C92A2A"/>
+  
+  <!-- Triangular pattern -->
+  <polygon points="100,120 120,160 80,160" fill="#F06595"/>
+  <polygon points="60,140 80,180 40,180" fill="#D6336C"/>
+  <polygon points="140,140 160,180 120,180" fill="#A61E4D"/>
+</svg>

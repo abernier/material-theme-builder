@@ -1,0 +1,14 @@
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="200" height="200" fill="#E8E8E8"/>
+  
+  <!-- Abstract wavy shapes -->
+  <path d="M 0 50 Q 50 30 100 50 T 200 50 L 200 100 L 0 100 Z" fill="#20C997"/>
+  <path d="M 0 90 Q 50 70 100 90 T 200 90 L 200 140 L 0 140 Z" fill="#0CA678"/>
+  <path d="M 0 130 Q 50 110 100 130 T 200 130 L 200 180 L 0 180 Z" fill="#087F5B"/>
+  
+  <!-- Circles overlay -->
+  <circle cx="50" cy="40" r="15" fill="#FFD43B"/>
+  <circle cx="150" cy="120" r="20" fill="#FCC419"/>
+  <circle cx="100" cy="170" r="12" fill="#FAB005"/>
+</svg>

@@ -1,0 +1,16 @@
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="200" height="200" fill="#F0F0F0"/>
+  
+  <!-- Blue shapes (will map to primary palette) -->
+  <rect x="20" y="20" width="50" height="50" fill="#4A90E2"/>
+  <rect x="130" y="20" width="50" height="50" fill="#357ABD"/>
+  
+  <!-- Green shapes (will map to secondary palette) -->
+  <circle cx="45" cy="120" r="25" fill="#7ED321"/>
+  <circle cx="155" cy="120" r="25" fill="#5FB304"/>
+  
+  <!-- Purple shapes (will map to tertiary palette) -->
+  <polygon points="100,160 120,180 80,180" fill="#9013FE"/>
+  <polygon points="100,145 115,165 85,165" fill="#7B11CA"/>
+</svg>
