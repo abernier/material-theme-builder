@@ -7,11 +7,11 @@ import tsconfigPaths from "vite-tsconfig-paths";
 const dir = import.meta.dirname;
 
 export default defineConfig({
-  root: resolve(dir, "src"),
+  root: dir,
   plugins: [
     react(),
     viteSingleFile(),
-    tsconfigPaths({ root: resolve(dir, "..") }),
+    tsconfigPaths({ root: resolve(dir, "../..") }),
   ],
   build: {
     outDir: resolve(dir, "dist"),

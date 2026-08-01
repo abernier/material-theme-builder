@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { Fab } from "../../src/components/m3/Fab";
-import { FlowfieldSt } from "../../src/Flowfield.stories";
-import { FlowfieldScene } from "../../src/Flowfield.stories.helpers";
-import { Mcu } from "../../src/Mcu";
-import { useMcu } from "../../src/Mcu.context";
+import { Fab } from "../components/m3/Fab";
+import { FlowfieldSt } from "../Flowfield.stories";
+import { FlowfieldScene } from "../Flowfield.stories.helpers";
+import { Mcu } from "../Mcu";
+import { useMcu } from "../Mcu.context";
 
-import { TooltipProvider } from "../../src/components/ui/tooltip";
-import "../../src/styles/globals.css";
+import { TooltipProvider } from "../components/ui/tooltip";
+import "../styles/globals.css";
 import "./main.css";
 
 function SyncButton() {
@@ -73,4 +73,5 @@ function App() {
   );
 }
 
-createRoot(document.getElementById("root")!).render(<App />);
+const root = document.getElementById("root");
+if (root) createRoot(root).render(<App />);

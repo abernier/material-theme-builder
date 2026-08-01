@@ -466,7 +466,7 @@ $ pnpm i
 
 1. `pnpm run build-figma`
 2. In Figma: Plugins → Development → Import plugin from manifest…
-3. Select `figma-plugin/manifest.json`
+3. Select `src/figma-plugin/manifest.json`
 
 ## Validation
 
