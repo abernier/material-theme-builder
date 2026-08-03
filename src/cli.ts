@@ -7,6 +7,7 @@
 // ```sh
 // $ node dist/cli.js '#6750A4'
 // $ node dist/cli.js '#6750A4' --format css
+// $ node dist/cli.js '#6750A4' --format shadcn
 // ```
 
 import * as fs from "node:fs";
@@ -31,6 +32,39 @@ const customColorSchema = z.array(
     blend: z.boolean().default(DEFAULT_BLEND),
   }),
 ) satisfies z.ZodType<HexCustomColor[]>;
+
+type Theme = ReturnType<typeof builder>;
+
+function writeFigmaTokens(theme: Theme, outputDir: string) {
+  fs.mkdirSync(outputDir, { recursive: true });
+  for (const [filename, content] of Object.entries(theme.toFigmaTokens())) {
+    const filePath = path.join(outputDir, filename);
+    fs.writeFileSync(filePath, JSON.stringify(content, null, 2) + "\n");
+    console.error(`wrote ${filePath}`);
+  }
+}
+
+function writeOutput(
+  theme: Theme,
+  opts: { format: string; output?: string; shadcn?: boolean },
+) {
+  const json = (value: unknown) => JSON.stringify(value, null, 2) + "\n";
+
+  switch (opts.format) {
+    case "css":
+      return process.stdout.write(theme.toCss());
+    case "tailwind":
+      return process.stdout.write(theme.toTailwind({ shadcn: opts.shadcn }));
+    case "shadcn":
+      return process.stdout.write(json(theme.toShadcn()));
+    case "flutter":
+      return process.stdout.write(theme.toFlutter());
+    case "figma":
+      return writeFigmaTokens(theme, opts.output ?? "material-theme");
+    default:
+      return process.stdout.write(json(theme.toJson()));
+  }
+}
 
 const program = new Command();
 
@@ -61,13 +95,13 @@ program
   )
   .option(
     "--format <type>",
-    "Output format: json, css, figma, tailwind, or flutter",
+    "Output format: json, css, figma, tailwind, shadcn, or flutter",
     "figma",
   )
   .option("--output <dir>", "Output directory (required for figma format)")
   .option(
     "--shadcn",
-    "Append shadcn CSS variable remapping (with --format tailwind)",
+    "Append the shadcn var() alias block to --format tailwind (for concrete values, use --format shadcn)",
   )
   .option(
     "--prefix <string>",
@@ -75,6 +109,15 @@ program
     DEFAULT_PREFIX,
   )
   .action((source: string, opts) => {
+    // --shadcn only ever modified the tailwind output; silently dropping it
+    // elsewhere is now a likelier mistake, --format shadcn being one keystroke away.
+    if (opts.shadcn && opts.format !== "tailwind") {
+      console.error(
+        "Error: --shadcn only applies to --format tailwind. For concrete color values, use --format shadcn.",
+      );
+      process.exit(1);
+    }
+
     let customColors: HexCustomColor[] = [];
     if (opts.customColors) {
       const result = customColorSchema.safeParse(JSON.parse(opts.customColors));
@@ -98,24 +141,7 @@ program
       prefix: opts.prefix,
     });
 
-    if (opts.format === "css") {
-      process.stdout.write(result.toCss());
-    } else if (opts.format === "tailwind") {
-      process.stdout.write(result.toTailwind({ shadcn: opts.shadcn }));
-    } else if (opts.format === "flutter") {
-      process.stdout.write(result.toFlutter());
-    } else if (opts.format === "figma") {
-      const outputDir = opts.output ?? "material-theme";
-      fs.mkdirSync(outputDir, { recursive: true });
-      const files = result.toFigmaTokens();
-      for (const [filename, content] of Object.entries(files)) {
-        const filePath = path.join(outputDir, filename);
-        fs.writeFileSync(filePath, JSON.stringify(content, null, 2) + "\n");
-        console.error(`wrote ${filePath}`);
-      }
-    } else {
-      process.stdout.write(JSON.stringify(result.toJson(), null, 2) + "\n");
-    }
+    writeOutput(result, opts);
   });
 
 program.parse();
