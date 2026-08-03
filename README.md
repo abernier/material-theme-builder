@@ -372,6 +372,29 @@ Or simply:
 
 ## shadcn
 
+Two ways to get a shadcn project themed with M3 colors. Same mapping table
+underneath, same result on screen — but they are distributed differently, so
+pick one:
+
+|             | [`toShadcn()`](#toshadcn)                                    | [`toTailwind({ shadcn: true })`](#remapping-the-css-variables-instead)  |
+| ----------- | ------------------------------------------------------------ | ----------------------------------------------------------------------- |
+| emits       | `background: "oklch(0.983 0.012 317.743)"`                   | `--background: var(--md-sys-color-surface)`                             |
+| needs       | nothing                                                      | the M3 variables already on the page (`toCss()` or `<Mcu>`)             |
+| modes       | `{ light, dark }`, separate                                  | one `:root, .dark` block — the M3 variables underneath do the switching |
+| at runtime  | frozen at build time                                         | **live** — `<Mcu source="#FF5722">` and every shadcn color follows      |
+| consumed by | `npx shadcn init --preset <url>`, the registry, any consumer | your own CSS, in your own app                                           |
+
+In short: **shipping colors to people who don't install this library →
+`toShadcn()`**. **Theming your own app, especially if the source color can change
+→ the alias block.**
+
+> [!CAUTION]
+>
+> Don't ship both. Concrete values and `var()` aliases set the same custom
+> properties, so whichever comes last in the cascade silently wins.
+
+### `toShadcn()`
+
 `toShadcn()` returns concrete color values, split by mode and keyed by bare
 [shadcn variable name](https://ui.shadcn.com/docs/theming#list-of-variables) —
 the exact shape shadcn's `cssVars` field expects:
@@ -450,6 +473,12 @@ rather than snapped to M3's three named levels.
 If the M3 variables are already on the page (via `toCss()` or `<Mcu>`), you can
 skip the concrete values and just alias shadcn's variables to them — that is
 what `toTailwind({ shadcn: true })` emits.
+
+The indirection is the point: change the source color at runtime and every
+shadcn color follows, with no regeneration. It is also why a single
+`:root, .dark` block suffices — the M3 variables it points at are already
+mode-aware. And it is why this output can't be handed to the `shadcn` CLI,
+which needs values it can install, not references to variables it doesn't ship.
 
 Pre-requisites:
 
