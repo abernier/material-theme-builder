@@ -404,6 +404,12 @@ All 31 variables, both modes, in `oklch()` like shadcn's own registry themes —
 nothing falls back to an unthemed default. Non-color fields (`radius`, fonts)
 are yours to compose.
 
+Also from the [CLI](#cli):
+
+```sh
+$ npx material-theme-builder '#6750A4' --format shadcn
+```
+
 ### Serving it as a registry item
 
 `--preset` accepts any URL, so a

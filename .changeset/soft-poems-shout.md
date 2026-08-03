@@ -17,3 +17,7 @@ a single mapping table, so neither can name a variable the other doesn't.
 Values come from the same merged colors `toCss()` emits, so every option —
 `contrast` included, across its full `-1.0`…`1.0` range — lands identically in
 both exporters.
+
+Available from the CLI as `--format shadcn`. The existing `--shadcn` flag is
+unchanged, but now errors instead of being silently ignored when combined with
+a format other than `tailwind`.
