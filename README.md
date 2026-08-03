@@ -137,6 +137,16 @@ import { Mtb, ThemePanel } from "material-theme-builder/react";
 </Mtb>;
 ```
 
+### Bookmarklet
+
+Try the `ThemePanel` on **any shadcn-based site** — no install. Create a bookmark with this URL:
+
+```
+javascript:(()=>{var s=document.createElement("script");s.src="https://cdn.jsdelivr.net/npm/material-theme-builder@3/dist/bookmarklet.global.js";document.body.append(s)})()
+```
+
+Click it on a shadcn site (try [ui.shadcn.com/create](https://ui.shadcn.com/create)): the panel mounts bottom-right and every tweak re-themes the page live, by forcing the [shadcn variables](https://ui.shadcn.com/docs/theming#list-of-variables) (same mapping as `toShadcn()`) on the page — same-origin preview iframes included. The panel itself lives in a shadow root and is styled by the very variables it edits. Click the bookmarklet again — or its ✕ button — to restore the site untouched.
+
 ## Tailwind
 
 Compatible through [theme variables](https://tailwindcss.com/docs/theme):
