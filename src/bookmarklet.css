@@ -24,6 +24,7 @@
 @source "./bookmarklet.tsx";
 @source "./components/ui/button.tsx";
 @source "./components/ui/button-group.tsx";
+@source "./components/ui/popover.tsx";
 @source "./components/ui/separator.tsx";
 @source "./components/ui/tooltip.tsx";
 

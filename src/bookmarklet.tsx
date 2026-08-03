@@ -9,7 +9,7 @@
  * panel is styled by the very shadcn variables it edits.
  */
 
-import { ArrowDownToLine, Check, Terminal, X } from "lucide-react";
+import { ArrowDownToLine, Check, Info, Terminal, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
@@ -19,13 +19,19 @@ import cssText from "./bookmarklet.css?raw";
 import { Button } from "./components/ui/button";
 import { ButtonGroup } from "./components/ui/button-group";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "./components/ui/popover";
+import {
   Tooltip,
   TooltipContent,
-  TooltipPortalContainerContext,
   TooltipProvider,
   TooltipTrigger,
 } from "./components/ui/tooltip";
+import { Flowfield, type Peak } from "./Flowfield";
 import { builder, type MtbConfig } from "./lib/builder";
+import { PortalContainerContext } from "./lib/portalContainer";
 import { shadcnStyleSheet } from "./lib/shadcnStyle";
 import { Mtb } from "./Mtb";
 import { useMtb } from "./Mtb.context";
@@ -145,9 +151,90 @@ function installCommand(config: MtbConfig) {
   return `npx shadcn@latest add "data:application/json;base64,${b64}"`;
 }
 
+const REPO_URL = "https://github.com/abernier/material-theme-builder";
+
+/*
+ * The flowfield behind the About popover, painted with the host page's own
+ * shadcn variables — they inherit through the shadow boundary, so the
+ * backdrop is itself a live preview of the theme being edited, dark mode
+ * included. Base thresholds stay below the peaks', as in Flowfield's own
+ * defaults: the base grid is the terrain, each peak paints over it.
+ */
+const FLOWFIELD_BASE_COLORS: Record<number, string> = {
+  100: "var(--popover)",
+  200: "var(--muted)",
+  300: "var(--accent)",
+  400: "var(--secondary)",
+  500: "var(--border)",
+};
+
+const FLOWFIELD_PEAKS: Peak[] = [
+  { id: "primary", colors: { 600: "var(--chart-4)", 900: "var(--chart-1)" } },
+  { id: "secondary", colors: { 600: "var(--chart-5)", 900: "var(--chart-2)" } },
+  { id: "tertiary", colors: { 600: "var(--chart-3)", 900: "var(--primary)" } },
+];
+
 /**
- * The action cluster next to the panel: copy the shadcn CLI install
- * command, download the theme as a registry item, close.
+ * The About popover — what this thing is and where it comes from, over an
+ * animated flowfield backdrop.
+ */
+function InfoPopover() {
+  return (
+    <Popover>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="icon" aria-label="About">
+              <Info />
+            </Button>
+          </PopoverTrigger>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">About</TooltipContent>
+      </Tooltip>
+
+      <PopoverContent
+        side="top"
+        align="end"
+        className="relative overflow-hidden p-0"
+      >
+        {/* Dimmed — at full strength the peaks swallow the text, more so in
+            dark mode where they are the lightest thing on screen. */}
+        <div
+          className="absolute inset-0 opacity-60 dark:opacity-40"
+          aria-hidden="true"
+        >
+          <Flowfield
+            peaks={FLOWFIELD_PEAKS}
+            baseColors={FLOWFIELD_BASE_COLORS}
+            gridScale={8}
+          />
+        </div>
+
+        {/* Later sibling: paints over the backdrop, no z-index needed. */}
+        <div className="relative flex flex-col gap-1.5 p-4">
+          <p className="text-sm font-medium">Material Theme Builder</p>
+          <p className="text-xs text-muted-foreground">
+            Rebuilds this page's shadcn theme from a single source color, the
+            Material&nbsp;You way. Tweak it, grab the CSS or the install
+            command, close to restore the site.
+          </p>
+          <a
+            href={REPO_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="text-xs font-medium underline underline-offset-2"
+          >
+            github.com/abernier/material-theme-builder
+          </a>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+/**
+ * The action cluster next to the panel: about, download the theme as a
+ * globals.css snippet, copy the shadcn CLI install command, close.
  */
 function Actions({ onClose }: { onClose: () => void }) {
   const { mcuConfig } = useMtb();
@@ -184,6 +271,10 @@ function Actions({ onClose }: { onClose: () => void }) {
 
   return (
     <>
+      <ButtonGroup>
+        <InfoPopover />
+      </ButtonGroup>
+
       <ButtonGroup>
         <Tooltip>
           <TooltipTrigger asChild>
@@ -249,17 +340,19 @@ function App({
   onClose: () => void;
 }) {
   return (
-    <TooltipPortalContainerContext.Provider value={container}>
+    <PortalContainerContext.Provider value={container}>
       <TooltipProvider>
         <Mtb source={source}>
           <ApplyToHost />
           <div className="flex items-center gap-1">
-            <ThemePanel />
+            {/* No custom colors: they map to no shadcn variable, so on a
+                host page they would be a control that does nothing. */}
+            <ThemePanel customColors={false} />
             <Actions onClose={onClose} />
           </div>
         </Mtb>
       </TooltipProvider>
-    </TooltipPortalContainerContext.Provider>
+    </PortalContainerContext.Provider>
   );
 }
 

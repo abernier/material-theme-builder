@@ -1,17 +1,8 @@
 import { Tooltip as TooltipPrimitive } from "radix-ui";
 import * as React from "react";
 
+import { PortalContainerContext } from "@/lib/portalContainer";
 import { cn } from "@/lib/utils";
-
-/**
- * Where tooltip portals land — `null` (the default) portals to
- * `document.body`, Radix's own default. The bookmarklet provides a node
- * inside its shadow root instead: content portalled to `document.body`
- * would escape the shadow boundary and lose every style.
- */
-const TooltipPortalContainerContext = React.createContext<HTMLElement | null>(
-  null,
-);
 
 function TooltipProvider({
   delayDuration = 0,
@@ -44,7 +35,7 @@ function TooltipContent({
   children,
   ...props
 }: React.ComponentProps<typeof TooltipPrimitive.Content>) {
-  const container = React.useContext(TooltipPortalContainerContext);
+  const container = React.useContext(PortalContainerContext);
   return (
     <TooltipPrimitive.Portal container={container ?? undefined}>
       <TooltipPrimitive.Content
@@ -63,10 +54,4 @@ function TooltipContent({
   );
 }
 
-export {
-  Tooltip,
-  TooltipContent,
-  TooltipPortalContainerContext,
-  TooltipProvider,
-  TooltipTrigger,
-};
+export { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger };
