@@ -76,6 +76,7 @@ function Pill({
  */
 export function ThemePanel({
   customColors = true,
+  size = "default",
   ...props
 }: {
   /**
@@ -84,8 +85,11 @@ export function ThemePanel({
    * writes the core shadcn variables, which no custom color maps to.
    */
   customColors?: boolean;
+  /** Control scale — `"lg"` for an overlay meant to be hit on any page. */
+  size?: "default" | "lg";
 } & ComponentProps<typeof ButtonGroup>) {
   const { initials, setMcuConfig, allPalettes } = useMtb();
+  const iconSize = size === "lg" ? "icon-lg" : "icon";
 
   const [config, setConfig] = useState<MtbConfig>(() => initials);
 
@@ -131,7 +135,7 @@ export function ThemePanel({
         <TooltipTrigger asChild>
           <Button
             variant="outline"
-            size="icon"
+            size={iconSize}
             className="relative"
             onClick={() => setExpanded((v) => !v)}
             onKeyDown={(e) => {
@@ -182,7 +186,7 @@ export function ThemePanel({
                 <TooltipTrigger asChild>
                   <Button
                     variant="outline"
-                    size="icon"
+                    size={iconSize}
                     className="relative"
                     onClick={clickColorInput}
                   >
@@ -226,7 +230,7 @@ export function ThemePanel({
                   <TooltipTrigger asChild>
                     <Button
                       variant="outline"
-                      size="icon"
+                      size={iconSize}
                       className="relative"
                       onClick={clickColorInput}
                     >
@@ -271,7 +275,7 @@ export function ThemePanel({
                 <TooltipTrigger asChild>
                   <Button
                     variant="outline"
-                    size="icon"
+                    size={iconSize}
                     className="relative"
                     onClick={clickColorInput}
                   >
@@ -317,11 +321,13 @@ export function ThemePanel({
       <ContrastToggle
         contrast={config.contrast}
         onChange={(v) => update({ contrast: v })}
+        size={iconSize}
       />
 
       <SchemeToggle
         scheme={config.scheme}
         onChange={(v) => update({ scheme: v })}
+        size={size}
       />
     </ButtonGroup>
   );
@@ -339,9 +345,11 @@ const CONTRAST_ICON_SIZE: Record<number, string> = {
 function ContrastToggle({
   contrast,
   onChange,
+  size,
 }: {
   contrast?: number;
   onChange: (v: number) => void;
+  size: ComponentProps<typeof Button>["size"];
 }) {
   const current = contrast ?? 0;
   const currentLevel =
@@ -351,7 +359,7 @@ function ContrastToggle({
       <TooltipTrigger asChild>
         <Button
           variant="outline"
-          size="icon"
+          size={size}
           onClick={() => {
             const i = CONTRAST_LEVELS.findIndex((l) => l.value === current);
             const next =
@@ -376,9 +384,11 @@ function ContrastToggle({
 function SchemeToggle({
   scheme,
   onChange,
+  size,
 }: {
   scheme?: (typeof schemeNames)[number];
   onChange: (v: (typeof schemeNames)[number]) => void;
+  size: ComponentProps<typeof Button>["size"];
 }) {
   const current = scheme ?? "tonalSpot";
   const i = schemeNames.indexOf(current);
@@ -388,6 +398,7 @@ function SchemeToggle({
       <TooltipTrigger asChild>
         <Button
           variant="outline"
+          size={size}
           onClick={() =>
             onChange(
               schemeNames[(i + 1) % schemeNames.length] ?? schemeNames[0],

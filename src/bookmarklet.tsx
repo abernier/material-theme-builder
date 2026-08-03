@@ -185,7 +185,7 @@ function InfoPopover() {
         <Tooltip>
           <TooltipTrigger asChild>
             <PopoverTrigger asChild>
-              <Button variant="outline" size="icon" aria-label="About">
+              <Button variant="outline" size="icon-lg" aria-label="About">
                 <Info />
               </Button>
             </PopoverTrigger>
@@ -282,7 +282,7 @@ function Actions({ onClose }: { onClose: () => void }) {
           <TooltipTrigger asChild>
             <Button
               variant="outline"
-              size="icon"
+              size="icon-lg"
               aria-label="Download theme"
               onClick={downloadTheme}
             >
@@ -298,7 +298,7 @@ function Actions({ onClose }: { onClose: () => void }) {
           <TooltipTrigger asChild>
             <Button
               variant="outline"
-              size="icon"
+              size="icon-lg"
               aria-label="Copy install command"
               onClick={copyCommand}
             >
@@ -318,7 +318,7 @@ function Actions({ onClose }: { onClose: () => void }) {
           <TooltipTrigger asChild>
             <Button
               variant="outline"
-              size="icon"
+              size="icon-lg"
               aria-label="Close"
               onClick={onClose}
             >
@@ -351,7 +351,7 @@ function App({
 
             {/* No custom colors: they map to no shadcn variable, so on a
                 host page they would be a control that does nothing. */}
-            <ThemePanel customColors={false} />
+            <ThemePanel customColors={false} size="lg" />
             <Actions onClose={onClose} />
           </div>
         </Mtb>
@@ -363,8 +363,13 @@ function App({
 function open() {
   const host = document.createElement("div") as MtbHost;
   host.id = HOST_ID;
+  // Centered at the bottom: a full-width strip that centers the panel,
+  // rather than `left:50%` + a translate — a transformed ancestor would
+  // become the containing block of the fixed-positioned Radix popper
+  // inside the shadow root. Click-through, since the strip spans the page.
   host.style.cssText =
-    "position:fixed;bottom:16px;right:16px;z-index:2147483647;";
+    "position:fixed;bottom:16px;left:0;right:0;display:flex;" +
+    "justify-content:center;pointer-events:none;z-index:2147483647;";
   const shadow = host.attachShadow({ mode: "open" });
 
   const style = document.createElement("style");
@@ -372,6 +377,8 @@ function open() {
   shadow.appendChild(style);
 
   const wrapper = document.createElement("div");
+  // Re-enables what the click-through host strip turned off.
+  wrapper.style.pointerEvents = "auto";
   shadow.appendChild(wrapper);
 
   // Mirror the page's `.dark` class onto the in-shadow wrapper: compiled
