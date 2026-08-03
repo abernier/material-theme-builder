@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { Flowfield } from "./Flowfield";
 import { FlowfieldScene } from "./Flowfield.stories.helpers";
-import { Mcu } from "./Mcu";
+import { Mtb } from "./Mtb";
 
 const customColor1 = "#00D68A";
 const customColor2 = "#FFE16B";
@@ -40,7 +40,7 @@ export const FlowfieldSt: StoryObj<typeof Flowfield> = {
     smoothing: { control: { type: "range", min: 0, max: 10, step: 1 } },
   },
   render: (args) => (
-    <Mcu
+    <Mtb
       source="#769CDF"
       customColors={[
         { name: "myCustomColor1", hex: customColor1, blend: true },
@@ -50,6 +50,6 @@ export const FlowfieldSt: StoryObj<typeof Flowfield> = {
       <div className="h-dvh">
         <FlowfieldScene {...args} />
       </div>
-    </Mcu>
+    </Mtb>
   ),
 };

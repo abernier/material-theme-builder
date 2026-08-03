@@ -3,8 +3,8 @@ import { createRoot } from "react-dom/client";
 import { Fab } from "../../src/components/m3/Fab";
 import { FlowfieldSt } from "../../src/Flowfield.stories";
 import { FlowfieldScene } from "../../src/Flowfield.stories.helpers";
-import { Mcu } from "../../src/Mcu";
 import { useMcu } from "../../src/Mcu.context";
+import { Mtb } from "../../src/Mtb";
 
 import { TooltipProvider } from "../../src/components/ui/tooltip";
 import "../../src/styles/globals.css";
@@ -62,13 +62,13 @@ function SyncButton() {
 function App() {
   return (
     <TooltipProvider>
-      <Mcu source="#769CDF" contrast={0}>
+      <Mtb source="#769CDF" contrast={0}>
         <FlowfieldScene {...FlowfieldSt.args} />
         <SyncButton />
         {/* <Layout notext noExport>
           <Scheme />
         </Layout> */}
-      </Mcu>
+      </Mtb>
     </TooltipProvider>
   );
 }

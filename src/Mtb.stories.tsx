@@ -3,15 +3,15 @@ import { useMemo } from "react";
 import { allModes } from "../.storybook/modes";
 import { type McuConfig, schemeNames } from "./lib/builder";
 import { recolorizeSvg } from "./lib/recolorizeSvg";
-import { Mcu } from "./Mcu";
 import { useMcu } from "./Mcu.context";
-import { Layout, Scheme, Shades, TailwindScheme } from "./Mcu.stories.helpers";
+import { Mtb } from "./Mtb";
+import { Layout, Scheme, Shades, TailwindScheme } from "./Mtb.stories.helpers";
 
 import exampleSvg from "./assets/example.svg?raw";
 
 // More on how to set up stories at: https://storybook.js.org/docs/writing-stories#default-export
 const meta = {
-  component: Mcu,
+  component: Mtb,
   parameters: {
     // layout: "centered",
     chromatic: {
@@ -74,7 +74,7 @@ const meta = {
       table: { disable: true }, // hide
     },
   },
-} satisfies Meta<typeof Mcu>;
+} satisfies Meta<typeof Mtb>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
@@ -92,13 +92,13 @@ export const St2: Story = {
     contrast: 0,
   },
   render: (args) => (
-    <Mcu {...args}>
+    <Mtb {...args}>
       <Layout notext>
         <Scheme customColors={args.customColors}>
           <Shades customColors={args.customColors} noTitle />
         </Scheme>
       </Layout>
-    </Mcu>
+    </Mtb>
   ),
 };
 
@@ -108,7 +108,7 @@ export const St1: Story = {
     source: "#769CDF",
   },
   render: (args) => (
-    <Mcu {...args}>
+    <Mtb {...args}>
       <Layout>
         <Scheme
           theme="light"
@@ -123,7 +123,7 @@ export const St1: Story = {
         />
         <Shades customColors={args.customColors} />
       </Layout>
-    </Mcu>
+    </Mtb>
   ),
 };
 
@@ -142,7 +142,7 @@ export const MonochromeSt: Story = {
     scheme: "monochrome",
   },
   render: (args) => (
-    <Mcu {...args}>
+    <Mtb {...args}>
       <Layout>
         <Scheme
           theme="light"
@@ -157,7 +157,7 @@ export const MonochromeSt: Story = {
         />
         <Shades customColors={args.customColors} />
       </Layout>
-    </Mcu>
+    </Mtb>
   ),
 };
 
@@ -168,7 +168,7 @@ export const NeutralSt: Story = {
     scheme: "neutral",
   },
   render: (args) => (
-    <Mcu {...args}>
+    <Mtb {...args}>
       <Layout>
         <Scheme
           theme="light"
@@ -183,7 +183,7 @@ export const NeutralSt: Story = {
         />
         <Shades customColors={args.customColors} />
       </Layout>
-    </Mcu>
+    </Mtb>
   ),
 };
 
@@ -194,7 +194,7 @@ export const VibrantSt: Story = {
     scheme: "vibrant",
   },
   render: (args) => (
-    <Mcu {...args}>
+    <Mtb {...args}>
       <Layout>
         <Scheme
           theme="light"
@@ -209,7 +209,7 @@ export const VibrantSt: Story = {
         />
         <Shades customColors={args.customColors} />
       </Layout>
-    </Mcu>
+    </Mtb>
   ),
 };
 
@@ -220,7 +220,7 @@ export const ExpressiveSt: Story = {
     scheme: "expressive",
   },
   render: (args) => (
-    <Mcu {...args}>
+    <Mtb {...args}>
       <Layout>
         <Scheme
           theme="light"
@@ -235,7 +235,7 @@ export const ExpressiveSt: Story = {
         />
         <Shades customColors={args.customColors} />
       </Layout>
-    </Mcu>
+    </Mtb>
   ),
 };
 
@@ -246,7 +246,7 @@ export const FidelitySt: Story = {
     scheme: "fidelity",
   },
   render: (args) => (
-    <Mcu {...args}>
+    <Mtb {...args}>
       <Layout>
         <Scheme
           theme="light"
@@ -261,7 +261,7 @@ export const FidelitySt: Story = {
         />
         <Shades customColors={args.customColors} />
       </Layout>
-    </Mcu>
+    </Mtb>
   ),
 };
 
@@ -272,7 +272,7 @@ export const ContentSt: Story = {
     scheme: "content",
   },
   render: (args) => (
-    <Mcu {...args}>
+    <Mtb {...args}>
       <Layout>
         <Scheme
           theme="light"
@@ -287,7 +287,7 @@ export const ContentSt: Story = {
         />
         <Shades customColors={args.customColors} />
       </Layout>
-    </Mcu>
+    </Mtb>
   ),
 };
 
@@ -306,7 +306,7 @@ export const ContrastLowSt: Story = {
     contrast: -1,
   },
   render: (args) => (
-    <Mcu {...args}>
+    <Mtb {...args}>
       <Layout>
         <Scheme
           theme="light"
@@ -321,7 +321,7 @@ export const ContrastLowSt: Story = {
         />
         <Shades customColors={args.customColors} />
       </Layout>
-    </Mcu>
+    </Mtb>
   ),
 };
 
@@ -332,7 +332,7 @@ export const ContrastMediumSt: Story = {
     contrast: 0,
   },
   render: (args) => (
-    <Mcu {...args}>
+    <Mtb {...args}>
       <Layout>
         <Scheme
           theme="light"
@@ -347,7 +347,7 @@ export const ContrastMediumSt: Story = {
         />
         <Shades customColors={args.customColors} />
       </Layout>
-    </Mcu>
+    </Mtb>
   ),
 };
 
@@ -358,7 +358,7 @@ export const ContrastHighSt: Story = {
     contrast: 1,
   },
   render: (args) => (
-    <Mcu {...args}>
+    <Mtb {...args}>
       <Layout>
         <Scheme
           theme="light"
@@ -373,7 +373,7 @@ export const ContrastHighSt: Story = {
         />
         <Shades customColors={args.customColors} />
       </Layout>
-    </Mcu>
+    </Mtb>
   ),
 };
 
@@ -392,7 +392,7 @@ export const PrimarySt: Story = {
     primary: "#cab337",
   },
   render: (args) => (
-    <Mcu {...args}>
+    <Mtb {...args}>
       <Layout>
         <Scheme
           theme="light"
@@ -407,7 +407,7 @@ export const PrimarySt: Story = {
         />
         <Shades customColors={args.customColors} />
       </Layout>
-    </Mcu>
+    </Mtb>
   ),
 };
 
@@ -421,7 +421,7 @@ export const PrimarySecondarySt: Story = {
     secondary: "#b03a3a",
   },
   render: (args) => (
-    <Mcu {...args}>
+    <Mtb {...args}>
       <Layout>
         <Scheme
           theme="light"
@@ -436,7 +436,7 @@ export const PrimarySecondarySt: Story = {
         />
         <Shades customColors={args.customColors} />
       </Layout>
-    </Mcu>
+    </Mtb>
   ),
 };
 
@@ -451,7 +451,7 @@ export const PrimarySecondaryTertiarySt: Story = {
     tertiary: "#2138d2",
   },
   render: (args) => (
-    <Mcu {...args}>
+    <Mtb {...args}>
       <Layout>
         <Scheme
           theme="light"
@@ -466,7 +466,7 @@ export const PrimarySecondaryTertiarySt: Story = {
         />
         <Shades customColors={args.customColors} />
       </Layout>
-    </Mcu>
+    </Mtb>
   ),
 };
 
@@ -482,7 +482,7 @@ export const PrimarySecondaryTertiaryErrorSt: Story = {
     error: "#479200",
   },
   render: (args) => (
-    <Mcu {...args}>
+    <Mtb {...args}>
       <Layout>
         <Scheme
           theme="light"
@@ -497,7 +497,7 @@ export const PrimarySecondaryTertiaryErrorSt: Story = {
         />
         <Shades customColors={args.customColors} />
       </Layout>
-    </Mcu>
+    </Mtb>
   ),
 };
 
@@ -514,7 +514,7 @@ export const PrimarySecondaryTertiaryErrorNeutralSt: Story = {
     neutral: "#957FF1",
   },
   render: (args) => (
-    <Mcu {...args}>
+    <Mtb {...args}>
       <Layout>
         <Scheme
           theme="light"
@@ -529,7 +529,7 @@ export const PrimarySecondaryTertiaryErrorNeutralSt: Story = {
         />
         <Shades customColors={args.customColors} />
       </Layout>
-    </Mcu>
+    </Mtb>
   ),
 };
 
@@ -547,7 +547,7 @@ export const PrimarySecondaryTertiaryErrorNeutralNeutralVariantSt: Story = {
     neutralVariant: "#007EDF",
   },
   render: (args) => (
-    <Mcu {...args}>
+    <Mtb {...args}>
       <Layout>
         <Scheme
           theme="light"
@@ -562,7 +562,7 @@ export const PrimarySecondaryTertiaryErrorNeutralNeutralVariantSt: Story = {
         />
         <Shades customColors={args.customColors} />
       </Layout>
-    </Mcu>
+    </Mtb>
   ),
 };
 
@@ -582,9 +582,9 @@ export const PrimarySecondaryTertiaryErrorNeutralNeutralVariantSt: Story = {
 //       colorMatch: true,
 //     },
 //     render: (args) => (
-//       <Mcu {...args}>
+//       <Mtb {...args}>
 //         <Bar customColors={args.customColors} />
-//       </Mcu>
+//       </Mtb>
 //     ),
 //   };
 
@@ -632,9 +632,9 @@ export const TailwindSt: Story = {
   name: "Tailwind",
   args: CustomColorsSt.args,
   render: (args) => (
-    <Mcu {...args}>
+    <Mtb {...args}>
       <TailwindScheme />
-    </Mcu>
+    </Mtb>
   ),
 };
 
@@ -730,7 +730,7 @@ export const RecolorizeSvgSt1: Story = {
     source: "#769CDF",
   },
   render: (args) => (
-    <Mcu {...args}>
+    <Mtb {...args}>
       <Scene
         customColors={args.customColors}
         // includedPalettesNames={[
@@ -740,7 +740,7 @@ export const RecolorizeSvgSt1: Story = {
         // ]}
         excludedPalettesNames={["error"]}
       />
-    </Mcu>
+    </Mtb>
   ),
 };
 
@@ -762,7 +762,7 @@ export const RecolorizeSvgSt2: Story = {
     ],
   },
   render: (args) => (
-    <Mcu {...args}>
+    <Mtb {...args}>
       <Scene
         customColors={args.customColors}
         // includedPalettesNames={[
@@ -772,6 +772,6 @@ export const RecolorizeSvgSt2: Story = {
         // ]}
         excludedPalettesNames={["error"]}
       />
-    </Mcu>
+    </Mtb>
   ),
 };

@@ -4,8 +4,8 @@ import { type ComponentProps } from "react";
 import { ExportButton } from "./ExportButton";
 import { STANDARD_TONES } from "./lib/builder";
 import { cn } from "./lib/utils";
-import type { Mcu } from "./Mcu";
 import { useMcu } from "./Mcu.context";
+import type { Mtb } from "./Mtb";
 
 function Foo({ children, ...props }: ComponentProps<"div">) {
   return (
@@ -113,8 +113,8 @@ export function Scheme({
 }: {
   /** Heading displayed above the scheme. */
   title?: string;
-  /** Custom colors forwarded to the inner `<Mcu>`. */
-  customColors?: ComponentProps<typeof Mcu>["customColors"];
+  /** Custom colors forwarded to the inner `<Mtb>`. */
+  customColors?: ComponentProps<typeof Mtb>["customColors"];
 } & VariantProps<typeof schemeVariants> &
   Omit<ComponentProps<"div">, "title">) {
   return (
@@ -504,8 +504,8 @@ export function Shades({
 }: {
   /** Hide the palette group titles. */
   noTitle?: boolean;
-  /** Custom colors forwarded to the inner `<Mcu>`. */
-  customColors?: ComponentProps<typeof Mcu>["customColors"];
+  /** Custom colors forwarded to the inner `<Mtb>`. */
+  customColors?: ComponentProps<typeof Mtb>["customColors"];
 }) {
   return (
     <div className="flex flex-col gap-(--gap2)">

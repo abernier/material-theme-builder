@@ -1,9 +1,9 @@
 import { cleanup, render } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it } from "vitest";
-import { Mcu } from "./Mcu";
+import { Mcu, Mtb } from "./Mtb";
 
-describe("Mcu", () => {
+describe("Mtb", () => {
   afterEach(() => {
     cleanup();
     // Also manually remove any leftover style tags
@@ -12,9 +12,9 @@ describe("Mcu", () => {
 
   it("should inject style tag with --md-sys-color-* CSS variables", () => {
     render(
-      <Mcu source="#6750A4" scheme="tonalSpot" contrast={0} customColors={[]}>
+      <Mtb source="#6750A4" scheme="tonalSpot" contrast={0} customColors={[]}>
         <div>Test content</div>
-      </Mcu>,
+      </Mtb>,
     );
 
     // Check that the style tag exists
@@ -33,7 +33,7 @@ describe("Mcu", () => {
   it("should remove custom color CSS variables when customColors are removed", () => {
     // First render with custom colors
     const { rerender } = render(
-      <Mcu
+      <Mtb
         source="#6750A4"
         customColors={[
           { name: "brand", hex: "#FF5733", blend: true },
@@ -41,7 +41,7 @@ describe("Mcu", () => {
         ]}
       >
         <div>Test content</div>
-      </Mcu>,
+      </Mtb>,
     );
 
     // Check that custom color variables are present
@@ -53,12 +53,12 @@ describe("Mcu", () => {
 
     // Rerender with only one custom color (removing "success")
     rerender(
-      <Mcu
+      <Mtb
         source="#6750A4"
         customColors={[{ name: "brand", hex: "#FF5733", blend: true }]}
       >
         <div>Test content</div>
-      </Mcu>,
+      </Mtb>,
     );
 
     // Check that "success" variables are removed
@@ -73,9 +73,9 @@ describe("Mcu", () => {
 
     // Rerender with no custom colors (empty array)
     rerender(
-      <Mcu source="#6750A4" customColors={[]}>
+      <Mtb source="#6750A4" customColors={[]}>
         <div>Test content</div>
-      </Mcu>,
+      </Mtb>,
     );
 
     // Check that all custom color variables are removed
@@ -86,9 +86,9 @@ describe("Mcu", () => {
 
     // Rerender without customColors prop at all (should use default empty array)
     rerender(
-      <Mcu source="#6750A4">
+      <Mtb source="#6750A4">
         <div>Test content</div>
-      </Mcu>,
+      </Mtb>,
     );
 
     // Check that custom colors are still not present
@@ -104,9 +104,9 @@ describe("Mcu", () => {
     // used to reach the browser with no colors at all and paint an unthemed
     // first frame.
     const html = renderToStaticMarkup(
-      <Mcu source="#6750A4">
+      <Mtb source="#6750A4">
         <div>Test content</div>
-      </Mcu>,
+      </Mtb>,
     );
 
     const open = '<style id="mcu-styles">';
@@ -126,5 +126,9 @@ describe("Mcu", () => {
     // escapes text children, which would turn a `&` or `>` in a selector into
     // an entity and break the sheet.
     expect(css).not.toMatch(/&(amp|gt|lt|quot|#x27);/);
+  });
+
+  it("should keep `Mcu` as a deprecated alias of `Mtb`", () => {
+    expect(Mcu).toBe(Mtb);
   });
 });

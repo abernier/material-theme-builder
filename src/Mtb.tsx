@@ -16,7 +16,7 @@ const DEFAULT_COLOR_MATCH = false;
 /**
  * Root component that generates and injects a Material You color theme into the page.
  */
-export function Mcu({
+export function Mtb({
   source,
   scheme = DEFAULT_SCHEME,
   contrast = DEFAULT_CONTRAST,
@@ -71,3 +71,9 @@ export function Mcu({
     </McuProvider>
   );
 }
+
+/**
+ * @deprecated Renamed `Mtb` — same component, same props. This alias will be
+ * removed in the next major.
+ */
+export const Mcu = Mtb;
