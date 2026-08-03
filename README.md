@@ -127,247 +127,101 @@ return (
 
 ## Tailwind
 
-Compatible through [theme variables](https://tailwindcss.com/docs/theme):
+A [Tailwind 4 plugin](https://tailwindcss.com/docs/functions-and-directives#plugin-directive) maps every Material token to a [theme variable](https://tailwindcss.com/docs/theme):
 
 ```css
-@theme inline {
-  --color-background: var(--md-sys-color-background);
-  --color-on-background: var(--md-sys-color-on-background);
-  --color-surface: var(--md-sys-color-surface);
-  --color-surface-dim: var(--md-sys-color-surface-dim);
-  --color-surface-bright: var(--md-sys-color-surface-bright);
-  --color-surface-container-lowest: var(
-    --md-sys-color-surface-container-lowest
-  );
-  --color-surface-container-low: var(--md-sys-color-surface-container-low);
-  --color-surface-container: var(--md-sys-color-surface-container);
-  --color-surface-container-high: var(--md-sys-color-surface-container-high);
-  --color-surface-container-highest: var(
-    --md-sys-color-surface-container-highest
-  );
-  --color-on-surface: var(--md-sys-color-on-surface);
-  --color-on-surface-variant: var(--md-sys-color-on-surface-variant);
-  --color-outline: var(--md-sys-color-outline);
-  --color-outline-variant: var(--md-sys-color-outline-variant);
-  --color-inverse-surface: var(--md-sys-color-inverse-surface);
-  --color-inverse-on-surface: var(--md-sys-color-inverse-on-surface);
-  --color-primary: var(--md-sys-color-primary);
-  --color-on-primary: var(--md-sys-color-on-primary);
-  --color-primary-container: var(--md-sys-color-primary-container);
-  --color-on-primary-container: var(--md-sys-color-on-primary-container);
-  --color-primary-fixed: var(--md-sys-color-primary-fixed);
-  --color-primary-fixed-dim: var(--md-sys-color-primary-fixed-dim);
-  --color-on-primary-fixed: var(--md-sys-color-on-primary-fixed);
-  --color-on-primary-fixed-variant: var(
-    --md-sys-color-on-primary-fixed-variant
-  );
-  --color-inverse-primary: var(--md-sys-color-inverse-primary);
-  --color-secondary: var(--md-sys-color-secondary);
-  --color-on-secondary: var(--md-sys-color-on-secondary);
-  --color-secondary-container: var(--md-sys-color-secondary-container);
-  --color-on-secondary-container: var(--md-sys-color-on-secondary-container);
-  --color-secondary-fixed: var(--md-sys-color-secondary-fixed);
-  --color-secondary-fixed-dim: var(--md-sys-color-secondary-fixed-dim);
-  --color-on-secondary-fixed: var(--md-sys-color-on-secondary-fixed);
-  --color-on-secondary-fixed-variant: var(
-    --md-sys-color-on-secondary-fixed-variant
-  );
-  --color-tertiary: var(--md-sys-color-tertiary);
-  --color-on-tertiary: var(--md-sys-color-on-tertiary);
-  --color-tertiary-container: var(--md-sys-color-tertiary-container);
-  --color-on-tertiary-container: var(--md-sys-color-on-tertiary-container);
-  --color-tertiary-fixed: var(--md-sys-color-tertiary-fixed);
-  --color-tertiary-fixed-dim: var(--md-sys-color-tertiary-fixed-dim);
-  --color-on-tertiary-fixed: var(--md-sys-color-on-tertiary-fixed);
-  --color-on-tertiary-fixed-variant: var(
-    --md-sys-color-on-tertiary-fixed-variant
-  );
-  --color-error: var(--md-sys-color-error);
-  --color-on-error: var(--md-sys-color-on-error);
-  --color-error-container: var(--md-sys-color-error-container);
-  --color-on-error-container: var(--md-sys-color-on-error-container);
-  --color-scrim: var(--md-sys-color-scrim);
-  --color-shadow: var(--md-sys-color-shadow);
+@import "tailwindcss";
+@plugin "material-theme-builder/tailwind";
+```
 
-  /* Shades */
+You get `bg-primary`, `text-on-surface`, `border-outline-variant`, shades like
+`bg-primary-100` (Tailwind shade → M3 tone: `50`→`95` … `500`→`50` … `950`→`5`),
+all backed by the `--md-sys-color-*` / `--md-ref-palette-*` variables `<Mtb>`
+(or `toCss()`) injects — so they follow scheme/contrast changes live.
 
-  --color-primary-50: var(--md-ref-palette-primary-95);
-  --color-primary-100: var(--md-ref-palette-primary-90);
-  --color-primary-200: var(--md-ref-palette-primary-80);
-  --color-primary-300: var(--md-ref-palette-primary-70);
-  --color-primary-400: var(--md-ref-palette-primary-60);
-  --color-primary-500: var(--md-ref-palette-primary-50);
-  --color-primary-600: var(--md-ref-palette-primary-40);
-  --color-primary-700: var(--md-ref-palette-primary-30);
-  --color-primary-800: var(--md-ref-palette-primary-20);
-  --color-primary-900: var(--md-ref-palette-primary-10);
-  --color-primary-950: var(--md-ref-palette-primary-5);
+Custom colors live in your JS at runtime, so the plugin cannot discover them at
+build time: list their names —
 
-  --color-secondary-50: var(--md-ref-palette-secondary-95);
-  --color-secondary-100: var(--md-ref-palette-secondary-90);
-  --color-secondary-200: var(--md-ref-palette-secondary-80);
-  --color-secondary-300: var(--md-ref-palette-secondary-70);
-  --color-secondary-400: var(--md-ref-palette-secondary-60);
-  --color-secondary-500: var(--md-ref-palette-secondary-50);
-  --color-secondary-600: var(--md-ref-palette-secondary-40);
-  --color-secondary-700: var(--md-ref-palette-secondary-30);
-  --color-secondary-800: var(--md-ref-palette-secondary-20);
-  --color-secondary-900: var(--md-ref-palette-secondary-10);
-  --color-secondary-950: var(--md-ref-palette-secondary-5);
-
-  --color-tertiary-50: var(--md-ref-palette-tertiary-95);
-  --color-tertiary-100: var(--md-ref-palette-tertiary-90);
-  --color-tertiary-200: var(--md-ref-palette-tertiary-80);
-  --color-tertiary-300: var(--md-ref-palette-tertiary-70);
-  --color-tertiary-400: var(--md-ref-palette-tertiary-60);
-  --color-tertiary-500: var(--md-ref-palette-tertiary-50);
-  --color-tertiary-600: var(--md-ref-palette-tertiary-40);
-  --color-tertiary-700: var(--md-ref-palette-tertiary-30);
-  --color-tertiary-800: var(--md-ref-palette-tertiary-20);
-  --color-tertiary-900: var(--md-ref-palette-tertiary-10);
-  --color-tertiary-950: var(--md-ref-palette-tertiary-5);
-
-  --color-error-50: var(--md-ref-palette-error-95);
-  --color-error-100: var(--md-ref-palette-error-90);
-  --color-error-200: var(--md-ref-palette-error-80);
-  --color-error-300: var(--md-ref-palette-error-70);
-  --color-error-400: var(--md-ref-palette-error-60);
-  --color-error-500: var(--md-ref-palette-error-50);
-  --color-error-600: var(--md-ref-palette-error-40);
-  --color-error-700: var(--md-ref-palette-error-30);
-  --color-error-800: var(--md-ref-palette-error-20);
-  --color-error-900: var(--md-ref-palette-error-10);
-  --color-error-950: var(--md-ref-palette-error-5);
-
-  --color-neutral-50: var(--md-ref-palette-neutral-95);
-  --color-neutral-100: var(--md-ref-palette-neutral-90);
-  --color-neutral-200: var(--md-ref-palette-neutral-80);
-  --color-neutral-300: var(--md-ref-palette-neutral-70);
-  --color-neutral-400: var(--md-ref-palette-neutral-60);
-  --color-neutral-500: var(--md-ref-palette-neutral-50);
-  --color-neutral-600: var(--md-ref-palette-neutral-40);
-  --color-neutral-700: var(--md-ref-palette-neutral-30);
-  --color-neutral-800: var(--md-ref-palette-neutral-20);
-  --color-neutral-900: var(--md-ref-palette-neutral-10);
-  --color-neutral-950: var(--md-ref-palette-neutral-5);
-
-  --color-neutral-variant-50: var(--md-ref-palette-neutral-variant-95);
-  --color-neutral-variant-100: var(--md-ref-palette-neutral-variant-90);
-  --color-neutral-variant-200: var(--md-ref-palette-neutral-variant-80);
-  --color-neutral-variant-300: var(--md-ref-palette-neutral-variant-70);
-  --color-neutral-variant-400: var(--md-ref-palette-neutral-variant-60);
-  --color-neutral-variant-500: var(--md-ref-palette-neutral-variant-50);
-  --color-neutral-variant-600: var(--md-ref-palette-neutral-variant-40);
-  --color-neutral-variant-700: var(--md-ref-palette-neutral-variant-30);
-  --color-neutral-variant-800: var(--md-ref-palette-neutral-variant-20);
-  --color-neutral-variant-900: var(--md-ref-palette-neutral-variant-10);
-  --color-neutral-variant-950: var(--md-ref-palette-neutral-variant-5);
-
-  /*
-   * Custom colors
-   */
-
-  --color-myCustomColor1: var(--md-sys-color-my-custom-color-1);
-  --color-on-myCustomColor1: var(--md-sys-color-on-my-custom-color-1);
-  --color-myCustomColor1-container: var(
-    --md-sys-color-my-custom-color-1-container
-  );
-  --color-on-myCustomColor1-container: var(
-    --md-sys-color-on-my-custom-color-1-container
-  );
-  /* Shades */
-  --color-myCustomColor1-50: var(--md-ref-palette-my-custom-color-1-95);
-  --color-myCustomColor1-100: var(--md-ref-palette-my-custom-color-1-90);
-  --color-myCustomColor1-200: var(--md-ref-palette-my-custom-color-1-80);
-  --color-myCustomColor1-300: var(--md-ref-palette-my-custom-color-1-70);
-  --color-myCustomColor1-400: var(--md-ref-palette-my-custom-color-1-60);
-  --color-myCustomColor1-500: var(--md-ref-palette-my-custom-color-1-50);
-  --color-myCustomColor1-600: var(--md-ref-palette-my-custom-color-1-40);
-  --color-myCustomColor1-700: var(--md-ref-palette-my-custom-color-1-30);
-  --color-myCustomColor1-800: var(--md-ref-palette-my-custom-color-1-20);
-  --color-myCustomColor1-900: var(--md-ref-palette-my-custom-color-1-10);
-  --color-myCustomColor1-950: var(--md-ref-palette-my-custom-color-1-5);
-
-  --color-myCustomColor2: var(--md-sys-color-my-custom-color-2);
-  --color-on-myCustomColor2: var(--md-sys-color-on-my-custom-color-2);
-  --color-myCustomColor2-container: var(
-    --md-sys-color-my-custom-color-2-container
-  );
-  --color-on-myCustomColor2-container: var(
-    --md-sys-color-on-my-custom-color-2-container
-  );
-  /* Shades */
-  --color-myCustomColor2-50: var(--md-ref-palette-my-custom-color-2-95);
-  --color-myCustomColor2-100: var(--md-ref-palette-my-custom-color-2-90);
-  --color-myCustomColor2-200: var(--md-ref-palette-my-custom-color-2-80);
-  --color-myCustomColor2-300: var(--md-ref-palette-my-custom-color-2-70);
-  --color-myCustomColor2-400: var(--md-ref-palette-my-custom-color-2-60);
-  --color-myCustomColor2-500: var(--md-ref-palette-my-custom-color-2-50);
-  --color-myCustomColor2-600: var(--md-ref-palette-my-custom-color-2-40);
-  --color-myCustomColor2-700: var(--md-ref-palette-my-custom-color-2-30);
-  --color-myCustomColor2-800: var(--md-ref-palette-my-custom-color-2-20);
-  --color-myCustomColor2-900: var(--md-ref-palette-my-custom-color-2-10);
-  --color-myCustomColor2-950: var(--md-ref-palette-my-custom-color-2-5);
+```css
+@plugin "material-theme-builder/tailwind" {
+  custom-colors: myCustomColor1, myCustomColor2;
 }
 ```
 
-Or simply:
+— which yields `bg-my-custom-color-1`, `text-on-my-custom-color-1`,
+`bg-my-custom-color-1-container`, shades `bg-my-custom-color-1-50`…`950`, etc.
+
+Or avoid the duplication entirely by sharing one JSON file with `<Mtb>`:
+
+```jsonc
+// mtb.json
+{
+  "customColors": [
+    { "name": "myCustomColor1", "hex": "#FFDE3F", "blend": true },
+  ],
+}
+```
+
+```css
+@plugin "material-theme-builder/tailwind" {
+  config: "./mtb.json"; /* resolved from the cwd, usually the project root */
+}
+```
+
+```tsx
+import mtb from "./mtb.json";
+
+<Mtb source="#4285F4" customColors={mtb.customColors}>
+```
+
+Options: `custom-colors` (name or comma-separated names), `config` (path to a
+JSON file with a `customColors` array), `prefix` (default `md` — must match the
+`prefix` prop/option).
+
+<details>
+<summary>Without the plugin (manual theme variables)</summary>
+
+Standard tokens are covered by a static stylesheet:
 
 ```css
 @import "material-theme-builder/tailwind.css";
 ```
 
-> [!IMPORTANT]
->
-> Do not forget to manually add your custom colors, as in:
->
-> ```css
-> /*
->  * Custom colors
->  */
->
-> --color-myCustomColor1: var(--md-sys-color-my-custom-color-1);
-> --color-on-myCustomColor1: var(--md-sys-color-on-my-custom-color-1);
-> --color-myCustomColor1-container: var(
->   --md-sys-color-my-custom-color-1-container
-> );
-> --color-on-myCustomColor1-container: var(
->   --md-sys-color-on-my-custom-color-1-container
-> );
-> /* Shades */
-> --color-myCustomColor1-50: var(--md-ref-palette-my-custom-color-1-95);
-> --color-myCustomColor1-100: var(--md-ref-palette-my-custom-color-1-90);
-> --color-myCustomColor1-200: var(--md-ref-palette-my-custom-color-1-80);
-> --color-myCustomColor1-300: var(--md-ref-palette-my-custom-color-1-70);
-> --color-myCustomColor1-400: var(--md-ref-palette-my-custom-color-1-60);
-> --color-myCustomColor1-500: var(--md-ref-palette-my-custom-color-1-50);
-> --color-myCustomColor1-600: var(--md-ref-palette-my-custom-color-1-40);
-> --color-myCustomColor1-700: var(--md-ref-palette-my-custom-color-1-30);
-> --color-myCustomColor1-800: var(--md-ref-palette-my-custom-color-1-20);
-> --color-myCustomColor1-900: var(--md-ref-palette-my-custom-color-1-10);
-> --color-myCustomColor1-950: var(--md-ref-palette-my-custom-color-1-5);
->
-> --color-myCustomColor2: var(--md-sys-color-my-custom-color-2);
-> --color-on-myCustomColor2: var(--md-sys-color-on-my-custom-color-2);
-> --color-myCustomColor2-container: var(
->   --md-sys-color-my-custom-color-2-container
-> );
-> --color-on-myCustomColor2-container: var(
->   --md-sys-color-on-my-custom-color-2-container
-> );
-> /* Shades */
-> --color-myCustomColor2-50: var(--md-ref-palette-my-custom-color-2-95);
-> --color-myCustomColor2-100: var(--md-ref-palette-my-custom-color-2-90);
-> --color-myCustomColor2-200: var(--md-ref-palette-my-custom-color-2-80);
-> --color-myCustomColor2-300: var(--md-ref-palette-my-custom-color-2-70);
-> --color-myCustomColor2-400: var(--md-ref-palette-my-custom-color-2-60);
-> --color-myCustomColor2-500: var(--md-ref-palette-my-custom-color-2-50);
-> --color-myCustomColor2-600: var(--md-ref-palette-my-custom-color-2-40);
-> --color-myCustomColor2-700: var(--md-ref-palette-my-custom-color-2-30);
-> --color-myCustomColor2-800: var(--md-ref-palette-my-custom-color-2-20);
-> --color-myCustomColor2-900: var(--md-ref-palette-my-custom-color-2-10);
-> --color-myCustomColor2-950: var(--md-ref-palette-my-custom-color-2-5);
-> ```
+Custom colors must then be mapped by hand, following the same naming scheme —
+for a custom color named `myCustomColor1`:
+
+```css
+@theme inline {
+  --color-my-custom-color-1: var(--md-sys-color-my-custom-color-1);
+  --color-on-my-custom-color-1: var(--md-sys-color-on-my-custom-color-1);
+  --color-my-custom-color-1-container: var(
+    --md-sys-color-my-custom-color-1-container
+  );
+  --color-on-my-custom-color-1-container: var(
+    --md-sys-color-on-my-custom-color-1-container
+  );
+  /* Shades */
+  --color-my-custom-color-1-50: var(--md-ref-palette-my-custom-color-1-95);
+  --color-my-custom-color-1-100: var(--md-ref-palette-my-custom-color-1-90);
+  --color-my-custom-color-1-200: var(--md-ref-palette-my-custom-color-1-80);
+  --color-my-custom-color-1-300: var(--md-ref-palette-my-custom-color-1-70);
+  --color-my-custom-color-1-400: var(--md-ref-palette-my-custom-color-1-60);
+  --color-my-custom-color-1-500: var(--md-ref-palette-my-custom-color-1-50);
+  --color-my-custom-color-1-600: var(--md-ref-palette-my-custom-color-1-40);
+  --color-my-custom-color-1-700: var(--md-ref-palette-my-custom-color-1-30);
+  --color-my-custom-color-1-800: var(--md-ref-palette-my-custom-color-1-20);
+  --color-my-custom-color-1-900: var(--md-ref-palette-my-custom-color-1-10);
+  --color-my-custom-color-1-950: var(--md-ref-palette-my-custom-color-1-5);
+}
+```
+
+You can also generate the whole block (custom colors included) with the CLI:
+
+```sh
+material-theme-builder '#4285F4' --format tailwind --custom-colors '[{"name":"myCustomColor1","hex":"#FFDE3F","blend":true}]'
+```
+
+</details>
 
 ## shadcn
 

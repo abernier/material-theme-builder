@@ -1,6 +1,6 @@
-import { kebabCase } from "lodash-es";
+import { kebabCase, upperFirst } from "lodash-es";
 
-import type { BuilderContext } from "./builder";
+import { type BuilderContext, tokenNames } from "./builder";
 import { SHADCN_MAPPING } from "./builder.shadcn";
 
 // Tailwind shade → M3 tone mapping
@@ -27,6 +27,52 @@ const CORE_PALETTES = [
   "neutral",
   "neutral-variant",
 ] as const;
+
+/**
+ * The four scheme token names generated for a custom color — the same names
+ * mergeBaseAndCustomColors() produces in builder.ts.
+ */
+function customColorTokenNames(name: string) {
+  return [
+    name,
+    `on${upperFirst(name)}`,
+    `${name}Container`,
+    `on${upperFirst(name)}Container`,
+  ];
+}
+
+/**
+ * Flat Tailwind `colors` record (utility name → `var()` reference) — the JS
+ * equivalent of the `@theme inline` block emitted by buildTailwind(), for the
+ * Tailwind plugin (tailwind-plugin.ts) where custom colors are only known by
+ * name, not by value.
+ */
+export function tailwindThemeColors(
+  prefix: string,
+  customColorNames: string[] = [],
+) {
+  const colors: Record<string, string> = {};
+
+  for (const token of [
+    ...tokenNames,
+    ...customColorNames.flatMap(customColorTokenNames),
+  ]) {
+    const kebab = kebabCase(token);
+    colors[kebab] = `var(--${prefix}-sys-color-${kebab})`;
+  }
+
+  for (const palette of [
+    ...CORE_PALETTES,
+    ...customColorNames.map(kebabCase),
+  ]) {
+    for (const [shade, tone] of SHADE_TO_TONE) {
+      colors[`${palette}-${shade}`] =
+        `var(--${prefix}-ref-palette-${palette}-${tone})`;
+    }
+  }
+
+  return colors;
+}
 
 /** Options for the Tailwind CSS exporter. */
 export type TailwindOptions = {

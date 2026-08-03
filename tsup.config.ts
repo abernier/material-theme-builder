@@ -1,12 +1,18 @@
-import { copyFileSync } from "fs";
+import { copyFileSync, rmSync } from "fs";
 import { defineConfig } from "tsup";
+
+// Clean once, up front, instead of `clean: true`: the configs below build in
+// parallel, and a `clean: true` dts build deletes every `*.d.ts` in outDir
+// when it completes -- wiping whichever sibling dts happened to finish first.
+rmSync("dist", { recursive: true, force: true });
 
 // Three bundles rather than one, so that `"use client"` lands only on the
 // React surface -- and so that nothing on the root entry points at it:
 //
-//   dist/index.js   no directive -- `builder`, the package root
-//   dist/react.js   "use client" -- Mtb, useMcu, ExportButton
-//   dist/cli.js     the CLI
+//   dist/index.js            no directive -- `builder`, the package root
+//   dist/tailwind-plugin.js  no directive -- the Tailwind 4 plugin (Node-only)
+//   dist/react.js            "use client" -- Mtb, useMcu, ExportButton
+//   dist/cli.js              the CLI
 //
 // The two are independent: `index.js` does not import `react.js`, which is
 // what keeps `import { builder } from "material-theme-builder"` free of React
@@ -17,7 +23,7 @@ import { defineConfig } from "tsup";
 const shared = {
   format: ["esm"] as const,
   outDir: "dist",
-  external: ["react", "react-dom"],
+  external: ["react", "react-dom", /^tailwindcss/],
   esbuildOptions(options: { jsx?: string }) {
     options.jsx = "automatic";
   },
@@ -26,9 +32,8 @@ const shared = {
 export default defineConfig([
   {
     ...shared,
-    entryPoints: ["src/index.ts"],
+    entryPoints: ["src/index.ts", "src/tailwind-plugin.ts"],
     dts: true,
-    clean: true,
     onSuccess: async () => {
       // Copy tailwind.css to dist
       copyFileSync("src/tailwind.css", "dist/tailwind.css");

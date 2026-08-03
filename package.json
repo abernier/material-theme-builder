@@ -16,6 +16,10 @@
       "types": "./dist/react.d.ts",
       "import": "./dist/react.js"
     },
+    "./tailwind": {
+      "types": "./dist/tailwind-plugin.d.ts",
+      "import": "./dist/tailwind-plugin.js"
+    },
     "./tailwind.css": "./dist/tailwind.css"
   },
   "homepage": "https://github.com/abernier/material-theme-builder",
@@ -53,6 +57,7 @@
     "@types/culori": "^4.0.1",
     "@types/d3": "^7.4.3",
     "@types/lodash-es": "^4.17.12",
+    "@types/node": "^26.1.2",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "@types/seedrandom": "^3.0.8",
@@ -116,7 +121,13 @@
   },
   "peerDependencies": {
     "react": "^19.2.3",
-    "react-dom": "^19.2.3"
+    "react-dom": "^19.2.3",
+    "tailwindcss": "^4.0.0"
+  },
+  "peerDependenciesMeta": {
+    "tailwindcss": {
+      "optional": true
+    }
   },
   "dependencies": {
     "@material/material-color-utilities": "^0.3.0",

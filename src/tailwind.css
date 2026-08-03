@@ -1,61 +1,63 @@
 @theme inline {
   --color-background: var(--md-sys-color-background);
+  --color-error: var(--md-sys-color-error);
+  --color-error-container: var(--md-sys-color-error-container);
+  --color-inverse-on-surface: var(--md-sys-color-inverse-on-surface);
+  --color-inverse-primary: var(--md-sys-color-inverse-primary);
+  --color-inverse-surface: var(--md-sys-color-inverse-surface);
   --color-on-background: var(--md-sys-color-on-background);
-  --color-surface: var(--md-sys-color-surface);
-  --color-surface-dim: var(--md-sys-color-surface-dim);
-  --color-surface-bright: var(--md-sys-color-surface-bright);
-  --color-surface-container-lowest: var(
-    --md-sys-color-surface-container-lowest
+  --color-on-error: var(--md-sys-color-on-error);
+  --color-on-error-container: var(--md-sys-color-on-error-container);
+  --color-on-primary: var(--md-sys-color-on-primary);
+  --color-on-primary-container: var(--md-sys-color-on-primary-container);
+  --color-on-primary-fixed: var(--md-sys-color-on-primary-fixed);
+  --color-on-primary-fixed-variant: var(
+    --md-sys-color-on-primary-fixed-variant
   );
-  --color-surface-container-low: var(--md-sys-color-surface-container-low);
+  --color-on-secondary: var(--md-sys-color-on-secondary);
+  --color-on-secondary-container: var(--md-sys-color-on-secondary-container);
+  --color-on-secondary-fixed: var(--md-sys-color-on-secondary-fixed);
+  --color-on-secondary-fixed-variant: var(
+    --md-sys-color-on-secondary-fixed-variant
+  );
+  --color-on-surface: var(--md-sys-color-on-surface);
+  --color-on-surface-variant: var(--md-sys-color-on-surface-variant);
+  --color-on-tertiary: var(--md-sys-color-on-tertiary);
+  --color-on-tertiary-container: var(--md-sys-color-on-tertiary-container);
+  --color-on-tertiary-fixed: var(--md-sys-color-on-tertiary-fixed);
+  --color-on-tertiary-fixed-variant: var(
+    --md-sys-color-on-tertiary-fixed-variant
+  );
+  --color-outline: var(--md-sys-color-outline);
+  --color-outline-variant: var(--md-sys-color-outline-variant);
+  --color-primary: var(--md-sys-color-primary);
+  --color-primary-container: var(--md-sys-color-primary-container);
+  --color-primary-fixed: var(--md-sys-color-primary-fixed);
+  --color-primary-fixed-dim: var(--md-sys-color-primary-fixed-dim);
+  --color-scrim: var(--md-sys-color-scrim);
+  --color-secondary: var(--md-sys-color-secondary);
+  --color-secondary-container: var(--md-sys-color-secondary-container);
+  --color-secondary-fixed: var(--md-sys-color-secondary-fixed);
+  --color-secondary-fixed-dim: var(--md-sys-color-secondary-fixed-dim);
+  --color-shadow: var(--md-sys-color-shadow);
+  --color-surface: var(--md-sys-color-surface);
+  --color-surface-bright: var(--md-sys-color-surface-bright);
   --color-surface-container: var(--md-sys-color-surface-container);
   --color-surface-container-high: var(--md-sys-color-surface-container-high);
   --color-surface-container-highest: var(
     --md-sys-color-surface-container-highest
   );
-  --color-on-surface: var(--md-sys-color-on-surface);
-  --color-on-surface-variant: var(--md-sys-color-on-surface-variant);
-  --color-outline: var(--md-sys-color-outline);
-  --color-outline-variant: var(--md-sys-color-outline-variant);
-  --color-inverse-surface: var(--md-sys-color-inverse-surface);
-  --color-inverse-on-surface: var(--md-sys-color-inverse-on-surface);
-  --color-primary: var(--md-sys-color-primary);
-  --color-on-primary: var(--md-sys-color-on-primary);
-  --color-primary-container: var(--md-sys-color-primary-container);
-  --color-on-primary-container: var(--md-sys-color-on-primary-container);
-  --color-primary-fixed: var(--md-sys-color-primary-fixed);
-  --color-primary-fixed-dim: var(--md-sys-color-primary-fixed-dim);
-  --color-on-primary-fixed: var(--md-sys-color-on-primary-fixed);
-  --color-on-primary-fixed-variant: var(
-    --md-sys-color-on-primary-fixed-variant
+  --color-surface-container-low: var(--md-sys-color-surface-container-low);
+  --color-surface-container-lowest: var(
+    --md-sys-color-surface-container-lowest
   );
-  --color-inverse-primary: var(--md-sys-color-inverse-primary);
-  --color-secondary: var(--md-sys-color-secondary);
-  --color-on-secondary: var(--md-sys-color-on-secondary);
-  --color-secondary-container: var(--md-sys-color-secondary-container);
-  --color-on-secondary-container: var(--md-sys-color-on-secondary-container);
-  --color-secondary-fixed: var(--md-sys-color-secondary-fixed);
-  --color-secondary-fixed-dim: var(--md-sys-color-secondary-fixed-dim);
-  --color-on-secondary-fixed: var(--md-sys-color-on-secondary-fixed);
-  --color-on-secondary-fixed-variant: var(
-    --md-sys-color-on-secondary-fixed-variant
-  );
+  --color-surface-dim: var(--md-sys-color-surface-dim);
+  --color-surface-tint: var(--md-sys-color-surface-tint);
+  --color-surface-variant: var(--md-sys-color-surface-variant);
   --color-tertiary: var(--md-sys-color-tertiary);
-  --color-on-tertiary: var(--md-sys-color-on-tertiary);
   --color-tertiary-container: var(--md-sys-color-tertiary-container);
-  --color-on-tertiary-container: var(--md-sys-color-on-tertiary-container);
   --color-tertiary-fixed: var(--md-sys-color-tertiary-fixed);
   --color-tertiary-fixed-dim: var(--md-sys-color-tertiary-fixed-dim);
-  --color-on-tertiary-fixed: var(--md-sys-color-on-tertiary-fixed);
-  --color-on-tertiary-fixed-variant: var(
-    --md-sys-color-on-tertiary-fixed-variant
-  );
-  --color-error: var(--md-sys-color-error);
-  --color-on-error: var(--md-sys-color-on-error);
-  --color-error-container: var(--md-sys-color-error-container);
-  --color-on-error-container: var(--md-sys-color-on-error-container);
-  --color-scrim: var(--md-sys-color-scrim);
-  --color-shadow: var(--md-sys-color-shadow);
 
   /* Shades */
 
@@ -130,50 +132,4 @@
   --color-neutral-variant-800: var(--md-ref-palette-neutral-variant-20);
   --color-neutral-variant-900: var(--md-ref-palette-neutral-variant-10);
   --color-neutral-variant-950: var(--md-ref-palette-neutral-variant-5);
-
-  /*
-   * Custom colors
-   */
-
-  --color-myCustomColor1: var(--md-sys-color-my-custom-color-1);
-  --color-on-myCustomColor1: var(--md-sys-color-on-my-custom-color-1);
-  --color-myCustomColor1-container: var(
-    --md-sys-color-my-custom-color-1-container
-  );
-  --color-on-myCustomColor1-container: var(
-    --md-sys-color-on-my-custom-color-1-container
-  );
-  /* Shades */
-  --color-myCustomColor1-50: var(--md-ref-palette-my-custom-color-1-95);
-  --color-myCustomColor1-100: var(--md-ref-palette-my-custom-color-1-90);
-  --color-myCustomColor1-200: var(--md-ref-palette-my-custom-color-1-80);
-  --color-myCustomColor1-300: var(--md-ref-palette-my-custom-color-1-70);
-  --color-myCustomColor1-400: var(--md-ref-palette-my-custom-color-1-60);
-  --color-myCustomColor1-500: var(--md-ref-palette-my-custom-color-1-50);
-  --color-myCustomColor1-600: var(--md-ref-palette-my-custom-color-1-40);
-  --color-myCustomColor1-700: var(--md-ref-palette-my-custom-color-1-30);
-  --color-myCustomColor1-800: var(--md-ref-palette-my-custom-color-1-20);
-  --color-myCustomColor1-900: var(--md-ref-palette-my-custom-color-1-10);
-  --color-myCustomColor1-950: var(--md-ref-palette-my-custom-color-1-5);
-
-  --color-myCustomColor2: var(--md-sys-color-my-custom-color-2);
-  --color-on-myCustomColor2: var(--md-sys-color-on-my-custom-color-2);
-  --color-myCustomColor2-container: var(
-    --md-sys-color-my-custom-color-2-container
-  );
-  --color-on-myCustomColor2-container: var(
-    --md-sys-color-on-my-custom-color-2-container
-  );
-  /* Shades */
-  --color-myCustomColor2-50: var(--md-ref-palette-my-custom-color-2-95);
-  --color-myCustomColor2-100: var(--md-ref-palette-my-custom-color-2-90);
-  --color-myCustomColor2-200: var(--md-ref-palette-my-custom-color-2-80);
-  --color-myCustomColor2-300: var(--md-ref-palette-my-custom-color-2-70);
-  --color-myCustomColor2-400: var(--md-ref-palette-my-custom-color-2-60);
-  --color-myCustomColor2-500: var(--md-ref-palette-my-custom-color-2-50);
-  --color-myCustomColor2-600: var(--md-ref-palette-my-custom-color-2-40);
-  --color-myCustomColor2-700: var(--md-ref-palette-my-custom-color-2-30);
-  --color-myCustomColor2-800: var(--md-ref-palette-my-custom-color-2-20);
-  --color-myCustomColor2-900: var(--md-ref-palette-my-custom-color-2-10);
-  --color-myCustomColor2-950: var(--md-ref-palette-my-custom-color-2-5);
 }
