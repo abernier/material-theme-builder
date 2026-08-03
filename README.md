@@ -430,21 +430,11 @@ $ npx shadcn init --preset https://example.com/r/material-you.json
 ### Options
 
 Same options as every other exporter — `toShadcn()` reads the colors `toCss()`
-emits, so they land identically. Effect on the 31 variables, source `#6750A4`:
+emits, so they land identically.
 
-| option           | affects  | which                                                     |
-| ---------------- | -------- | --------------------------------------------------------- |
-| `source`         | 30/31    | all but `destructive` — M3's error palette is fixed       |
-| `primary`        | 30/31    | all but `destructive`                                     |
-| `contrast`       | 26–30/31 | all but `background`                                      |
-| `scheme`         | 29–30/31 | all but `destructive` (`fidelity`, `content`: 20/31)      |
-| `neutral`        | 9/31     | `background`, `card`, `popover`, `muted`, `sidebar` + fg  |
-| `secondary`      | 8/31     | `secondary`, `accent`, `sidebar-accent` + fg, `chart-2/5` |
-| `neutralVariant` | 4/31     | `border`, `input`, `muted-foreground`, `sidebar-border`   |
-| `tertiary`       | 1/31     | `chart-3`                                                 |
-| `error`          | 1/31     | `destructive`                                             |
-| `customColors`   | **0/31** | shadcn's variable set is fixed                            |
-| `prefix`         | **0/31** | the names it prefixes are the ones the mapping replaces   |
+Two are inert here: `customColors`, because shadcn's variable set is fixed and
+no component reads them, and `prefix`, because the M3 names it prefixes are the
+ones the mapping replaces.
 
 > [!WARNING]
 >
