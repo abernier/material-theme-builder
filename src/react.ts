@@ -6,3 +6,4 @@
 export { ExportButton } from "./ExportButton";
 export { Mcu, Mtb } from "./Mtb";
 export { useMcu, useMtb } from "./Mtb.context";
+export { ThemePanel } from "./ThemePanel";
