@@ -29,8 +29,11 @@ function BookmarkletLink() {
         the site untouched.
       </p>
       <p>
+        {/* React refuses javascript: URLs in a JSX href (it swaps in a
+            thrower string), which is exactly what a bookmarklet is — so the
+            attribute is set imperatively, outside React's sanitizer. */}
         <a
-          href={BOOKMARKLET_HREF}
+          ref={(el) => el?.setAttribute("href", BOOKMARKLET_HREF)}
           className="inline-block rounded-md border px-3 py-1.5 font-medium no-underline"
           onClick={(e) => e.preventDefault()}
         >
