@@ -50,15 +50,6 @@ theme.toFlutter();
 theme.toShadcn();
 ```
 
-> [!NOTE]
->
-> The root entry costs a client bundle nothing. It holds `builder` alone — the
-> React bindings live at [`material-theme-builder/react`](#react) and are the
-> only thing carrying `"use client"`. So you can call `builder` from a
-> [React Server Component](https://react.dev/reference/rsc/server-components)
-> and emit `toCss()` into the document yourself, rather than let `<Mcu>` do it
-> on the client, without shipping React components the page never renders.
-
 ## CLI
 
 ```sh
@@ -109,6 +100,14 @@ import { Mcu } from "material-theme-builder/react";
 >
 > CSS varnames are always kebab-cased, e.g. `myCustomColor1` →
 > `--md-sys-color-my-custom-color-1` / `--md-ref-palette-my-custom-color-1-<tone>`
+
+> [!NOTE]
+>
+> `<Mcu>` injects the CSS from the client, and is the only thing here carrying
+> `"use client"`. The root entry holds `builder` alone — so from a
+> [React Server Component](https://react.dev/reference/rsc/server-components)
+> you can call it and emit `toCss()` into the document yourself, without
+> shipping components the page never renders.
 
 ## `useMcu`
 
