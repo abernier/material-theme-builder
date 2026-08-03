@@ -372,32 +372,25 @@ Or simply:
 
 ## shadcn
 
-Two ways to get a shadcn project themed with M3 colors. Same mapping table
-underneath, same result on screen — but they are distributed differently, so
-pick one:
+Two outputs, one mapping table, same result on screen — they differ in how they
+travel:
 
-|             | [`toShadcn()`](#toshadcn)                                    | [`toTailwind({ shadcn: true })`](#remapping-the-css-variables-instead)  |
-| ----------- | ------------------------------------------------------------ | ----------------------------------------------------------------------- |
-| emits       | `background: "oklch(0.983 0.012 317.743)"`                   | `--background: var(--md-sys-color-surface)`                             |
-| needs       | nothing                                                      | the M3 variables already on the page (`toCss()` or `<Mcu>`)             |
-| modes       | `{ light, dark }`, separate                                  | one `:root, .dark` block — the M3 variables underneath do the switching |
-| at runtime  | frozen at build time                                         | **live** — `<Mcu source="#FF5722">` and every shadcn color follows      |
-| consumed by | `npx shadcn init --preset <url>`, the registry, any consumer | your own CSS, in your own app                                           |
-
-In short: **shipping colors to people who don't install this library →
-`toShadcn()`**. **Theming your own app, especially if the source color can change
-→ the alias block.**
+|            | [`toShadcn()`](#toshadcn)                  | [alias block](#remapping-the-css-variables-instead) |
+| ---------- | ------------------------------------------ | --------------------------------------------------- |
+| emits      | `background: "oklch(0.983 0.012 317.743)"` | `--background: var(--md-sys-color-surface)`         |
+| needs      | nothing                                    | the M3 variables on the page (`toCss()` / `<Mcu>`)  |
+| at runtime | frozen                                     | **live** — `<Mcu source="#FF5722">` and it follows  |
+| for        | shipping colors to others                  | theming your own app                                |
 
 > [!CAUTION]
 >
-> Don't ship both. Concrete values and `var()` aliases set the same custom
-> properties, so whichever comes last in the cascade silently wins.
+> Don't ship both — they set the same custom properties, the cascade decides.
 
 ### `toShadcn()`
 
-`toShadcn()` returns concrete color values, split by mode and keyed by bare
+Concrete values, per mode, keyed by bare
 [shadcn variable name](https://ui.shadcn.com/docs/theming#list-of-variables) —
-the exact shape shadcn's `cssVars` field expects:
+the shape `cssVars` expects:
 
 ```ts
 const theme = builder("#6750A4", { scheme: "vibrant" }).toShadcn();
@@ -407,16 +400,15 @@ const theme = builder("#6750A4", { scheme: "vibrant" }).toShadcn();
 // }
 ```
 
-All 31 shadcn color variables are covered, in both modes, so no component falls
-back to an unthemed default. Values are emitted in `oklch()`, like every theme
-in shadcn's own registry. Non-color theme fields (`radius`, fonts) are not
-emitted — compose those yourself.
+All 31 variables, both modes, in `oklch()` like shadcn's own registry themes —
+nothing falls back to an unthemed default. Non-color fields (`radius`, fonts)
+are yours to compose.
 
 ### Serving it as a registry item
 
-The `shadcn` CLI's `--preset` accepts any URL, so wrapping the output in a
+`--preset` accepts any URL, so a
 [`registry:base`](https://ui.shadcn.com/docs/registry/registry-item-json) item
-and serving it makes the theme installable with the standard CLI:
+served anywhere installs with the released CLI:
 
 ```ts
 import { builder } from "material-theme-builder";
@@ -437,48 +429,37 @@ $ npx shadcn init --preset https://example.com/r/material-you.json
 
 ### Options
 
-`toShadcn()` takes the same source color and options as every other exporter.
-Measured against the 31 shadcn variables, with source `#6750A4`:
+Same options as every other exporter — `toShadcn()` reads the colors `toCss()`
+emits, so they land identically. Effect on the 31 variables, source `#6750A4`:
 
-| option           | variables affected | which                                                                                                |
-| ---------------- | ------------------ | ---------------------------------------------------------------------------------------------------- |
-| `source`         | 30/31              | all but `destructive` — M3's error palette is fixed unless `error` overrides it                      |
-| `primary`        | 30/31              | all but `destructive`                                                                                |
-| `contrast`       | 26–30/31           | all but `background` (reduced contrast also leaves `card`, `popover`, `muted`, `sidebar` alone)      |
-| `scheme`         | 29–30/31           | all but `destructive` (`fidelity` and `content` also leave the surface-derived ones alone: 20/31)    |
-| `neutral`        | 9/31               | the surface-derived ones: `background`, `card`, `popover`, `muted`, `sidebar`, and their foregrounds |
-| `secondary`      | 8/31               | `secondary`, `accent`, `sidebar-accent` (+ foregrounds), `chart-2`, `chart-5`                        |
-| `neutralVariant` | 4/31               | `border`, `input`, `muted-foreground`, `sidebar-border`                                              |
-| `tertiary`       | 1/31               | `chart-3`                                                                                            |
-| `error`          | 1/31               | `destructive`                                                                                        |
-| `customColors`   | **0/31**           | none — shadcn's variable set is fixed, so no component reads them                                    |
-| `prefix`         | **0/31**           | none — the M3 variable names it prefixes are replaced by shadcn ones                                 |
-
-`toShadcn()` reads the same colors `toCss()` emits, so every option lands here
-exactly as it does there — including the full `contrast` range, from `-1.0`
-(reduced) through `0` (standard) to `1.0` (increased), at full resolution
-rather than snapped to M3's three named levels.
+| option           | affects  | which                                                     |
+| ---------------- | -------- | --------------------------------------------------------- |
+| `source`         | 30/31    | all but `destructive` — M3's error palette is fixed       |
+| `primary`        | 30/31    | all but `destructive`                                     |
+| `contrast`       | 26–30/31 | all but `background`                                      |
+| `scheme`         | 29–30/31 | all but `destructive` (`fidelity`, `content`: 20/31)      |
+| `neutral`        | 9/31     | `background`, `card`, `popover`, `muted`, `sidebar` + fg  |
+| `secondary`      | 8/31     | `secondary`, `accent`, `sidebar-accent` + fg, `chart-2/5` |
+| `neutralVariant` | 4/31     | `border`, `input`, `muted-foreground`, `sidebar-border`   |
+| `tertiary`       | 1/31     | `chart-3`                                                 |
+| `error`          | 1/31     | `destructive`                                             |
+| `customColors`   | **0/31** | shadcn's variable set is fixed                            |
+| `prefix`         | **0/31** | the names it prefixes are the ones the mapping replaces   |
 
 > [!WARNING]
 >
-> Do not feed a shadcn neutral palette color back into a core-color override.
-> Those palettes are achromatic — chroma is exactly zero — and a color with no
-> chroma has no hue to extract, so a one-bit change swings the generated theme
-> across the color wheel: with source `#6750A4`, `primary: "#171718"` yields a
-> blue theme while `primary: "#181717"` yields a maroon one. The core-color
-> overrides expect chromatic inputs.
+> Core-color overrides expect **chromatic** inputs. A shadcn neutral is
+> achromatic, and a color with no chroma has no hue to extract: from source
+> `#6750A4`, `primary: "#171718"` gives blue, `#181717` maroon.
 
 ### Remapping the CSS variables instead
 
-If the M3 variables are already on the page (via `toCss()` or `<Mcu>`), you can
-skip the concrete values and just alias shadcn's variables to them — that is
+With the M3 variables already on the page, alias shadcn's to them instead —
 what `toTailwind({ shadcn: true })` emits.
 
-The indirection is the point: change the source color at runtime and every
-shadcn color follows, with no regeneration. It is also why a single
-`:root, .dark` block suffices — the M3 variables it points at are already
-mode-aware. And it is why this output can't be handed to the `shadcn` CLI,
-which needs values it can install, not references to variables it doesn't ship.
+The indirection buys runtime theming, and means one `:root, .dark` block
+suffices since the M3 variables underneath already switch. It also means the
+`shadcn` CLI can't consume this: it installs values, not references.
 
 Pre-requisites:
 
