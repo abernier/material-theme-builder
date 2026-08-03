@@ -1,7 +1,7 @@
 import { Tooltip as TooltipPrimitive } from "radix-ui";
 import * as React from "react";
 
-import { PortalContainerContext } from "@/lib/portalContainer";
+import { PortalContainerContext } from "@/lib/bookmarklet.portalContainer";
 import { cn } from "@/lib/utils";
 
 function TooltipProvider({

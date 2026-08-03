@@ -30,9 +30,9 @@ import {
   TooltipTrigger,
 } from "./components/ui/tooltip";
 import { Flowfield, type Peak } from "./Flowfield";
+import { PortalContainerContext } from "./lib/bookmarklet.portalContainer";
+import { shadcnStyleSheet } from "./lib/bookmarklet.shadcnStyle";
 import { builder, type MtbConfig } from "./lib/builder";
-import { PortalContainerContext } from "./lib/portalContainer";
-import { shadcnStyleSheet } from "./lib/shadcnStyle";
 import { Mtb } from "./Mtb";
 import { useMtb } from "./Mtb.context";
 import { ThemePanel } from "./ThemePanel";
