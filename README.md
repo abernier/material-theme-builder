@@ -151,32 +151,8 @@ build time: list their names —
 — which yields `bg-my-custom-color-1`, `text-on-my-custom-color-1`,
 `bg-my-custom-color-1-container`, shades `bg-my-custom-color-1-50`…`950`, etc.
 
-Or avoid the duplication entirely by sharing one JSON file with `<Mtb>`:
-
-```jsonc
-// mtb.json
-{
-  "customColors": [
-    { "name": "myCustomColor1", "hex": "#FFDE3F", "blend": true },
-  ],
-}
-```
-
-```css
-@plugin "material-theme-builder/tailwind" {
-  config: "./mtb.json"; /* resolved from the cwd, usually the project root */
-}
-```
-
-```tsx
-import mtb from "./mtb.json";
-
-<Mtb source="#4285F4" customColors={mtb.customColors}>
-```
-
-Options: `custom-colors` (name or comma-separated names), `config` (path to a
-JSON file with a `customColors` array), `prefix` (default `md` — must match the
-`prefix` prop/option).
+Options: `custom-colors` (name or comma-separated names), `prefix` (default
+`md` — must match the `prefix` prop/option).
 
 <details>
 <summary>Without the plugin (manual theme variables)</summary>

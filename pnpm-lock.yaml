@@ -66,9 +66,6 @@ importers:
       '@types/lodash-es':
         specifier: ^4.17.12
         version: 4.17.12
-      '@types/node':
-        specifier: ^26.1.2
-        version: 26.1.2
       '@types/react':
         specifier: ^19.2.7
         version: 19.2.14
@@ -7545,6 +7542,7 @@ snapshots:
   '@types/node@26.1.2':
     dependencies:
       undici-types: 8.3.0
+    optional: true
 
   '@types/react-dom@19.2.3(@types/react@19.2.14)':
     dependencies:
@@ -10192,7 +10190,8 @@ snapshots:
 
   ufo@1.6.2: {}
 
-  undici-types@8.3.0: {}
+  undici-types@8.3.0:
+    optional: true
 
   undici@7.22.0: {}
 

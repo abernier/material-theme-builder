@@ -1,5 +1,4 @@
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
@@ -72,30 +71,5 @@ describe("tailwind plugin", () => {
     const colors = pluginColors({ prefix: "my" });
     expect(colors["primary"]).toBe("var(--my-sys-color-primary)");
     expect(colors["primary-500"]).toBe("var(--my-ref-palette-primary-50)");
-  });
-
-  it("should read custom color names from a config file", () => {
-    const dir = mkdtempSync(join(tmpdir(), "mtb-"));
-    const file = join(dir, "mtb.json");
-    writeFileSync(
-      file,
-      JSON.stringify({
-        customColors: [
-          { name: "myCustomColor1", hex: "#FF5733", blend: true },
-          { name: "myCustomColor2", hex: "#33FF57", blend: false },
-        ],
-      }),
-    );
-
-    const colors = pluginColors({
-      config: file,
-      "custom-colors": "myCustomColor1",
-    });
-    expect(colors["my-custom-color-1"]).toBe(
-      "var(--md-sys-color-my-custom-color-1)",
-    );
-    expect(colors["my-custom-color-2"]).toBe(
-      "var(--md-sys-color-my-custom-color-2)",
-    );
   });
 });

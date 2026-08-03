@@ -14,9 +14,7 @@ included:
 }
 ```
 
-Options: `custom-colors` (names), `config` (path to a JSON file with a
-`customColors` array, shareable with `<Mtb>` for a single source of truth),
-`prefix` (default `md`).
+Options: `custom-colors` (names), `prefix` (default `md`).
 
 The static `material-theme-builder/tailwind.css` fallback is now generated from
 `toTailwind()`: it gains the missing `--color-surface-tint` /
