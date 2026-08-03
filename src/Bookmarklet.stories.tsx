@@ -20,7 +20,12 @@ const BUNDLE_URL = import.meta.env.DEV
   ? `${window.location.origin}/dist/bookmarklet.global.js`
   : "https://cdn.jsdelivr.net/npm/material-theme-builder@3/dist/bookmarklet.global.js";
 
-const BOOKMARKLET_HREF = `javascript:(()=>{var s=document.createElement("script");s.src="${BUNDLE_URL}";document.body.append(s)})()`;
+// Dev only: cache-bust at CLICK time (Date.now() runs inside the
+// bookmarklet) — the ad-hoc dev server sends no Cache-Control, and
+// Chrome's heuristic caching would happily serve a stale bundle.
+const BOOKMARKLET_HREF = import.meta.env.DEV
+  ? `javascript:(()=>{var s=document.createElement("script");s.src="${BUNDLE_URL}?t="+Date.now();document.body.append(s)})()`
+  : `javascript:(()=>{var s=document.createElement("script");s.src="${BUNDLE_URL}";document.body.append(s)})()`;
 
 function BookmarkletLink() {
   return (
