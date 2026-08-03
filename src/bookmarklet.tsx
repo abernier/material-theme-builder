@@ -9,19 +9,23 @@
  * panel is styled by the very shadcn variables it edits.
  */
 
-import { X } from "lucide-react";
-import { useEffect } from "react";
+import { ArrowDownToLine, Check, Terminal, X } from "lucide-react";
+import { useEffect, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
 // Compiled by Tailwind at build time and inlined as a string (tsup plugin).
 import cssText from "./bookmarklet.css?raw";
 
 import { Button } from "./components/ui/button";
+import { ButtonGroup } from "./components/ui/button-group";
 import {
+  Tooltip,
+  TooltipContent,
   TooltipPortalContainerContext,
   TooltipProvider,
+  TooltipTrigger,
 } from "./components/ui/tooltip";
-import { builder } from "./lib/builder";
+import { builder, type MtbConfig } from "./lib/builder";
 import { shadcnStyleSheet } from "./lib/shadcnStyle";
 import { Mtb } from "./Mtb";
 import { useMtb } from "./Mtb.context";
@@ -119,6 +123,104 @@ function ApplyToHost() {
   return null;
 }
 
+const THEME_FILENAME = "mtb-theme.json";
+const INSTALL_COMMAND = `npx shadcn@latest add ./${THEME_FILENAME}`;
+
+// The current theme as a shadcn registry item — installable as-is with the
+// standard shadcn CLI (toShadcn() already matches the cssVars field).
+function registryItem(config: MtbConfig) {
+  return {
+    $schema: "https://ui.shadcn.com/schema/registry-item.json",
+    name: "mtb-theme",
+    type: "registry:theme",
+    cssVars: builder(config.source, config).toShadcn(),
+  };
+}
+
+/**
+ * The action cluster next to the panel: copy the shadcn CLI install
+ * command, download the theme as a registry item, close.
+ */
+function Actions({ onClose }: { onClose: () => void }) {
+  const { mcuConfig } = useMtb();
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (!copied) return;
+    const timer = setTimeout(() => setCopied(false), 1500);
+    return () => clearTimeout(timer);
+  }, [copied]);
+
+  const copyCommand = async () => {
+    await navigator.clipboard.writeText(INSTALL_COMMAND);
+    setCopied(true);
+  };
+
+  const downloadTheme = () => {
+    const blob = new Blob([JSON.stringify(registryItem(mcuConfig), null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = THEME_FILENAME;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <ButtonGroup>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="outline"
+            size="icon"
+            aria-label="Copy install command"
+            onClick={copyCommand}
+          >
+            {copied ? <Check /> : <Terminal />}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">
+          {copied ? "Copied!" : INSTALL_COMMAND}
+        </TooltipContent>
+      </Tooltip>
+
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="outline"
+            size="icon"
+            aria-label="Download theme"
+            onClick={downloadTheme}
+          >
+            <ArrowDownToLine />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">
+          Download theme ({THEME_FILENAME})
+        </TooltipContent>
+      </Tooltip>
+
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="outline"
+            size="icon"
+            aria-label="Close"
+            onClick={onClose}
+          >
+            <X />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">Close</TooltipContent>
+      </Tooltip>
+    </ButtonGroup>
+  );
+}
+
 function App({
   container,
   source,
@@ -135,14 +237,7 @@ function App({
           <ApplyToHost />
           <div className="flex items-center gap-1">
             <ThemePanel />
-            <Button
-              variant="outline"
-              size="icon"
-              aria-label="Close"
-              onClick={onClose}
-            >
-              <X />
-            </Button>
+            <Actions onClose={onClose} />
           </div>
         </Mtb>
       </TooltipProvider>
