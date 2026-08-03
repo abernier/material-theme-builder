@@ -8,8 +8,11 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
  * (`dist/bookmarklet.global.js`, React included) served from jsDelivr.
  * Floating on the major (`@3`) keeps existing bookmarks up to date with
  * every release.
+ *
+ * NOT exported: Storybook treats every named export of a story file as a
+ * story, and Chromatic chokes trying to hang `parameters` off a string.
  */
-export const BOOKMARKLET_HREF = `javascript:(()=>{var s=document.createElement("script");s.src="https://cdn.jsdelivr.net/npm/material-theme-builder@3/dist/bookmarklet.global.js";document.body.append(s)})()`;
+const BOOKMARKLET_HREF = `javascript:(()=>{var s=document.createElement("script");s.src="https://cdn.jsdelivr.net/npm/material-theme-builder@3/dist/bookmarklet.global.js";document.body.append(s)})()`;
 
 function BookmarkletLink() {
   return (

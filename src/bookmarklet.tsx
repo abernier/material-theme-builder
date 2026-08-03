@@ -171,53 +171,57 @@ function Actions({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <ButtonGroup>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="outline"
-            size="icon"
-            aria-label="Copy install command"
-            onClick={copyCommand}
-          >
-            {copied ? <Check /> : <Terminal />}
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent side="bottom">
-          {copied ? "Copied!" : INSTALL_COMMAND}
-        </TooltipContent>
-      </Tooltip>
+    <>
+      <ButtonGroup>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="outline"
+              size="icon"
+              aria-label="Download theme"
+              onClick={downloadTheme}
+            >
+              <ArrowDownToLine />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            Download theme ({THEME_FILENAME})
+          </TooltipContent>
+        </Tooltip>
 
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="outline"
-            size="icon"
-            aria-label="Download theme"
-            onClick={downloadTheme}
-          >
-            <ArrowDownToLine />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent side="bottom">
-          Download theme ({THEME_FILENAME})
-        </TooltipContent>
-      </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="outline"
+              size="icon"
+              aria-label="Copy install command"
+              onClick={copyCommand}
+            >
+              {copied ? <Check /> : <Terminal />}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            {copied ? "Copied!" : INSTALL_COMMAND}
+          </TooltipContent>
+        </Tooltip>
+      </ButtonGroup>
 
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="outline"
-            size="icon"
-            aria-label="Close"
-            onClick={onClose}
-          >
-            <X />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent side="bottom">Close</TooltipContent>
-      </Tooltip>
-    </ButtonGroup>
+      <ButtonGroup>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="outline"
+              size="icon"
+              aria-label="Close"
+              onClick={onClose}
+            >
+              <X />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">Close</TooltipContent>
+        </Tooltip>
+      </ButtonGroup>
+    </>
   );
 }
 
