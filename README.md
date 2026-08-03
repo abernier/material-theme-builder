@@ -438,9 +438,9 @@ ones the mapping replaces.
 
 > [!WARNING]
 >
-> Core-color overrides expect **chromatic** inputs. A shadcn neutral is
-> achromatic, and a color with no chroma has no hue to extract: from source
-> `#6750A4`, `primary: "#171718"` gives blue, `#181717` maroon.
+> An override keeps only your color's **hue**, and a grey hasn't got one — from
+> source `#6750A4`, `primary: "#171718"` gives blue, `#181717` maroon. So don't
+> pass shadcn's neutrals back in: they're grey by construction.
 
 ### Remapping the CSS variables instead
 
