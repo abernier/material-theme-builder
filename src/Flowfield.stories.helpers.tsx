@@ -4,7 +4,7 @@ import { useCallback, useMemo, useState, type ComponentProps } from "react";
 import { Toggle } from "./components/ui/toggle";
 import { Flowfield, type Peak } from "./Flowfield";
 import { cn } from "./lib/utils";
-import { useMcu } from "./Mcu.context";
+import { useMtb } from "./Mtb.context";
 import { ThemePanel } from "./ThemePanel";
 
 /**
@@ -37,7 +37,7 @@ function DarkModeToggle() {
  * Flowfield scene with color palette controls overlay.
  */
 export function FlowfieldScene({ ...props }: ComponentProps<typeof Flowfield>) {
-  const { allPalettes } = useMcu();
+  const { allPalettes } = useMtb();
 
   const baseColors = useMemo<Record<number, string>>(
     () => ({

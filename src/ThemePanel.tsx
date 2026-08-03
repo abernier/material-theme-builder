@@ -17,9 +17,9 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "./components/ui/tooltip";
-import { schemeNames, type McuConfig } from "./lib/builder";
+import { schemeNames, type MtbConfig } from "./lib/builder";
 import { cn } from "./lib/utils";
-import { useMcu } from "./Mcu.context";
+import { useMtb } from "./Mtb.context";
 
 const CONTRAST_LEVELS = [
   { label: "Standard", value: 0 },
@@ -65,7 +65,7 @@ function Pill({
  * Lets users customise the Material color scheme: source color,
  * palette overrides, custom colors, scheme variant, and contrast level.
  *
- * Must be rendered inside `<Mtb>` (it drives the theme via {@link useMcu}).
+ * Must be rendered inside `<Mtb>` (it drives the theme via {@link useMtb}).
  *
  * @example
  * ```tsx
@@ -75,15 +75,15 @@ function Pill({
  * ```
  */
 export function ThemePanel(props: ComponentProps<typeof ButtonGroup>) {
-  const { initials, setMcuConfig, allPalettes } = useMcu();
+  const { initials, setMcuConfig, allPalettes } = useMtb();
 
-  const [config, setConfig] = useState<McuConfig>(() => initials);
+  const [config, setConfig] = useState<MtbConfig>(() => initials);
 
   const pendingAddIndexRef = useRef<number | null>(null);
   const sourceInputRef = useRef<HTMLInputElement>(null);
   const [expanded, setExpanded] = useState(false);
 
-  const update = useCallback((patch: Partial<McuConfig>) => {
+  const update = useCallback((patch: Partial<MtbConfig>) => {
     setConfig((prev) => ({ ...prev, ...patch }));
   }, []);
 

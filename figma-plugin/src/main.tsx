@@ -3,15 +3,15 @@ import { createRoot } from "react-dom/client";
 import { Fab } from "../../src/components/m3/Fab";
 import { FlowfieldSt } from "../../src/Flowfield.stories";
 import { FlowfieldScene } from "../../src/Flowfield.stories.helpers";
-import { useMcu } from "../../src/Mcu.context";
 import { Mtb } from "../../src/Mtb";
+import { useMtb } from "../../src/Mtb.context";
 
 import { TooltipProvider } from "../../src/components/ui/tooltip";
 import "../../src/styles/globals.css";
 import "./main.css";
 
 function SyncButton() {
-  const { figmaVariables } = useMcu();
+  const { figmaVariables } = useMtb();
   const [syncing, setSyncing] = useState(false);
 
   function handleSync() {

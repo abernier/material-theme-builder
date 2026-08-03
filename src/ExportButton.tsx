@@ -1,10 +1,10 @@
 import { Fab } from "./components/m3/Fab";
-import type { McuConfig } from "./lib/builder";
+import type { MtbConfig } from "./lib/builder";
 import { builder } from "./lib/builder";
 
 interface ExportButtonProps {
   /** Current theme configuration used to generate the exported tokens. */
-  config: McuConfig;
+  config: MtbConfig;
 }
 
 /**

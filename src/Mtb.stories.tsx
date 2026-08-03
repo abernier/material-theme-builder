@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useMemo } from "react";
 import { allModes } from "../.storybook/modes";
-import { type McuConfig, schemeNames } from "./lib/builder";
+import { type MtbConfig, schemeNames } from "./lib/builder";
 import { recolorizeSvg } from "./lib/recolorizeSvg";
-import { useMcu } from "./Mcu.context";
 import { Mtb } from "./Mtb";
+import { useMtb } from "./Mtb.context";
 import { Layout, Scheme, Shades, TailwindScheme } from "./Mtb.stories.helpers";
 
 import exampleSvg from "./assets/example.svg?raw";
@@ -651,7 +651,7 @@ const RecolorizedIllustration = ({
   palettes,
 }: {
   svgContent: string;
-  palettes: ReturnType<typeof useMcu>["allPalettes"];
+  palettes: ReturnType<typeof useMtb>["allPalettes"];
 }) => {
   const recoloredSvg = useMemo(() => {
     return recolorizeSvg(svgContent, palettes);
@@ -667,11 +667,11 @@ function Scene({
   excludedPalettesNames = [], // palettes to exclude
 }: {
   svgContent?: string;
-  customColors?: McuConfig["customColors"];
+  customColors?: MtbConfig["customColors"];
   includedPalettesNames?: string[];
   excludedPalettesNames?: string[];
 }) {
-  const { allPalettes } = useMcu();
+  const { allPalettes } = useMtb();
 
   let palettes = allPalettes;
 

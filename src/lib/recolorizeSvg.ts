@@ -6,7 +6,7 @@ import {
 import type { Color, Lab65 } from "culori";
 import { converter, differenceCiede2000, parseHex } from "culori";
 import { kebabCase } from "lodash-es";
-import type { useMcu } from "../Mcu.context";
+import type { useMtb } from "../Mtb.context";
 import { STANDARD_TONES } from "./builder";
 
 /**
@@ -90,7 +90,7 @@ function findClosestTone(targetTone: number) {
 }
 
 /**
- * Ultra-optimized SVG recoloring that consumes directly the palettes from the MCU Context.
+ * Ultra-optimized SVG recoloring that consumes directly the palettes from the Mtb context.
  * This version reuses pre-computed palettes for maximum performance and perfect synchronization.
  *
  * **Matching Algorithm:**
@@ -120,7 +120,7 @@ function findClosestTone(targetTone: number) {
  */
 export function recolorizeSvg(
   svgString: string,
-  palettes: ReturnType<typeof useMcu>["allPalettes"],
+  palettes: ReturnType<typeof useMtb>["allPalettes"],
   options: RecolorizeSvgOptions = {},
 ) {
   const { tolerance = 15.0 } = options;
