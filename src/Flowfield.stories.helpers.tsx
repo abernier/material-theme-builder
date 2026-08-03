@@ -20,7 +20,7 @@ import {
 import { Flowfield, type Peak } from "./Flowfield";
 import { schemeNames } from "./lib/builder";
 import { cn } from "./lib/utils";
-import { useMcu } from "./Mcu.context";
+import { useMtb } from "./Mtb.context";
 
 function Pill({
   color,
@@ -119,7 +119,7 @@ export function FlowfieldScene({ ...props }: ComponentProps<typeof Flowfield>) {
     mcuConfig,
     setMcuConfig: _setMcuConfig,
     initials,
-  } = useMcu();
+  } = useMtb();
 
   const setMcuConfig = useDebounceCallback(_setMcuConfig, 50);
 

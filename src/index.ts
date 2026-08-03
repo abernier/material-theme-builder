@@ -9,4 +9,9 @@
 // the page never rendered.
 
 export { builder } from "./lib/builder";
-export type { McuConfig, ShadcnTheme, ShadcnVarName } from "./lib/builder";
+export type {
+  McuConfig,
+  MtbConfig,
+  ShadcnTheme,
+  ShadcnVarName,
+} from "./lib/builder";

@@ -4,8 +4,8 @@ import { type ComponentProps } from "react";
 import { ExportButton } from "./ExportButton";
 import { STANDARD_TONES } from "./lib/builder";
 import { cn } from "./lib/utils";
-import { useMcu } from "./Mcu.context";
 import type { Mtb } from "./Mtb";
+import { useMtb } from "./Mtb.context";
 
 function Foo({ children, ...props }: ComponentProps<"div">) {
   return (
@@ -40,7 +40,7 @@ export function Layout({
   /** Story content to render inside the layout. */
   children: React.ReactNode;
 }) {
-  const { initials } = useMcu();
+  const { initials } = useMtb();
 
   return (
     <div className="flex flex-col gap-6 max-w-208 mx-auto">

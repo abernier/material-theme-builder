@@ -7,38 +7,38 @@ import {
   builder,
   type FigmaTokens,
   type FigmaVariable,
-  type McuConfig,
+  type MtbConfig,
   type TokenName,
 } from "./lib/builder";
 import { createRequiredContext } from "./lib/createRequiredContext";
 
 type Api = {
-  initials: McuConfig;
-  mcuConfig: McuConfig;
-  setMcuConfig: (config: McuConfig) => void;
+  initials: MtbConfig;
+  mcuConfig: MtbConfig;
+  setMcuConfig: (config: MtbConfig) => void;
   getMcuColor: (colorName: TokenName, theme?: string) => string;
   allPalettes: Record<string, TonalPalette>;
   figmaTokens: FigmaTokens;
   figmaVariables: FigmaVariable[];
 };
 
-const [useMcu, Provider, McuContext] = createRequiredContext<Api>();
+const [useMtb, Provider, MtbContext] = createRequiredContext<Api>();
 
 /**
  * Provider that computes the Material You theme and exposes it via context.
  */
-export const McuProvider = ({
+export const MtbProvider = ({
   styleId,
   children,
   ...configProps
-}: McuConfig & {
+}: MtbConfig & {
   /** The `id` attribute applied to the injected `<style>` element. */
   styleId: string;
   /** Content to render inside the provider. */
   children?: React.ReactNode;
 }) => {
   const [initials] = useState(() => configProps);
-  // console.log("McuProvider initials", initials);
+  // console.log("MtbProvider initials", initials);
 
   const [mcuConfig, setMcuConfig] = useState(initials);
 
@@ -137,4 +137,10 @@ export const McuProvider = ({
   );
 };
 
-export { McuContext, useMcu };
+/**
+ * @deprecated Renamed `useMtb` — same hook, same return value. This alias will
+ * be removed in the next major.
+ */
+const useMcu = useMtb;
+
+export { MtbContext, useMcu, useMtb };

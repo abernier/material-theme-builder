@@ -6,9 +6,9 @@ import {
   DEFAULT_CUSTOM_COLORS,
   DEFAULT_PREFIX,
   DEFAULT_SCHEME,
-  type McuConfig,
+  type MtbConfig,
 } from "./lib/builder";
-import { McuProvider } from "./Mcu.context";
+import { MtbProvider } from "./Mtb.context";
 
 const mcuStyleId = "mcu-styles";
 const DEFAULT_COLOR_MATCH = false;
@@ -30,7 +30,7 @@ export function Mtb({
   customColors = DEFAULT_CUSTOM_COLORS,
   prefix = DEFAULT_PREFIX,
   children,
-}: McuConfig & {
+}: MtbConfig & {
   /** Content to render inside the themed scope. */
   children?: React.ReactNode;
 }) {
@@ -66,9 +66,9 @@ export function Mtb({
   );
 
   return (
-    <McuProvider {...config} styleId={mcuStyleId}>
+    <MtbProvider {...config} styleId={mcuStyleId}>
       {children}
-    </McuProvider>
+    </MtbProvider>
   );
 }
 
