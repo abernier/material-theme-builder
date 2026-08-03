@@ -11,8 +11,16 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
  *
  * NOT exported: Storybook treats every named export of a story file as a
  * story, and Chromatic chokes trying to hang `parameters` off a string.
+ *
+ * In dev the link targets the locally-built bundle, served by this very
+ * Storybook (staticDirs) — run `pnpm build` to refresh it. The built
+ * Storybook keeps the jsDelivr URL.
  */
-const BOOKMARKLET_HREF = `javascript:(()=>{var s=document.createElement("script");s.src="https://cdn.jsdelivr.net/npm/material-theme-builder@3/dist/bookmarklet.global.js";document.body.append(s)})()`;
+const BUNDLE_URL = import.meta.env.DEV
+  ? `${window.location.origin}/dist/bookmarklet.global.js`
+  : "https://cdn.jsdelivr.net/npm/material-theme-builder@3/dist/bookmarklet.global.js";
+
+const BOOKMARKLET_HREF = `javascript:(()=>{var s=document.createElement("script");s.src="${BUNDLE_URL}";document.body.append(s)})()`;
 
 function BookmarkletLink() {
   return (
@@ -39,6 +47,10 @@ function BookmarkletLink() {
         >
           🎨 MTB ThemePanel
         </a>
+      </p>
+      <p>
+        Bundle: <code>{BUNDLE_URL}</code>
+        {import.meta.env.DEV && " (local build — run pnpm build to refresh)"}
       </p>
       <p>
         (Clicking it here is a no-op — Storybook runs in an iframe. Drag it to
