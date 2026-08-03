@@ -5,7 +5,7 @@ import { defineConfig } from "tsup";
 // React surface -- and so that nothing on the root entry points at it:
 //
 //   dist/index.js   no directive -- `builder`, the package root
-//   dist/react.js   "use client" -- Mcu, useMcu, ExportButton
+//   dist/react.js   "use client" -- Mtb, useMcu, ExportButton
 //   dist/cli.js     the CLI
 //
 // The two are independent: `index.js` does not import `react.js`, which is

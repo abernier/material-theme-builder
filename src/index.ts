@@ -5,7 +5,7 @@
 // server and client graphs registers every export of a `"use client"` module
 // it sees, including through a re-export. While this file re-exported them,
 // `import { builder } from "material-theme-builder"` in a server component
-// still shipped `Mcu` and the color utilities to the browser, for a component
+// still shipped `Mtb` and the color utilities to the browser, for a component
 // the page never rendered.
 
 export { builder } from "./lib/builder";
