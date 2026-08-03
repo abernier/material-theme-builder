@@ -125,6 +125,18 @@ return (
 );
 ```
 
+## `ThemePanel`
+
+A debug panel (à la [Radix Themes](https://www.radix-ui.com/themes/docs/components/theme-panel)) to tweak the theme live — source color, palette overrides, custom colors, scheme and contrast:
+
+```tsx
+import { Mtb, ThemePanel } from "material-theme-builder/react";
+
+<Mtb source="#769CDF">
+  <ThemePanel />
+</Mtb>;
+```
+
 ## Tailwind
 
 Compatible through [theme variables](https://tailwindcss.com/docs/theme):
