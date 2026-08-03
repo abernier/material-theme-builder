@@ -181,21 +181,27 @@ const FLOWFIELD_PEAKS: Peak[] = [
 function InfoPopover() {
   return (
     <Popover>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <PopoverTrigger asChild>
-            <Button variant="outline" size="icon" aria-label="About">
-              <Info />
-            </Button>
-          </PopoverTrigger>
-        </TooltipTrigger>
-        <TooltipContent side="bottom">About</TooltipContent>
-      </Tooltip>
+      <ButtonGroup>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="icon" aria-label="About">
+                <Info />
+              </Button>
+            </PopoverTrigger>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">About</TooltipContent>
+        </Tooltip>
+      </ButtonGroup>
 
       <PopoverContent
         side="top"
-        align="end"
+        align="start"
         className="relative overflow-hidden p-0"
+        // Only the info button dismisses it. Every tweak on the panel next
+        // to it repaints the backdrop, which an outside click closing the
+        // popover would make impossible to watch.
+        onInteractOutside={(e) => e.preventDefault()}
       >
         {/* Dimmed — at full strength the peaks swallow the text, more so in
             dark mode where they are the lightest thing on screen. */}
@@ -233,8 +239,8 @@ function InfoPopover() {
 }
 
 /**
- * The action cluster next to the panel: about, download the theme as a
- * globals.css snippet, copy the shadcn CLI install command, close.
+ * The action cluster after the panel: download the theme as a globals.css
+ * snippet, copy the shadcn CLI install command, close.
  */
 function Actions({ onClose }: { onClose: () => void }) {
   const { mcuConfig } = useMtb();
@@ -271,10 +277,6 @@ function Actions({ onClose }: { onClose: () => void }) {
 
   return (
     <>
-      <ButtonGroup>
-        <InfoPopover />
-      </ButtonGroup>
-
       <ButtonGroup>
         <Tooltip>
           <TooltipTrigger asChild>
@@ -345,6 +347,8 @@ function App({
         <Mtb source={source}>
           <ApplyToHost />
           <div className="flex items-center gap-1">
+            <InfoPopover />
+
             {/* No custom colors: they map to no shadcn variable, so on a
                 host page they would be a control that does nothing. */}
             <ThemePanel customColors={false} />
