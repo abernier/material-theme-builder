@@ -23,15 +23,25 @@ describe("shadcnStyleSheet()", () => {
     }
   });
 
+  it("should emit plain declarations by default (globals.css snippet)", () => {
+    expect(css).not.toContain("!important");
+  });
+
+  it("should not wrap anything in @layer (unlayered wins the cascade)", () => {
+    expect(css).not.toContain("@layer");
+  });
+});
+
+describe("shadcnStyleSheet({ important: true })", () => {
+  const css = shadcnStyleSheet(builder(SOURCE).toShadcn(), {
+    important: true,
+  });
+
   it("should mark every declaration !important", () => {
     const declarations = css.match(/--[a-z1-5-]+: [^;]+;/g) ?? [];
     expect(declarations.length).toBe(2 * SHADCN_MAPPING.length);
     for (const declaration of declarations) {
       expect(declaration).toMatch(/ !important;$/);
     }
-  });
-
-  it("should not wrap anything in @layer (unlayered wins the cascade)", () => {
-    expect(css).not.toContain("@layer");
   });
 });

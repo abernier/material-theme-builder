@@ -104,7 +104,7 @@ function ApplyToHost() {
     if (JSON.stringify(mcuConfig) === JSON.stringify(initials)) return;
 
     const { toShadcn } = builder(mcuConfig.source, mcuConfig);
-    const css = shadcnStyleSheet(toShadcn());
+    const css = shadcnStyleSheet(toShadcn(), { important: true });
 
     for (const doc of themableDocuments()) {
       let style = doc.getElementById(STYLE_ID) as HTMLStyleElement | null;
@@ -123,7 +123,7 @@ function ApplyToHost() {
   return null;
 }
 
-const THEME_FILENAME = "mtb-theme.json";
+const THEME_FILENAME = "globals.css";
 
 // The current theme as a shadcn registry item — installable as-is with the
 // standard shadcn CLI (toShadcn() already matches the cssVars field).
@@ -164,10 +164,14 @@ function Actions({ onClose }: { onClose: () => void }) {
     setCopied(true);
   };
 
+  // The globals.css snippet, à la ui.shadcn.com/create's "Copy Theme" —
+  // plain declarations (no !important): it's meant to be merged into the
+  // user's stylesheet, not to fight one.
   const downloadTheme = () => {
-    const blob = new Blob([JSON.stringify(registryItem(mcuConfig), null, 2)], {
-      type: "application/json",
-    });
+    const css = shadcnStyleSheet(
+      builder(mcuConfig.source, mcuConfig).toShadcn(),
+    );
+    const blob = new Blob([css], { type: "text/css" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -193,7 +197,7 @@ function Actions({ onClose }: { onClose: () => void }) {
             </Button>
           </TooltipTrigger>
           <TooltipContent side="bottom">
-            Download theme ({THEME_FILENAME})
+            Download theme CSS ({THEME_FILENAME})
           </TooltipContent>
         </Tooltip>
 

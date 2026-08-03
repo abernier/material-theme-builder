@@ -40,7 +40,17 @@ const tailwindAsText: Plugin = {
         const result = await postcss([
           tailwindPostcss({ optimize: true }),
         ]).process(source, { from: file });
-        return { contents: result.css, loader: "text" };
+        // Watch mode: recompile when the css itself OR any file it
+        // @source-scans changes — esbuild would otherwise serve the cached
+        // text while the scanned classes drift.
+        const scanned = [...source.matchAll(/@source "(.+?)";/g)].map((m) =>
+          path.resolve(path.dirname(file), m[1] ?? ""),
+        );
+        return {
+          contents: result.css,
+          loader: "text",
+          watchFiles: [file, ...scanned],
+        };
       },
     );
   },

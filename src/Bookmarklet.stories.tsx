@@ -55,7 +55,8 @@ function BookmarkletLink() {
       </p>
       <p>
         Bundle: <code>{BUNDLE_URL}</code>
-        {import.meta.env.DEV && " (local build — run pnpm build to refresh)"}
+        {import.meta.env.DEV &&
+          " (local build — keep pnpm dev running and it recompiles on change)"}
       </p>
       <p>
         (Clicking it here is a no-op — Storybook runs in an iframe. Drag it to
