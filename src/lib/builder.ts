@@ -75,8 +75,8 @@ const schemesMap = {
   content: SchemeContent,
 } satisfies Record<SchemeName, SchemeConstructor>;
 
-/** Configuration for the Material Color Utilities builder. */
-export type McuConfig = {
+/** Configuration for the Material Theme Builder. */
+export type MtbConfig = {
   /** Source color in hex format (e.g., "#6750A4") used to generate the color scheme */
   source: string;
   /** Color scheme variant. Default: "tonalSpot" */
@@ -116,6 +116,12 @@ export type McuConfig = {
    */
   prefix?: string;
 };
+
+/**
+ * @deprecated Renamed `MtbConfig` — same shape. This alias will be removed in
+ * the next major.
+ */
+export type McuConfig = MtbConfig;
 
 // ─── Constants ───────────────────────────────────────────────────────────
 
@@ -514,7 +520,7 @@ function buildTokenToPaletteMap(
  * ```
  */
 export function builder(
-  hexSource: McuConfig["source"],
+  hexSource: MtbConfig["source"],
   {
     scheme = DEFAULT_SCHEME,
     contrast = DEFAULT_CONTRAST,
@@ -526,7 +532,7 @@ export function builder(
     error,
     customColors: hexCustomColors = DEFAULT_CUSTOM_COLORS,
     prefix = DEFAULT_PREFIX,
-  }: Omit<McuConfig, "source"> = {},
+  }: Omit<MtbConfig, "source"> = {},
 ) {
   const sourceArgb = argbFromHex(hexSource);
   const sourceHct = Hct.fromInt(sourceArgb);

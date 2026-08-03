@@ -2,6 +2,7 @@ import { cleanup, render } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it } from "vitest";
 import { Mcu, Mtb } from "./Mtb";
+import { useMcu, useMtb } from "./Mtb.context";
 
 describe("Mtb", () => {
   afterEach(() => {
@@ -130,5 +131,9 @@ describe("Mtb", () => {
 
   it("should keep `Mcu` as a deprecated alias of `Mtb`", () => {
     expect(Mcu).toBe(Mtb);
+  });
+
+  it("should keep `useMcu` as a deprecated alias of `useMtb`", () => {
+    expect(useMcu).toBe(useMtb);
   });
 });

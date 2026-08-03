@@ -67,9 +67,9 @@ The React bindings live on their own entry point, `material-theme-builder/react`
 CSS variables are injected into the page:
 
 ```tsx
-import { Mcu } from "material-theme-builder/react";
+import { Mtb } from "material-theme-builder/react";
 
-<Mcu
+<Mtb
   source="#0e1216"
   scheme="vibrant"
   contrast={0.5}
@@ -88,7 +88,7 @@ import { Mcu } from "material-theme-builder/react";
       color: "var(--md-sys-color-on-my-custom-color-1)",
     }}>colors<span>!
   </p>
-</Mcu>
+</Mtb>
 ```
 
 > [!TIP]
@@ -103,20 +103,20 @@ import { Mcu } from "material-theme-builder/react";
 
 > [!NOTE]
 >
-> `<Mcu>` injects the CSS from the client, and is the only thing here carrying
+> `<Mtb>` injects the CSS from the client, and is the only thing here carrying
 > `"use client"`. The root entry holds `builder` alone — so from a
 > [React Server Component](https://react.dev/reference/rsc/server-components)
 > you can call it and emit `toCss()` into the document yourself, without
 > shipping components the page never renders.
 
-## `useMcu`
+## `useMtb`
 
 A hook is also provided:
 
 ```tsx
-import { useMcu } from "material-theme-builder/react";
+import { useMtb } from "material-theme-builder/react";
 
-const { initials, setMcuConfig, getMcuColor } = useMcu();
+const { initials, setMcuConfig, getMcuColor } = useMtb();
 
 return (
   <button onClick={() => setMcuConfig({ ...initials, source: "#FF5722" })}>
