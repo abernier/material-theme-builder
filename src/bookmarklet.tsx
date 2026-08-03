@@ -124,7 +124,6 @@ function ApplyToHost() {
 }
 
 const THEME_FILENAME = "mtb-theme.json";
-const INSTALL_COMMAND = `npx shadcn@latest add ./${THEME_FILENAME}`;
 
 // The current theme as a shadcn registry item — installable as-is with the
 // standard shadcn CLI (toShadcn() already matches the cssVars field).
@@ -135,6 +134,15 @@ function registryItem(config: MtbConfig) {
     type: "registry:theme",
     cssVars: builder(config.source, config).toShadcn(),
   };
+}
+
+// Self-contained install command: the registry item rides along as a
+// base64 data: URL, so there is nothing to download or host first. `add`
+// fetches data: URLs fine; `apply` would corrupt them by appending its
+// ?base=…&rtl=… params into the payload.
+function installCommand(config: MtbConfig) {
+  const b64 = btoa(JSON.stringify(registryItem(config)));
+  return `npx shadcn@latest add "data:application/json;base64,${b64}"`;
 }
 
 /**
@@ -152,7 +160,7 @@ function Actions({ onClose }: { onClose: () => void }) {
   }, [copied]);
 
   const copyCommand = async () => {
-    await navigator.clipboard.writeText(INSTALL_COMMAND);
+    await navigator.clipboard.writeText(installCommand(mcuConfig));
     setCopied(true);
   };
 
@@ -201,7 +209,9 @@ function Actions({ onClose }: { onClose: () => void }) {
             </Button>
           </TooltipTrigger>
           <TooltipContent side="bottom">
-            {copied ? "Copied!" : INSTALL_COMMAND}
+            {copied
+              ? "Copied!"
+              : 'Copy install command — npx shadcn add "data:…" (theme embedded)'}
           </TooltipContent>
         </Tooltip>
       </ButtonGroup>
