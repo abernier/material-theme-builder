@@ -1,7 +1,7 @@
 import { Popover as PopoverPrimitive } from "radix-ui";
 import * as React from "react";
 
-import { PortalContainerContext } from "@/lib/bookmarklet.portalContainer";
+import { PortalContainerContext } from "@/lib/extension.portalContainer";
 import { cn } from "@/lib/utils";
 
 function Popover({

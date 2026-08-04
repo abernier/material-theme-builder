@@ -81,8 +81,8 @@ export function ThemePanel({
 }: {
   /**
    * Whether the expanded panel offers custom colors. Turn them off where
-   * they can't show up in the output — the bookmarklet, for one, only ever
-   * writes the core shadcn variables, which no custom color maps to.
+   * they can't show up in the output — the Chrome extension, for one, only
+   * ever writes the core shadcn variables, which no custom color maps to.
    */
   customColors?: boolean;
   /** Control scale — `"lg"` for an overlay meant to be hit on any page. */

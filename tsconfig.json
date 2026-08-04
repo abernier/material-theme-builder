@@ -25,6 +25,6 @@
     "jsx": "react-jsx",
     "noEmit": true
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["src/**/*", "chrome-extension/**/*"],
+  "exclude": ["node_modules", "**/dist"]
 }

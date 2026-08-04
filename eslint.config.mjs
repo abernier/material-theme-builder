@@ -4,11 +4,15 @@ import sonarjs from "eslint-plugin-sonarjs";
 import { defineConfig } from "eslint/config";
 import tseslint from "typescript-eslint";
 
-const SOURCE_FILES = ["src/**/*.{ts,tsx}", ".storybook/**/*.{ts,tsx}"];
+const SOURCE_FILES = [
+  "src/**/*.{ts,tsx}",
+  "chrome-extension/**/*.{ts,tsx}",
+  ".storybook/**/*.{ts,tsx}",
+];
 
 export default defineConfig([
   {
-    ignores: ["dist/**", "storybook-static/**", "node_modules/**"],
+    ignores: ["**/dist/**", "storybook-static/**", "node_modules/**"],
   },
   {
     ...reactHooks.configs.flat.recommended,

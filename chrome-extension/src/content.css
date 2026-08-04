@@ -1,7 +1,7 @@
 /*
- * Stylesheet for the bookmarklet's shadow root — compiled by Tailwind at
- * build time (see tsup.config.ts) and injected as a <style> inside the
- * shadow DOM, never into the host page.
+ * Stylesheet for the panel's shadow root — compiled by Tailwind at build
+ * time and imported by content.tsx as a string (`?inline`), then injected
+ * as a <style> inside the shadow DOM, never into the host page.
  *
  * Scans only the files the panel actually renders (source(none) + explicit
  * @source), so the host page's own markup never inflates the bundle.
@@ -20,13 +20,13 @@
 @import "tailwindcss" source(none);
 @import "tw-animate-css";
 
-@source "./ThemePanel.tsx";
-@source "./bookmarklet.tsx";
-@source "./components/ui/button.tsx";
-@source "./components/ui/button-group.tsx";
-@source "./components/ui/popover.tsx";
-@source "./components/ui/separator.tsx";
-@source "./components/ui/tooltip.tsx";
+@source "./content.tsx";
+@source "../../src/ThemePanel.tsx";
+@source "../../src/components/ui/button.tsx";
+@source "../../src/components/ui/button-group.tsx";
+@source "../../src/components/ui/popover.tsx";
+@source "../../src/components/ui/separator.tsx";
+@source "../../src/components/ui/tooltip.tsx";
 
 @custom-variant dark (&:is(.dark *));
 

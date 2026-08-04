@@ -1,0 +1,9 @@
+---
+"material-theme-builder": minor
+---
+
+Add a Chrome extension: click its toolbar button on any shadcn-based site and the `ThemePanel` mounts on the page, re-theming it live by forcing the shadcn variables — same mapping as `toShadcn()`, same-origin preview iframes included. The panel renders in a shadow root, styled by the very variables it edits, and closing it restores the site untouched. Next to the panel: a button downloading the theme's CSS variables as a `globals.css` snippet (à la ui.shadcn.com/create's "Copy Theme") and one copying a self-contained install command — the theme rides along as a base64 `data:` URL (`npx shadcn@latest add "data:application/json;base64,…"`), nothing to host or download first. An info button opens an About popover backed by an animated `Flowfield`, itself painted with the theme's variables.
+
+It asks for `activeTab` alone: nothing is read or injected until the button is clicked, and the panel is not a declared content script. Built with Vite + CRXJS out of `chrome-extension/`, shipped as a zip on each GitHub release (and to the Chrome Web Store once its credentials are configured) — not as part of this npm package.
+
+`ThemePanel` also gains two props: `customColors` (default `true`), which the extension turns off since custom colors map to no shadcn variable and would be a control that does nothing there, and `size` (`"default" | "lg"`), which scales every control up for an overlay meant to be hit on any page.

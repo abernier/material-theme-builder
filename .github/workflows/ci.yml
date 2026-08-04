@@ -134,3 +134,99 @@ jobs:
           fi
 
           echo "Figma plugin v${VERSION} published successfully"
+
+  #
+  # Chrome extension — only on version bump (release merge).
+  #
+  # Two outputs, independent: the zip is always attached to the GitHub release
+  # (that's the "load unpacked" install path documented in the README), and the
+  # Web Store upload runs only once the store credentials exist as repo
+  # secrets. See chrome-extension/README.md for how to obtain them.
+  #
+
+  chrome-extension:
+    needs: ci
+    if: needs.ci.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write # gh release upload
+
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: ".nvmrc"
+          cache: "pnpm"
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build & zip
+        run: pnpm run zip-extension
+
+      # Changesets tags a single-package repo `v<version>` and creates the
+      # release; this only adds the asset to it.
+      - name: Attach to the GitHub release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "v${{ needs.ci.outputs.version }}" \
+            chrome-extension/material-theme-builder-chrome.zip --clobber
+
+      - name: Publish to the Chrome Web Store
+        if: vars.CHROME_EXTENSION_ID != ''
+        env:
+          EXTENSION_ID: ${{ vars.CHROME_EXTENSION_ID }}
+          CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
+          REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          VERSION="${{ needs.ci.outputs.version }}"
+          ZIP="chrome-extension/material-theme-builder-chrome.zip"
+
+          echo "Publishing Chrome extension v${VERSION} (item id: ${EXTENSION_ID})"
+
+          ACCESS_TOKEN=$(curl -s -X POST "https://oauth2.googleapis.com/token" \
+            -d "client_id=${CLIENT_ID}" \
+            -d "client_secret=${CLIENT_SECRET}" \
+            -d "refresh_token=${REFRESH_TOKEN}" \
+            -d "grant_type=refresh_token" | jq -r '.access_token')
+
+          if [[ -z "$ACCESS_TOKEN" || "$ACCESS_TOKEN" == "null" ]]; then
+            echo "::error::Could not refresh the Chrome Web Store access token"
+            exit 1
+          fi
+
+          # Upload the new package, then flip it to published. `uploadState`
+          # is FAILURE on e.g. a version that isn't higher than the live one.
+          UPLOAD=$(curl -s \
+            -X PUT \
+            -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+            -H "x-goog-api-version: 2" \
+            -T "$ZIP" \
+            "https://www.googleapis.com/upload/chromewebstore/v1.1/items/${EXTENSION_ID}")
+
+          echo "$UPLOAD" | jq . 2>/dev/null || echo "$UPLOAD"
+
+          if [[ "$(echo "$UPLOAD" | jq -r '.uploadState')" != "SUCCESS" ]]; then
+            echo "::error::Chrome Web Store upload failed"
+            exit 1
+          fi
+
+          PUBLISH=$(curl -s \
+            -X POST \
+            -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+            -H "x-goog-api-version: 2" \
+            -H "Content-Length: 0" \
+            "https://www.googleapis.com/chromewebstore/v1.1/items/${EXTENSION_ID}/publish")
+
+          echo "$PUBLISH" | jq . 2>/dev/null || echo "$PUBLISH"
+
+          if echo "$PUBLISH" | jq -e '.error' >/dev/null 2>&1; then
+            echo "::error::Chrome Web Store publish failed"
+            exit 1
+          fi
+
+          echo "Chrome extension v${VERSION} submitted for review"

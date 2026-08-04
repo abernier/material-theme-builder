@@ -1,5 +1,6 @@
 node_modules
 dist
+*.zip
 *storybook.log
 storybook-static
 package-lock.json

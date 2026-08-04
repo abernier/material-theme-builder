@@ -137,15 +137,28 @@ import { Mtb, ThemePanel } from "material-theme-builder/react";
 </Mtb>;
 ```
 
-### Bookmarklet
+### Chrome extension
 
-Try the `ThemePanel` on **any shadcn-based site** — no install. Create a bookmark with this URL:
+Try the `ThemePanel` on **any shadcn-based site**, without touching its code.
 
-```
-javascript:(()=>{var s=document.createElement("script");s.src="https://cdn.jsdelivr.net/npm/material-theme-builder@3/dist/bookmarklet.global.js";document.body.append(s)})()
-```
+Grab the latest `material-theme-builder-chrome.zip` from
+[Releases](https://github.com/abernier/material-theme-builder/releases), unzip it, then
+`chrome://extensions` → **Developer mode** → **Load unpacked** → pick the folder. Pin the
+extension and click its toolbar button on a shadcn site (try
+[ui.shadcn.com/create](https://ui.shadcn.com/create)).
 
-Click it on a shadcn site (try [ui.shadcn.com/create](https://ui.shadcn.com/create)): the panel mounts bottom-right and every tweak re-themes the page live, by forcing the [shadcn variables](https://ui.shadcn.com/docs/theming#list-of-variables) (same mapping as `toShadcn()`) on the page — same-origin preview iframes included. The panel itself lives in a shadow root and is styled by the very variables it edits. Click the bookmarklet again — or its ✕ button — to restore the site untouched.
+The panel appears at the bottom of the page and every tweak re-themes it live, by forcing
+the [shadcn variables](https://ui.shadcn.com/docs/theming#list-of-variables) (same mapping
+as `toShadcn()`) onto the page — same-origin preview iframes included. The panel itself
+lives in a shadow root and is styled by the very variables it edits. Click the toolbar
+button again — or the panel's ✕ — to restore the site untouched.
+
+Next to the panel: a button to download the theme as a `globals.css` snippet, and one to
+copy a self-contained `npx shadcn add` command with the theme embedded.
+
+The extension asks for `activeTab` and nothing else: it can't see any page until you click
+its button, and it sends nothing anywhere. Source and build in
+[`chrome-extension/`](chrome-extension/).
 
 ## Tailwind
 

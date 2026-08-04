@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { shadcnStyleSheet } from "./bookmarklet.shadcnStyle";
 import { builder } from "./builder";
 import { SHADCN_MAPPING } from "./builder.shadcn";
+import { shadcnStyleSheet } from "./extension.shadcnStyle";
 
 const SOURCE = "#6750A4";
 

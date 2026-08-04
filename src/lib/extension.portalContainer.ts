@@ -4,7 +4,7 @@ import * as React from "react";
  * Where Radix portals — tooltips, popovers — land. `null`, the default,
  * leaves Radix its own default of `document.body`.
  *
- * The bookmarklet provides a node inside its shadow root instead: content
+ * The Chrome extension provides a node inside its shadow root instead: content
  * portalled to `document.body` would escape the shadow boundary and lose
  * every style.
  */

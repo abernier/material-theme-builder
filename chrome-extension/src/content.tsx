@@ -1,7 +1,10 @@
 /*
- * Bookmarklet entry — a self-contained IIFE (React bundled, see
- * tsup.config.ts) that mounts <ThemePanel> on any shadcn site and applies
- * the tweaked theme to the page as forced shadcn variables.
+ * Content script — mounts <ThemePanel> on any shadcn site and applies the
+ * tweaked theme to the page as forced shadcn variables.
+ *
+ * Injected on demand by the service worker (src/background.ts), never
+ * declared in the manifest: React on every page the user browses would be
+ * a poor trade for a panel they open now and then.
  *
  * The panel lives in a shadow root: its Tailwind styles (preflight
  * included) stay confined there, and the host page's styles can't reach
@@ -13,31 +16,39 @@ import { ArrowDownToLine, Check, Info, Terminal, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-// Compiled by Tailwind at build time and inlined as a string (tsup plugin).
-import cssText from "./bookmarklet.css?raw";
+// `?inline` (not `?raw`): Vite runs the file through Tailwind first and
+// hands back the compiled CSS as a string, which goes into the shadow root.
+import cssText from "./content.css?inline";
 
-import { Button } from "./components/ui/button";
-import { ButtonGroup } from "./components/ui/button-group";
+import { Button } from "@/components/ui/button";
+import { ButtonGroup } from "@/components/ui/button-group";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "./components/ui/popover";
+} from "@/components/ui/popover";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "./components/ui/tooltip";
-import { Flowfield, type Peak } from "./Flowfield";
-import { PortalContainerContext } from "./lib/bookmarklet.portalContainer";
-import { shadcnStyleSheet } from "./lib/bookmarklet.shadcnStyle";
-import { builder, type MtbConfig } from "./lib/builder";
-import { Mtb } from "./Mtb";
-import { useMtb } from "./Mtb.context";
-import { ThemePanel } from "./ThemePanel";
+} from "@/components/ui/tooltip";
+import { Flowfield, type Peak } from "@/Flowfield";
+import { builder, type MtbConfig } from "@/lib/builder";
+import { PortalContainerContext } from "@/lib/extension.portalContainer";
+import { shadcnStyleSheet } from "@/lib/extension.shadcnStyle";
+import { Mtb } from "@/Mtb";
+import { useMtb } from "@/Mtb.context";
+import { ThemePanel } from "@/ThemePanel";
 
-const HOST_ID = "mtb-bookmarklet";
+import {
+  PANEL_CLOSED,
+  PANEL_TOGGLE,
+  type PanelMessage,
+  type PanelState,
+} from "./messages";
+
+const HOST_ID = "mtb-panel";
 const STYLE_ID = "mtb-shadcn";
 const FALLBACK_SOURCE = "#769CDF";
 
@@ -222,7 +233,7 @@ function InfoPopover() {
           <p className="text-xs text-muted-foreground">
             Rebuilds this page's shadcn theme from a single source color, the
             Material&nbsp;You way. Tweak it, grab the CSS or the install
-            command, close to restore the site.
+            command, close to restore the site untouched.
           </p>
           <a
             href={REPO_URL}
@@ -406,9 +417,14 @@ function open() {
     root = null;
     host.remove();
     removeInjectedStyles();
+    // The ✕ button closes without the service worker's knowledge; its badge
+    // would otherwise still read ON.
+    void chrome.runtime
+      .sendMessage({ type: PANEL_CLOSED } satisfies PanelMessage)
+      .catch(() => {});
   };
-  // Stashed on the element so a later load of this script (fresh module
-  // scope) can tear this instance down — that's what makes it a toggle.
+  // Stashed on the element so the toggle below needs no module state of its
+  // own — and keeps working even if this script is ever executed twice.
   host.__mtbCleanup = close;
 
   root.render(
@@ -420,9 +436,23 @@ function open() {
   );
 }
 
-const existing = document.getElementById(HOST_ID) as MtbHost | null;
-if (existing) {
-  existing.__mtbCleanup?.();
-} else {
+/** Opens the panel, or tears down the one already on the page. */
+function toggle(): PanelState {
+  const existing = document.getElementById(HOST_ID) as MtbHost | null;
+  if (existing) {
+    existing.__mtbCleanup?.();
+    return { open: false };
+  }
   open();
+  return { open: true };
 }
+
+// Injection is a one-off: every later click on the toolbar button arrives
+// here as a message, because re-running this file would not re-run this
+// module (see src/background.ts).
+chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  if ((message as PanelMessage).type !== PANEL_TOGGLE) return;
+  sendResponse(toggle());
+});
+
+toggle();
