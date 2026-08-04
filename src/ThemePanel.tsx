@@ -74,8 +74,22 @@ function Pill({
  * </Mtb>
  * ```
  */
-export function ThemePanel(props: ComponentProps<typeof ButtonGroup>) {
+export function ThemePanel({
+  customColors = true,
+  size = "default",
+  ...props
+}: {
+  /**
+   * Whether the expanded panel offers custom colors. Turn them off where
+   * they can't show up in the output — the Chrome extension, for one, only
+   * ever writes the core shadcn variables, which no custom color maps to.
+   */
+  customColors?: boolean;
+  /** Control scale — `"lg"` for an overlay meant to be hit on any page. */
+  size?: "default" | "lg";
+} & ComponentProps<typeof ButtonGroup>) {
   const { initials, setMcuConfig, allPalettes } = useMtb();
+  const iconSize = size === "lg" ? "icon-lg" : "icon";
 
   const [config, setConfig] = useState<MtbConfig>(() => initials);
 
@@ -121,7 +135,7 @@ export function ThemePanel(props: ComponentProps<typeof ButtonGroup>) {
         <TooltipTrigger asChild>
           <Button
             variant="outline"
-            size="icon"
+            size={iconSize}
             className="relative"
             onClick={() => setExpanded((v) => !v)}
             onKeyDown={(e) => {
@@ -172,7 +186,7 @@ export function ThemePanel(props: ComponentProps<typeof ButtonGroup>) {
                 <TooltipTrigger asChild>
                   <Button
                     variant="outline"
-                    size="icon"
+                    size={iconSize}
                     className="relative"
                     onClick={clickColorInput}
                   >
@@ -209,104 +223,111 @@ export function ThemePanel(props: ComponentProps<typeof ButtonGroup>) {
 
           {/* Custom colors */}
 
-          {(config.customColors ?? []).map(({ name, hex }, i) => (
-            <Tooltip key={name}>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="relative"
-                  onClick={clickColorInput}
-                >
-                  <Pill color={hex} />
-                  <input
-                    tabIndex={-1}
-                    type="color"
-                    value={hex}
-                    onChange={(e) => {
-                      const updated = (config.customColors ?? []).map((c, j) =>
-                        j === i ? { ...c, hex: e.target.value } : c,
-                      );
-                      update({ customColors: updated });
-                    }}
-                    className="opacity-0 absolute bottom-0 left-0 right-0 h-0 pointer-events-none"
-                  />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">
-                <span className="flex items-center gap-1">
+          {customColors && (
+            <>
+              {(config.customColors ?? []).map(({ name, hex }, i) => (
+                <Tooltip key={name}>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size={iconSize}
+                      className="relative"
+                      onClick={clickColorInput}
+                    >
+                      <Pill color={hex} />
+                      <input
+                        tabIndex={-1}
+                        type="color"
+                        value={hex}
+                        onChange={(e) => {
+                          const updated = (config.customColors ?? []).map(
+                            (c, j) =>
+                              j === i ? { ...c, hex: e.target.value } : c,
+                          );
+                          update({ customColors: updated });
+                        }}
+                        className="opacity-0 absolute bottom-0 left-0 right-0 h-0 pointer-events-none"
+                      />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    <span className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon-xs"
+                        onClick={() => {
+                          const updated = (config.customColors ?? []).filter(
+                            (_, j) => j !== i,
+                          );
+                          update({ customColors: updated });
+                        }}
+                      >
+                        <X />
+                      </Button>
+                      {name}
+                    </span>
+                  </TooltipContent>
+                </Tooltip>
+              ))}
+
+              {/* Add custom color */}
+              <Tooltip>
+                <TooltipTrigger asChild>
                   <Button
-                    variant="ghost"
-                    size="icon-xs"
-                    onClick={() => {
-                      const updated = (config.customColors ?? []).filter(
-                        (_, j) => j !== i,
-                      );
-                      update({ customColors: updated });
-                    }}
+                    variant="outline"
+                    size={iconSize}
+                    className="relative"
+                    onClick={clickColorInput}
                   >
-                    <X />
+                    <Pill />
+                    <input
+                      tabIndex={-1}
+                      type="color"
+                      onChange={(e) => {
+                        const hex = e.target.value;
+                        const existing = config.customColors ?? [];
+                        const idx = pendingAddIndexRef.current;
+
+                        if (idx !== null && idx < existing.length) {
+                          const updated = existing.map((c, j) =>
+                            j === idx ? { ...c, hex } : c,
+                          );
+                          update({ customColors: updated });
+                        } else {
+                          pendingAddIndexRef.current = existing.length;
+                          update({
+                            customColors: [
+                              ...existing,
+                              {
+                                name: `customColor${existing.length + 1}`,
+                                hex,
+                                blend: true,
+                              },
+                            ],
+                          });
+                        }
+                      }}
+                      className="opacity-0 absolute bottom-0 left-0 right-0 h-0 pointer-events-none"
+                    />
                   </Button>
-                  {name}
-                </span>
-              </TooltipContent>
-            </Tooltip>
-          ))}
-
-          {/* Add custom color */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="outline"
-                size="icon"
-                className="relative"
-                onClick={clickColorInput}
-              >
-                <Pill />
-                <input
-                  tabIndex={-1}
-                  type="color"
-                  onChange={(e) => {
-                    const hex = e.target.value;
-                    const existing = config.customColors ?? [];
-                    const idx = pendingAddIndexRef.current;
-
-                    if (idx !== null && idx < existing.length) {
-                      const updated = existing.map((c, j) =>
-                        j === idx ? { ...c, hex } : c,
-                      );
-                      update({ customColors: updated });
-                    } else {
-                      pendingAddIndexRef.current = existing.length;
-                      update({
-                        customColors: [
-                          ...existing,
-                          {
-                            name: `customColor${existing.length + 1}`,
-                            hex,
-                            blend: true,
-                          },
-                        ],
-                      });
-                    }
-                  }}
-                  className="opacity-0 absolute bottom-0 left-0 right-0 h-0 pointer-events-none"
-                />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">Add custom color</TooltipContent>
-          </Tooltip>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">Add custom color</TooltipContent>
+              </Tooltip>
+            </>
+          )}
         </>
       )}
 
       <ContrastToggle
         contrast={config.contrast}
         onChange={(v) => update({ contrast: v })}
+        size={iconSize}
       />
 
       <SchemeToggle
         scheme={config.scheme}
         onChange={(v) => update({ scheme: v })}
+        size={size}
       />
     </ButtonGroup>
   );
@@ -324,9 +345,11 @@ const CONTRAST_ICON_SIZE: Record<number, string> = {
 function ContrastToggle({
   contrast,
   onChange,
+  size,
 }: {
   contrast?: number;
   onChange: (v: number) => void;
+  size: ComponentProps<typeof Button>["size"];
 }) {
   const current = contrast ?? 0;
   const currentLevel =
@@ -336,7 +359,7 @@ function ContrastToggle({
       <TooltipTrigger asChild>
         <Button
           variant="outline"
-          size="icon"
+          size={size}
           onClick={() => {
             const i = CONTRAST_LEVELS.findIndex((l) => l.value === current);
             const next =
@@ -361,9 +384,11 @@ function ContrastToggle({
 function SchemeToggle({
   scheme,
   onChange,
+  size,
 }: {
   scheme?: (typeof schemeNames)[number];
   onChange: (v: (typeof schemeNames)[number]) => void;
+  size: ComponentProps<typeof Button>["size"];
 }) {
   const current = scheme ?? "tonalSpot";
   const i = schemeNames.indexOf(current);
@@ -373,6 +398,7 @@ function SchemeToggle({
       <TooltipTrigger asChild>
         <Button
           variant="outline"
+          size={size}
           onClick={() =>
             onChange(
               schemeNames[(i + 1) % schemeNames.length] ?? schemeNames[0],

@@ -1,0 +1,59 @@
+/*
+ * Stylesheet for the panel's shadow root — compiled by Tailwind at build
+ * time and imported by content.tsx as a string (`?inline`), then injected
+ * as a <style> inside the shadow DOM, never into the host page.
+ *
+ * Scans only the files the panel actually renders (source(none) + explicit
+ * @source), so the host page's own markup never inflates the bundle.
+ *
+ * The @theme inline block maps Tailwind color tokens straight onto the
+ * host page's shadcn variables: custom properties inherit through the
+ * shadow boundary, so the panel is styled by the very theme it is editing
+ * — including dark mode, whose values flow in through the same variables.
+ *
+ * Deliberately NO `:root { --background: … }` defaults here (unlike
+ * src/styles/shadcn.css): a `.dark { --background: … }` fallback block
+ * would match the mirrored `.dark` wrapper inside the shadow root and
+ * override the host's inherited values with stock zinc.
+ */
+
+@import "tailwindcss" source(none);
+@import "tw-animate-css";
+
+@source "./content.tsx";
+@source "../../src/ThemePanel.tsx";
+@source "../../src/components/ui/button.tsx";
+@source "../../src/components/ui/button-group.tsx";
+@source "../../src/components/ui/popover.tsx";
+@source "../../src/components/ui/separator.tsx";
+@source "../../src/components/ui/tooltip.tsx";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  /* --radius falls back: unlike colors, a missing radius silently unsets
+     every rounded-* utility rather than looking obviously broken. */
+  --radius-sm: calc(var(--radius, 0.625rem) - 4px);
+  --radius-md: calc(var(--radius, 0.625rem) - 2px);
+  --radius-lg: var(--radius, 0.625rem);
+  --radius-xl: calc(var(--radius, 0.625rem) + 4px);
+}

@@ -1,6 +1,7 @@
 import { Tooltip as TooltipPrimitive } from "radix-ui";
 import * as React from "react";
 
+import { PortalContainerContext } from "@/lib/extension.portalContainer";
 import { cn } from "@/lib/utils";
 
 function TooltipProvider({
@@ -34,8 +35,9 @@ function TooltipContent({
   children,
   ...props
 }: React.ComponentProps<typeof TooltipPrimitive.Content>) {
+  const container = React.useContext(PortalContainerContext);
   return (
-    <TooltipPrimitive.Portal>
+    <TooltipPrimitive.Portal container={container ?? undefined}>
       <TooltipPrimitive.Content
         data-slot="tooltip-content"
         sideOffset={sideOffset}
