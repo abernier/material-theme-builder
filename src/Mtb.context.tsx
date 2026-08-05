@@ -14,12 +14,28 @@ import { createRequiredContext } from "./lib/createRequiredContext";
 
 type Api = {
   initials: MtbConfig;
-  mcuConfig: MtbConfig;
-  setMcuConfig: (config: MtbConfig) => void;
-  getMcuColor: (colorName: TokenName, theme?: string) => string;
+  mtbConfig: MtbConfig;
+  setMtbConfig: (config: MtbConfig) => void;
+  getMtbColor: (colorName: TokenName, theme?: string) => string;
   allPalettes: Record<string, TonalPalette>;
   figmaTokens: FigmaTokens;
   figmaVariables: FigmaVariable[];
+
+  /**
+   * @deprecated Renamed `mtbConfig` — same value. This alias will be removed in
+   * the next major.
+   */
+  mcuConfig: MtbConfig;
+  /**
+   * @deprecated Renamed `setMtbConfig` — same setter. This alias will be
+   * removed in the next major.
+   */
+  setMcuConfig: (config: MtbConfig) => void;
+  /**
+   * @deprecated Renamed `getMtbColor` — same function. This alias will be
+   * removed in the next major.
+   */
+  getMcuColor: (colorName: TokenName, theme?: string) => string;
 };
 
 const [useMtb, Provider, MtbContext] = createRequiredContext<Api>();
@@ -40,13 +56,13 @@ export const MtbProvider = ({
   const [initials] = useState(() => configProps);
   // console.log("MtbProvider initials", initials);
 
-  const [mcuConfig, setMcuConfig] = useState(initials);
+  const [mtbConfig, setMtbConfig] = useState(initials);
 
-  // Update mcuConfig when configProps change
+  // Update mtbConfig when configProps change
   // Use a stable key to detect when config values have changed
   const configKey = JSON.stringify(configProps);
   React.useEffect(() => {
-    setMcuConfig(configProps);
+    setMtbConfig(configProps);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [configKey]);
 
@@ -59,8 +75,8 @@ export const MtbProvider = ({
     figmaVariables,
   } = useMemo(() => {
     const { toCss, toFigmaTokens, toFigmaVariables, ...rest } = builder(
-      mcuConfig.source,
-      mcuConfig,
+      mtbConfig.source,
+      mtbConfig,
     );
     return {
       css: toCss(),
@@ -68,21 +84,21 @@ export const MtbProvider = ({
       figmaVariables: toFigmaVariables(),
       ...rest,
     };
-  }, [mcuConfig]);
+  }, [mtbConfig]);
 
   //
-  // getMcuColor
+  // getMtbColor
   //
 
-  const getMcuColor = useCallback(
+  const getMtbColor = useCallback(
     (colorName: TokenName, theme: string | undefined) => {
-      // console.log("getMcuColor", colorName, theme);
+      // console.log("getMtbColor", colorName, theme);
       const mergedColors =
         theme === "light" ? mergedColorsLight : mergedColorsDark;
       const colorValue = mergedColors[colorName];
 
       if (colorValue === undefined) {
-        throw new Error(`Unknown MCU token '${colorName}'`);
+        throw new Error(`Unknown token '${colorName}'`);
       }
 
       return hexFromArgb(colorValue);
@@ -98,17 +114,22 @@ export const MtbProvider = ({
     () =>
       ({
         initials,
-        mcuConfig,
-        setMcuConfig,
-        getMcuColor,
+        mtbConfig,
+        setMtbConfig,
+        getMtbColor,
         allPalettes,
         figmaTokens,
         figmaVariables,
+
+        // deprecated aliases
+        mcuConfig: mtbConfig,
+        setMcuConfig: setMtbConfig,
+        getMcuColor: getMtbColor,
       }) satisfies Api,
     [
-      getMcuColor,
+      getMtbColor,
       initials,
-      mcuConfig,
+      mtbConfig,
       allPalettes,
       figmaTokens,
       figmaVariables,
@@ -122,7 +143,7 @@ export const MtbProvider = ({
   // browser, so a server-rendered page would ship with none of the variables
   // defined and paint before hydration filled them in -- every color missing
   // for that first frame. Rendering the tag puts the CSS in the HTML the
-  // server sends, and React updates its content in place when `setMcuConfig`
+  // server sends, and React updates its content in place when `setMtbConfig`
   // changes the theme.
   //
   // Not `<style href precedence>`: React treats hoisted stylesheets as

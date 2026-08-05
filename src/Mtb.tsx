@@ -10,7 +10,9 @@ import {
 } from "./lib/builder";
 import { MtbProvider } from "./Mtb.context";
 
-const mcuStyleId = "mcu-styles";
+// The DOM id stays `mcu-styles`: it is observable from user CSS/JS, so renaming
+// it would break selectors silently. Only the local binding follows the rename.
+const styleId = "mcu-styles";
 const DEFAULT_COLOR_MATCH = false;
 
 /**
@@ -66,7 +68,7 @@ export function Mtb({
   );
 
   return (
-    <MtbProvider {...config} styleId={mcuStyleId}>
+    <MtbProvider {...config} styleId={styleId}>
       {children}
     </MtbProvider>
   );

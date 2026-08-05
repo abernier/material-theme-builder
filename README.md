@@ -116,11 +116,11 @@ A hook is also provided:
 ```tsx
 import { useMtb } from "material-theme-builder/react";
 
-const { initials, setMcuConfig, getMcuColor } = useMtb();
+const { initials, setMtbConfig, getMtbColor } = useMtb();
 
 return (
-  <button onClick={() => setMcuConfig({ ...initials, source: "#FF5722" })}>
-    Change to {getMcuColor("primary", "light")}
+  <button onClick={() => setMtbConfig({ ...initials, source: "#FF5722" })}>
+    Change to {getMtbColor("primary", "light")}
   </button>
 );
 ```
