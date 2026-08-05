@@ -1,4 +1,5 @@
 import { cleanup, render } from "@testing-library/react";
+import { useEffect } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it } from "vitest";
 import { Mcu, Mtb } from "./Mtb";
@@ -135,5 +136,27 @@ describe("Mtb", () => {
 
   it("should keep `useMcu` as a deprecated alias of `useMtb`", () => {
     expect(useMcu).toBe(useMtb);
+  });
+
+  it("should expose the `mcu*` context keys as deprecated aliases of the `mtb*` ones", () => {
+    let api: ReturnType<typeof useMtb> | undefined;
+
+    function Probe() {
+      const value = useMtb();
+      useEffect(() => {
+        api = value;
+      }, [value]);
+      return null;
+    }
+
+    render(
+      <Mtb source="#6750A4">
+        <Probe />
+      </Mtb>,
+    );
+
+    expect(api?.mcuConfig).toBe(api?.mtbConfig);
+    expect(api?.setMcuConfig).toBe(api?.setMtbConfig);
+    expect(api?.getMcuColor).toBe(api?.getMtbColor);
   });
 });

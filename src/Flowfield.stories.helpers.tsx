@@ -116,12 +116,12 @@ function ButtonPill({
 export function FlowfieldScene({ ...props }: ComponentProps<typeof Flowfield>) {
   const {
     allPalettes,
-    mcuConfig,
-    setMcuConfig: _setMcuConfig,
+    mtbConfig,
+    setMtbConfig: _setMtbConfig,
     initials,
   } = useMtb();
 
-  const setMcuConfig = useDebounceCallback(_setMcuConfig, 50);
+  const setMtbConfig = useDebounceCallback(_setMtbConfig, 50);
 
   const pendingAddIndexRef = useRef<number | null>(null);
 
@@ -170,25 +170,25 @@ export function FlowfieldScene({ ...props }: ComponentProps<typeof Flowfield>) {
               {
                 key: "primary",
                 label: "Primary",
-                color: mcuConfig.primary ?? initials.source,
+                color: mtbConfig.primary ?? initials.source,
               },
               {
                 key: "secondary",
                 label: "Secondary",
-                color: mcuConfig.secondary,
+                color: mtbConfig.secondary,
               },
-              { key: "tertiary", label: "Tertiary", color: mcuConfig.tertiary },
-              { key: "error", label: "Error", color: mcuConfig.error },
-              { key: "neutral", label: "Neutral", color: mcuConfig.neutral },
+              { key: "tertiary", label: "Tertiary", color: mtbConfig.tertiary },
+              { key: "error", label: "Error", color: mtbConfig.error },
+              { key: "neutral", label: "Neutral", color: mtbConfig.neutral },
               {
                 key: "neutralVariant",
                 label: "Neutral variant",
-                color: mcuConfig.neutralVariant,
+                color: mtbConfig.neutralVariant,
               },
             ] as const
           ).map(({ key, label, color }) => {
             const paletteKey = kebabCase(key);
-            const isInferred = mcuConfig[key] === undefined;
+            const isInferred = mtbConfig[key] === undefined;
             const inferredHex = isInferred
               ? hexFromArgb(allPalettes[paletteKey]?.keyColor.toInt() ?? 0)
               : undefined;
@@ -199,8 +199,8 @@ export function FlowfieldScene({ ...props }: ComponentProps<typeof Flowfield>) {
                   <ButtonPill
                     color={color}
                     onChange={(hex) => {
-                      setMcuConfig({
-                        ...mcuConfig,
+                      setMtbConfig({
+                        ...mtbConfig,
                         [key]: hex,
                       });
                     }}
@@ -213,7 +213,7 @@ export function FlowfieldScene({ ...props }: ComponentProps<typeof Flowfield>) {
                         variant="ghost"
                         size="icon-xs"
                         onClick={() =>
-                          setMcuConfig({ ...mcuConfig, [key]: undefined })
+                          setMtbConfig({ ...mtbConfig, [key]: undefined })
                         }
                         className="-ml-1"
                       >
@@ -234,17 +234,17 @@ export function FlowfieldScene({ ...props }: ComponentProps<typeof Flowfield>) {
 
           <hr className="my-1 border-t border-outline-variant w-6 mx-auto" />
 
-          {(mcuConfig.customColors ?? []).map(({ name, hex }, i) => (
+          {(mtbConfig.customColors ?? []).map(({ name, hex }, i) => (
             <Tooltip key={name}>
               <TooltipTrigger asChild>
                 <ButtonPill
                   color={hex}
                   onChange={(newHex) => {
-                    const updated = (mcuConfig.customColors ?? []).map(
+                    const updated = (mtbConfig.customColors ?? []).map(
                       (c, j) => (j === i ? { ...c, hex: newHex } : c),
                     );
-                    setMcuConfig({
-                      ...mcuConfig,
+                    setMtbConfig({
+                      ...mtbConfig,
                       customColors: updated,
                     });
                   }}
@@ -256,10 +256,10 @@ export function FlowfieldScene({ ...props }: ComponentProps<typeof Flowfield>) {
                     variant="ghost"
                     size="icon-xs"
                     onClick={() => {
-                      const updated = (mcuConfig.customColors ?? []).filter(
+                      const updated = (mtbConfig.customColors ?? []).filter(
                         (_, j) => j !== i,
                       );
-                      setMcuConfig({ ...mcuConfig, customColors: updated });
+                      setMtbConfig({ ...mtbConfig, customColors: updated });
                     }}
                     className="-ml-1"
                   >
@@ -280,7 +280,7 @@ export function FlowfieldScene({ ...props }: ComponentProps<typeof Flowfield>) {
                   pendingAddIndexRef.current = null;
                 }}
                 onChange={(hex) => {
-                  const existing = mcuConfig.customColors ?? [];
+                  const existing = mtbConfig.customColors ?? [];
                   const idx = pendingAddIndexRef.current;
 
                   if (idx !== null && idx < existing.length) {
@@ -288,12 +288,12 @@ export function FlowfieldScene({ ...props }: ComponentProps<typeof Flowfield>) {
                     const updated = existing.map((c, j) =>
                       j === idx ? { ...c, hex } : c,
                     );
-                    setMcuConfig({ ...mcuConfig, customColors: updated });
+                    setMtbConfig({ ...mtbConfig, customColors: updated });
                   } else {
                     // first change of this pick session — add a new color
                     pendingAddIndexRef.current = existing.length;
-                    setMcuConfig({
-                      ...mcuConfig,
+                    setMtbConfig({
+                      ...mtbConfig,
                       customColors: [
                         ...existing,
                         {
@@ -321,10 +321,10 @@ export function FlowfieldScene({ ...props }: ComponentProps<typeof Flowfield>) {
               { label: "Med", value: 0.5 },
               { label: "Hi", value: 1 },
             ] as const;
-            const current = mcuConfig.contrast ?? 0;
+            const current = mtbConfig.contrast ?? 0;
             const idx = levels.findIndex((l) => l.value === current);
             const next = levels[(idx + 1) % levels.length] ?? levels[0];
-            setMcuConfig({ ...mcuConfig, contrast: next.value });
+            setMtbConfig({ ...mtbConfig, contrast: next.value });
           }}
         >
           {(
@@ -333,7 +333,7 @@ export function FlowfieldScene({ ...props }: ComponentProps<typeof Flowfield>) {
               { label: "Med", value: 0.5 },
               { label: "Hi", value: 1 },
             ] as const
-          ).find((l) => l.value === (mcuConfig.contrast ?? 0))?.label ?? "Std"}
+          ).find((l) => l.value === (mtbConfig.contrast ?? 0))?.label ?? "Std"}
         </Button>
         <div>
           <ButtonGroup>
@@ -342,13 +342,13 @@ export function FlowfieldScene({ ...props }: ComponentProps<typeof Flowfield>) {
               variant="outline"
               className="capitalize"
               onClick={() => {
-                const currentScheme = mcuConfig.scheme ?? "tonalSpot";
+                const currentScheme = mtbConfig.scheme ?? "tonalSpot";
                 const idx = schemeNames.indexOf(currentScheme);
                 const next = schemeNames[(idx + 1) % schemeNames.length];
-                setMcuConfig({ ...mcuConfig, scheme: next });
+                setMtbConfig({ ...mtbConfig, scheme: next });
               }}
             >
-              {mcuConfig.scheme ?? "tonalSpot"}
+              {mtbConfig.scheme ?? "tonalSpot"}
             </Button>
           </ButtonGroup>
         </div>
