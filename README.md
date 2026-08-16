@@ -436,6 +436,17 @@ Simply override/remap
 > Make sure `:root, .dark { ... }` comes AFTER `.root { ... } .dark { ... }` to
 > take precedence.
 
+The same remap ships to designers: `toFigmaTokens()` (and `--format figma`) emits
+a `shadcn` group next to `ref` and `sys`, so a Figma file carries `Card`, `Muted`,
+`Chart 1` — the names components are built from — and not only the M3 roles. Each
+is an alias onto its `sys/color` token rather than a copy of its value, so it
+follows the mode and the seed exactly as `var(--md-sys-color-*)` does above, and
+`css.variable` on each token spells out the CSS variable it stands for.
+
+Worth knowing if you ever map a frame by hand instead: `sys/color/Background` is
+the M3 role, and shadcn's `--background` is **not** it — that one is `surface`.
+The `shadcn` group exists so nobody has to remember which.
+
 # Dev
 
 ## INSTALL

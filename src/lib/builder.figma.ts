@@ -13,6 +13,7 @@ import {
   STANDARD_TONES,
   tokenDescriptions,
 } from "./builder";
+import { SHADCN_MAPPING } from "./builder.shadcn";
 
 // ─── Figma token types ───────────────────────────────────────────────────
 
@@ -44,6 +45,7 @@ export type FigmaTokenModeFile = {
   sys: {
     color: Record<string, DtcgColorToken>;
   };
+  shadcn: Record<string, DtcgColorToken>;
 };
 
 /** Return type of builder().toFigmaTokens() */
@@ -86,6 +88,7 @@ export function buildFigmaVariables(ctx: BuilderContext) {
   // Figma Variables compatible format using M3 token architecture:
   //   ref/palette/* — Reference Tokens (Tier 1): raw tonal palette values
   //   sys/color/*   — System Tokens (Tier 2): semantic roles referencing palette tones
+  //   shadcn/*      — the shadcn remap, referencing sys roles
   //
   // see: https://m3.material.io/foundations/design-tokens/overview
 
@@ -178,6 +181,38 @@ export function buildFigmaVariables(ctx: BuilderContext) {
     });
   }
 
+  // ── shadcn/* — aliases onto sys/color/*, one alias for both modes ──
+  //
+  // The third reader of SHADCN_MAPPING, next to `toShadcn()` and
+  // `toTailwind({ shadcn: true })`. Designers lay out shadcn components in
+  // Figma with the same vocabulary developers write — `Card`, `Muted`,
+  // `Chart 1` — and because all three exports read the one table, a name
+  // cannot mean one M3 role in Figma and another in the CSS.
+  //
+  // Aliases rather than values, and the *same* alias in both modes: the sys
+  // token they point at is what carries the mode, exactly as
+  // `--card: var(--md-sys-color-surface-container-low)` does in the remap.
+  // Dark is not a second set of colors here, it is the same reference read
+  // under a second mode.
+
+  const sysPaths = new Set(variables.map((v) => v.path));
+
+  for (const [cssVar, m3Token] of SHADCN_MAPPING) {
+    const alias = `sys/color/${startCase(m3Token)}`;
+    if (!sysPaths.has(alias)) {
+      throw new Error(
+        `M3 token '${m3Token}' is missing from the scheme, needed by '${cssVar}'. This is likely a bug in the implementation.`,
+      );
+    }
+
+    variables.push({
+      path: `shadcn/${startCase(cssVar.slice(2))}`,
+      description: `shadcn ${cssVar}, backed by the M3 ${m3Token} role.`,
+      scopes: ["ALL_SCOPES"],
+      values: { Light: { alias }, Dark: { alias } },
+    });
+  }
+
   return variables;
 }
 
@@ -224,6 +259,16 @@ export function buildFigmaTokens(ctx: BuilderContext) {
     const lastSegment = v.path.split("/").at(-1);
     if (!lastSegment) return { "com.figma.scopes": v.scopes ?? ["ALL_SCOPES"] };
     const tokenName = kebabCase(lastSegment);
+
+    // shadcn's variable names are fixed and unprefixed — `prefix` renames the
+    // M3 layer, not the vocabulary M3 is remapped onto. `Chart 1` → `--chart-1`.
+    if (v.path.startsWith("shadcn/")) {
+      return {
+        "com.figma.scopes": v.scopes ?? ["ALL_SCOPES"],
+        "css.variable": `--${tokenName}`,
+      };
+    }
+
     return {
       "com.figma.scopes": v.scopes ?? ["ALL_SCOPES"],
       "css.variable": `--${prefix}-sys-color-${tokenName}`,
@@ -251,12 +296,16 @@ export function buildFigmaTokens(ctx: BuilderContext) {
     if (parts[0] === "sys" && parts[1] === "color" && parts[2]) {
       return { kind: "color" as const, tokenName: parts[2] };
     }
+    if (parts[0] === "shadcn" && parts[1]) {
+      return { kind: "shadcn" as const, tokenName: parts[1] };
+    }
     return null;
   }
 
   function buildModeFile(modeName: string) {
     const palette: Record<string, DtcgPaletteGroup> = {};
     const color: Record<string, DtcgColorToken> = {};
+    const shadcn: Record<string, DtcgColorToken> = {};
 
     for (const v of variables) {
       const modeValue = v.values[modeName];
@@ -268,6 +317,8 @@ export function buildFigmaTokens(ctx: BuilderContext) {
       if (parsed.kind === "palette") {
         const group = (palette[parsed.paletteName] ??= {});
         group[parsed.tone] = buildToken(v, modeValue);
+      } else if (parsed.kind === "shadcn") {
+        shadcn[parsed.tokenName] = buildToken(v, modeValue);
       } else {
         color[parsed.tokenName] = buildToken(v, modeValue);
       }
@@ -277,6 +328,7 @@ export function buildFigmaTokens(ctx: BuilderContext) {
       $extensions: { "com.figma.modeName": modeName },
       ref: { palette },
       sys: { color },
+      shadcn,
     };
   }
 
