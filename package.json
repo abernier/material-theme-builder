@@ -16,7 +16,12 @@
       "types": "./dist/react.d.ts",
       "import": "./dist/react.js"
     },
-    "./tailwind.css": "./dist/tailwind.css"
+    "./tailwind": {
+      "types": "./dist/tailwind.d.ts",
+      "import": "./dist/tailwind.js"
+    },
+    "./tailwind.css": "./dist/tailwind.css",
+    "./shadcn.css": "./dist/shadcn.css"
   },
   "homepage": "https://github.com/abernier/material-theme-builder",
   "bugs": {
@@ -30,7 +35,8 @@
   "license": "MIT",
   "files": [
     "dist",
-    "src/tailwind.css"
+    "src/tailwind.css",
+    "src/shadcn.css"
   ],
   "bin": {
     "material-theme-builder": "./dist/cli.js"
@@ -116,7 +122,13 @@
   },
   "peerDependencies": {
     "react": "^19.2.3",
-    "react-dom": "^19.2.3"
+    "react-dom": "^19.2.3",
+    "tailwindcss": "^4.0.0"
+  },
+  "peerDependenciesMeta": {
+    "tailwindcss": {
+      "optional": true
+    }
   },
   "dependencies": {
     "@material/material-color-utilities": "^0.3.0",

@@ -3,8 +3,14 @@ import { kebabCase } from "lodash-es";
 import type { BuilderContext } from "./builder";
 import { SHADCN_MAPPING } from "./builder.shadcn";
 
-// Tailwind shade → M3 tone mapping
-const SHADE_TO_TONE = [
+/**
+ * Tailwind shade → M3 tone mapping.
+ *
+ * Shared with the Tailwind plugin (`material-theme-builder/tailwind`), so the
+ * `@theme inline` block `toTailwind()` writes and the theme the plugin
+ * registers cannot drift apart.
+ */
+export const SHADE_TO_TONE = [
   [50, 95],
   [100, 90],
   [200, 80],
@@ -18,8 +24,8 @@ const SHADE_TO_TONE = [
   [950, 5],
 ] as const;
 
-// Core palette names that receive shade mappings
-const CORE_PALETTES = [
+/** Core palette names that receive shade mappings. */
+export const CORE_PALETTES = [
   "primary",
   "secondary",
   "tertiary",

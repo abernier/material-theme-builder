@@ -13,6 +13,8 @@
   --color-surface-container-highest: var(
     --md-sys-color-surface-container-highest
   );
+  --color-surface-tint: var(--md-sys-color-surface-tint);
+  --color-surface-variant: var(--md-sys-color-surface-variant);
   --color-on-surface: var(--md-sys-color-on-surface);
   --color-on-surface-variant: var(--md-sys-color-on-surface-variant);
   --color-outline: var(--md-sys-color-outline);

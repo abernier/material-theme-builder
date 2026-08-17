@@ -30,9 +30,19 @@ export default defineConfig([
     dts: true,
     clean: true,
     onSuccess: async () => {
-      // Copy tailwind.css to dist
+      // Copy the stylesheets to dist
       copyFileSync("src/tailwind.css", "dist/tailwind.css");
+      copyFileSync("src/shadcn.css", "dist/shadcn.css");
     },
+  },
+  {
+    ...shared,
+    entryPoints: ["src/tailwind.ts"],
+    // The Tailwind plugin runs in the build, not in the app: `tailwindcss` is
+    // the host's, never bundled in.
+    external: [...shared.external, "tailwindcss"],
+    dts: true,
+    clean: false,
   },
   {
     ...shared,
