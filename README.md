@@ -219,12 +219,6 @@ Or simply, the same theme as a stylesheet:
 @import "material-theme-builder/tailwind.css";
 ```
 
-> [!NOTE]
->
-> Mostly there from before the plugin. One thing it still does that the plugin
-> cannot: imported AFTER a `@theme inline` of yours (shadcn's, say), it wins —
-> Tailwind gives a CSS `@theme` precedence over a plugin's theme.
-
 > [!IMPORTANT]
 >
 > Do not forget to manually add your custom colors, as in:
@@ -262,6 +256,7 @@ onto the m3 roles, for both modes at once:
 ```css
 /* globals.css */
 @import "tailwindcss";
+@import "material-theme-builder/shadcn.css";
 
 :root {
   /* ... */
@@ -269,20 +264,22 @@ onto the m3 roles, for both modes at once:
 .dark {
   /* ... */
 }
-
-@import "material-theme-builder/shadcn.css";
 ```
 
-> [!IMPORTANT]
+> [!NOTE]
 >
-> Make sure it comes AFTER `:root { ... } .dark { ... }` to take precedence.
+> Position does not matter: the block is written `:root:root, .dark.dark`, one
+> specificity step above shadcn's own — bundlers hoist `@import` to the top of
+> the sheet (Vite does), so source order could not be relied on. To override
+> one of these yourself, match that specificity, e.g.
+> `:root:root { --primary: … }`
 
 <details>
   <summary>what it remaps</summary>
 
 ```css
-:root,
-.dark {
+:root:root,
+.dark.dark {
   --background: var(--md-sys-color-surface);
   --foreground: var(--md-sys-color-on-surface);
   --card: var(--md-sys-color-surface-container-low);
@@ -323,8 +320,12 @@ In full in
 > With the Tailwind plugin too: on the names they share (`primary`,
 > `secondary`, `background`), shadcn's `@theme inline` wins whatever the order
 > — Tailwind gives a CSS `@theme` precedence over a plugin's. Those utilities
-> keep shadcn's semantics, already pointed at m3 by the import above. To flip
-> it, `@import "material-theme-builder/tailwind.css"` after shadcn's block.
+> keep shadcn's semantics, already pointed at m3 by the import above. Only
+> `secondary` differs in value — shadcn points it at the container role. To
+> take that one back, write the line yourself in `globals.css`:
+> `@theme inline { --color-secondary: var(--md-sys-color-secondary); }`. It has
+> to be written, not imported: bundlers hoist `@import` to the top of the sheet
+> (Vite does), which would put it back below shadcn's.
 
 > [!NOTE]
 >

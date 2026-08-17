@@ -95,6 +95,10 @@ export function buildTailwind(ctx: BuilderContext, options?: TailwindOptions) {
       ([shadcnVar, m3Token]) =>
         `${shadcnVar}: var(--${prefix}-sys-color-${m3Token});`,
     );
+    // Plain `:root` / `.dark` here: this block gets pasted, so where it lands
+    // -- and therefore what it outranks -- is the reader's call. The shipped
+    // `shadcn.css` doubles the selectors instead, because an `@import` is at
+    // the mercy of whatever the bundler does with it.
     output += `\n:root,\n.dark {\n  ${shadcnLines.join("\n  ")}\n}\n`;
   }
 

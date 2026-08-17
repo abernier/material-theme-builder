@@ -2,8 +2,8 @@
 "material-theme-builder": minor
 ---
 
-Add a Tailwind v4 plugin, `material-theme-builder/tailwind`, replacing the
-hand-written `@theme inline` block:
+Add a Tailwind v4 plugin, `material-theme-builder/tailwind`, as an alternative
+to pasting the `@theme inline` block:
 
 ```css
 @import "tailwindcss";
@@ -18,7 +18,12 @@ their own. `prefix` and `shades` options too.
 
 Also ships the shadcn remapping as a stylesheet of its own,
 `material-theme-builder/shadcn.css`, so the `:root, .dark { … }` block no
-longer has to be copied into a project.
+longer has to be copied into a project. It stays CSS on purpose: it has to beat
+shadcn's own unlayered `:root`, which a plugin — confined to `@layer base` —
+cannot. Its selectors are doubled (`:root:root, .dark.dark`) so it wins by
+specificity rather than by source order, an `@import` being at the mercy of
+whatever the bundler does with it.
 
-`material-theme-builder/tailwind.css` keeps working, and gains the two roles it
-was missing: `--color-surface-tint` and `--color-surface-variant`.
+Nothing is removed. `material-theme-builder/tailwind.css` keeps working, and
+gains the two roles it was missing: `--color-surface-tint` and
+`--color-surface-variant`.

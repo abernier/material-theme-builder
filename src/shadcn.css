@@ -1,5 +1,14 @@
-:root,
-.dark {
+/*
+ * `:root:root` / `.dark.dark` rather than `:root` / `.dark`: same elements,
+ * one specificity step up, so this block beats shadcn's own wherever it lands
+ * -- a bundler may hoist this @import to the top of the sheet (Vite does), and
+ * an unlayered `:root` cannot be outranked by a layer.
+ *
+ * To override one of these yourself, match that specificity:
+ * `:root:root { --primary: … }`.
+ */
+:root:root,
+.dark.dark {
   --background: var(--md-sys-color-surface);
   --foreground: var(--md-sys-color-on-surface);
   --card: var(--md-sys-color-surface-container-low);
