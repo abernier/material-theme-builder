@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { useMemo } from "react";
+import { type ComponentProps, useMemo } from "react";
 import { allModes } from "../.storybook/modes";
 import { type MtbConfig, schemeNames } from "./lib/builder";
 import { recolorizeSvg } from "./lib/recolorizeSvg";
@@ -125,6 +125,82 @@ export const St1: Story = {
       </Layout>
     </Mtb>
   ),
+};
+
+/**
+ * The light and dark schemes side by side, with the given extra roles switched
+ * on. By default `Scheme` draws the poster plus the fixed accent colors; every
+ * other extra is opt-in.
+ */
+const renderSchemes =
+  (extraRoles: Partial<ComponentProps<typeof Scheme>>): Story["render"] =>
+  (args) => (
+    <Mtb {...args}>
+      <Layout>
+        <Scheme
+          theme="light"
+          title="Light scheme"
+          {...extraRoles}
+          customColors={args.customColors}
+        />
+
+        <Scheme
+          theme="dark"
+          title="Dark scheme"
+          {...extraRoles}
+          customColors={args.customColors}
+        />
+      </Layout>
+    </Mtb>
+  );
+
+//
+//  ██████  ███████ ███████ ██  ██████ ██  █████  ██
+// ██    ██ ██      ██      ██ ██      ██ ██   ██ ██
+// ██    ██ █████   █████   ██ ██      ██ ███████ ██
+// ██    ██ ██      ██      ██ ██      ██ ██   ██ ██
+//  ██████  ██      ██      ██  ██████ ██ ██   ██ ███████
+//
+
+/**
+ * Exactly what the official Material Theme Builder app displays — no more, no
+ * less.
+ *
+ * The default adds the fixed accent colors, which the app's poster does not
+ * draw even though its own export contains them. This story pins the reference
+ * so any drift from it stays visible.
+ *
+ * @see https://material-foundation.github.io/material-theme-builder/
+ */
+export const OfficialPosterSt: Story = {
+  name: "Official poster",
+  args: St1.args,
+  render: renderSchemes({ fixedAccents: false }),
+};
+
+/**
+ * The four roles the current spec no longer lists — `background`,
+ * `on-background`, `surface-variant`, `surface-tint` — still emitted here, and
+ * still in the official export.
+ *
+ * They fill the extra row exactly, because that row *is* this set. Two of them
+ * carry `@deprecated` (Flutter dropped them from `ColorScheme`); `surface-tint`
+ * does not, it was merely left behind when elevation stopped being an overlay.
+ *
+ * With the default `fixedAccents` on top, this also happens to be every
+ * `sys.color` role the library emits — the official Material Theme Builder
+ * *export*, rather than its abridged on-screen poster.
+ *
+ * @see https://m3.material.io/styles/color/roles
+ */
+export const DroppedRolesSt: Story = {
+  name: "[background][surfaceVariant][surfaceTint] (dropped from the spec)",
+  args: St1.args,
+  render: renderSchemes({
+    background: true,
+    surfaceVariant: true,
+    surfaceTint: true,
+  }),
 };
 
 //
@@ -633,7 +709,9 @@ export const TailwindSt: Story = {
   args: CustomColorsSt.args,
   render: (args) => (
     <Mtb {...args}>
-      <TailwindScheme />
+      <Layout>
+        <TailwindScheme />
+      </Layout>
     </Mtb>
   ),
 };

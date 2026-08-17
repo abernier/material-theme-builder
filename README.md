@@ -146,6 +146,7 @@ Compatible through [theme variables](https://tailwindcss.com/docs/theme):
     --md-sys-color-surface-container-highest
   );
   --color-on-surface: var(--md-sys-color-on-surface);
+  --color-surface-variant: var(--md-sys-color-surface-variant);
   --color-on-surface-variant: var(--md-sys-color-on-surface-variant);
   --color-outline: var(--md-sys-color-outline);
   --color-outline-variant: var(--md-sys-color-outline-variant);
@@ -186,6 +187,7 @@ Compatible through [theme variables](https://tailwindcss.com/docs/theme):
   --color-on-error: var(--md-sys-color-on-error);
   --color-error-container: var(--md-sys-color-error-container);
   --color-on-error-container: var(--md-sys-color-on-error-container);
+  --color-surface-tint: var(--md-sys-color-surface-tint);
   --color-scrim: var(--md-sys-color-scrim);
   --color-shadow: var(--md-sys-color-shadow);
 
@@ -491,3 +493,34 @@ m3 references:
 | builder                                                                                                                                                                                                                             | roles                                                                                                                                                                                                           |
 | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [<img width="2836" height="2266" alt="CleanShot 2026-01-14 at 08 58 40@2x" src="https://github.com/user-attachments/assets/e4b47c00-716f-4b08-b393-de306d5ce302" />](https://material-foundation.github.io/material-theme-builder/) | [<img width="2836" height="2266" alt="CleanShot 2026-01-14 at 09 01 23@2x" src="https://github.com/user-attachments/assets/826e502d-e173-43c4-807a-53d0ba075a88" />](https://m3.material.io/styles/color/roles) |
+
+The spec itself, deep-linked to the sections that matter. `m3.material.io` is a
+client-rendered SPA, so `#:~:text=` fragments get stripped on load — only these
+section anchors work:
+
+- [Color roles](https://m3.material.io/styles/color/roles) — the inventory:
+  _"26 standard color roles organized into six groups"_, which is what
+  `tokenDescriptions` is checked against
+- [Color roles § Surface](https://m3.material.io/styles/color/roles#89f972b1-e372-494c-aabc-69aea34ed591)
+  — _"three surface roles: Surface / On surface / On surface variant"_. No
+  `surface variant`: the ink outlived its own background, hence the asymmetry
+- [Color roles § Add-on color roles](https://m3.material.io/styles/color/roles#a5f6ea3d-d457-4c5d-94f4-55f3cdf6470b)
+  — fixed accents and surface dim/bright are add-ons, and _"most products won't
+  need to use these"_
+- [Color system § What's new](https://m3.material.io/styles/color/system/overview#ca18ba03-a1ec-4bbb-a531-ae5396d3ee4a)
+  — the changelog. Feb 2023 is when tone-based surfaces replaced the +1…+5
+  elevation model
+
+The Material Design blog is where the reasoning behind the color system lives —
+and where changes to it get announced before the spec pages catch up:
+
+- [Tone-based Surfaces in Material 3](https://m3.material.io/blog/tone-based-surface-color-m3)
+  — the surface roles replacing elevation overlays. The only first-party text
+  stating that `Surface Variant` gives way to `Surface Container Highest`
+- [The science of color & design](https://m3.material.io/blog/science-of-color-design)
+  — HCT, and why a tone means the same contrast across hues: the basis of the
+  tonal palettes
+- [Designing Harmony into Dynamic Color](https://m3.material.io/blog/dynamic-color-harmony)
+  — what `customColors[].blend` actually does to a custom color
+- [Introducing Material Theme Builder](https://m3.material.io/blog/material-theme-builder)
+  — the tool this package reimplements
