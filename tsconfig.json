@@ -25,6 +25,15 @@
     "jsx": "react-jsx",
     "noEmit": true
   },
-  "include": ["src/**/*"],
+  // The root configs are in here too: they are TypeScript, they import node
+  // builtins, and left out they are checked by neither `pnpm typecheck` nor
+  // the editor -- which falls back to an inferred project without the node
+  // types and reports the builtins as missing.
+  "include": [
+    "src/**/*",
+    "*.config.ts",
+    "figma-plugin/*.config.ts",
+    ".storybook/**/*"
+  ],
   "exclude": ["node_modules", "dist"]
 }

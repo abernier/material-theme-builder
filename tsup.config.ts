@@ -1,12 +1,12 @@
-import { copyFileSync } from "fs";
-import { defineConfig } from "tsup";
+import { defineConfig, type Options } from "tsup";
 
 // Three bundles rather than one, so that `"use client"` lands only on the
 // React surface -- and so that nothing on the root entry points at it:
 //
-//   dist/index.js   no directive -- `builder`, the package root
-//   dist/react.js   "use client" -- Mtb, useMtb, ExportButton
-//   dist/cli.js     the CLI
+//   dist/index.js           no directive -- `builder`, the package root
+//   dist/react.js           "use client" -- Mtb, useMtb, ExportButton
+//   dist/cli.js             the CLI
+//   dist/tailwind-plugin.js the Tailwind v4 plugin, loaded from a stylesheet
 //
 // The two are independent: `index.js` does not import `react.js`, which is
 // what keeps `import { builder } from "material-theme-builder"` free of React
@@ -15,13 +15,13 @@ import { defineConfig } from "tsup";
 // so a barrel spanning both surfaces cannot be tree-shaken back apart.
 
 const shared = {
-  format: ["esm"] as const,
+  format: ["esm"],
   outDir: "dist",
   external: ["react", "react-dom"],
-  esbuildOptions(options: { jsx?: string }) {
+  esbuildOptions(options) {
     options.jsx = "automatic";
   },
-};
+} satisfies Options;
 
 export default defineConfig([
   {
@@ -29,10 +29,9 @@ export default defineConfig([
     entryPoints: ["src/index.ts"],
     dts: true,
     clean: true,
-    onSuccess: async () => {
-      // Copy tailwind.css to dist
-      copyFileSync("src/tailwind.css", "dist/tailwind.css");
-    },
+    // `dist/tailwind.css` is generated from `toTailwind()`, which this entry
+    // is what builds -- so it regenerates here, off the bundle it needs.
+    onSuccess: "node scripts/generate-tailwind-css.mjs",
   },
   {
     ...shared,
@@ -48,6 +47,16 @@ export default defineConfig([
     format: ["esm"],
     dts: false,
     outDir: "dist",
+    clean: false,
+  },
+  {
+    ...shared,
+    entryPoints: ["src/tailwind-plugin.ts"],
+    // `tailwindcss` is a devDependency here, so it is not externalized by
+    // default -- and bundling the consumer's own Tailwind into a plugin it
+    // loads would be absurd. It resolves from their install at build time.
+    external: [...shared.external, "tailwindcss"],
+    dts: true,
     clean: false,
   },
 ]);

@@ -2,5 +2,14 @@
 @import "tw-animate-css";
 @import "./shadcn.css";
 
-@import "../tailwind.css"; /* our material-theme-builder tailwind file */
+/* The pairing the README recommends, dogfooded: the generated stylesheet for
+   the standard tokens -- imported after shadcn's `@theme`, so it takes back
+   the three names both claim -- and the plugin below for the custom colors,
+   the one part the stylesheet cannot know. */
+@import "../tailwind.css";
 @import "../shadcn.css"; /* our material-theme-builder shadcn file */
+
+/* After the imports, which CSS requires to come first. */
+@plugin "../tailwind-plugin.ts" {
+  custom-colors: myCustomColor1, myCustomColor2;
+}

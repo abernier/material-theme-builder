@@ -127,249 +127,94 @@ return (
 
 ## Tailwind
 
-Compatible through [theme variables](https://tailwindcss.com/docs/theme):
+Compatible through [theme variables](https://tailwindcss.com/docs/theme), in two
+halves — a stylesheet for the standard tokens, and a plugin for the custom
+colors, the one part a shipped file cannot know:
+
+```css
+@import "tailwindcss";
+
+@import "material-theme-builder/tailwind.css";
+@plugin "material-theme-builder/tailwind" {
+  custom-colors: myCustomColor1, myCustomColor2;
+}
+```
+
+No hand-written block either side. Each name listed brings its four scheme roles
+and eleven shades — `bg-myCustomColor1`, `text-on-myCustomColor1`,
+`bg-myCustomColor1-container`, `bg-myCustomColor1-300`. Drop the `@plugin` line
+if you have no custom colors.
+
+The plugin takes a `prefix` too, mirroring `builder({ prefix })`:
+
+```css
+@plugin "material-theme-builder/tailwind" {
+  prefix: my;
+  custom-colors: myCustomColor1;
+}
+```
+
+The plugin can carry the standard tokens on its own — `@plugin` without the
+`@import` — for a setup that would rather not import CSS at all. Read the
+warning below first if you also use shadcn.
+
+> [!TIP]
+>
+> Both halves declare their colors as
+> [inlined theme values](https://tailwindcss.com/docs/theme#referencing-other-variables):
+> `bg-primary` compiles to `background-color: var(--md-sys-color-primary)`,
+> with no `--color-primary` in between. That matters for nesting — a
+> `--color-primary` declared on `:root` would resolve against `:root`, out of
+> reach of a nested `<Mtb>` re-declaring the M3 properties.
+
+> [!WARNING]
+>
+> Theme values a plugin contributes are _defaults_: an `@theme` block of your
+> own wins over them whatever the order, where the stylesheet — being CSS —
+> wins by import order.
+>
+> That is why the standard tokens are left to the stylesheet. shadcn's
+> `@theme inline` claims three names M3 also uses — `background`, `primary`,
+> `secondary` — and with the two halves above the stylesheet takes them back,
+> so shadcn changes nothing. Only if you drop the `@import` and let the plugin
+> carry the standard tokens do you have to hand those three back yourself:
+>
+> ```css
+> @theme inline {
+>   --color-background: var(--md-sys-color-background);
+>   --color-primary: var(--md-sys-color-primary);
+>   --color-secondary: var(--md-sys-color-secondary);
+> }
+> ```
+>
+> Left alone, `bg-secondary` resolves through shadcn's `--secondary`, which the
+> [shadcn](#shadcn) section below remaps to `secondary-container` — a tone 90
+> where you asked for a tone 40, under text still colored `on-secondary`.
+
+<details>
+<summary>The theme variables the stylesheet declares</summary>
+
+Generated from [`toTailwind()`](#programmatic-api), so the two cannot drift:
 
 ```css
 @theme inline {
   --color-background: var(--md-sys-color-background);
-  --color-on-background: var(--md-sys-color-on-background);
-  --color-surface: var(--md-sys-color-surface);
-  --color-surface-dim: var(--md-sys-color-surface-dim);
-  --color-surface-bright: var(--md-sys-color-surface-bright);
-  --color-surface-container-lowest: var(
-    --md-sys-color-surface-container-lowest
-  );
-  --color-surface-container-low: var(--md-sys-color-surface-container-low);
-  --color-surface-container: var(--md-sys-color-surface-container);
-  --color-surface-container-high: var(--md-sys-color-surface-container-high);
-  --color-surface-container-highest: var(
-    --md-sys-color-surface-container-highest
-  );
-  --color-on-surface: var(--md-sys-color-on-surface);
-  --color-surface-variant: var(--md-sys-color-surface-variant);
-  --color-on-surface-variant: var(--md-sys-color-on-surface-variant);
-  --color-outline: var(--md-sys-color-outline);
-  --color-outline-variant: var(--md-sys-color-outline-variant);
-  --color-inverse-surface: var(--md-sys-color-inverse-surface);
-  --color-inverse-on-surface: var(--md-sys-color-inverse-on-surface);
-  --color-primary: var(--md-sys-color-primary);
-  --color-on-primary: var(--md-sys-color-on-primary);
-  --color-primary-container: var(--md-sys-color-primary-container);
-  --color-on-primary-container: var(--md-sys-color-on-primary-container);
-  --color-primary-fixed: var(--md-sys-color-primary-fixed);
-  --color-primary-fixed-dim: var(--md-sys-color-primary-fixed-dim);
-  --color-on-primary-fixed: var(--md-sys-color-on-primary-fixed);
-  --color-on-primary-fixed-variant: var(
-    --md-sys-color-on-primary-fixed-variant
-  );
-  --color-inverse-primary: var(--md-sys-color-inverse-primary);
-  --color-secondary: var(--md-sys-color-secondary);
-  --color-on-secondary: var(--md-sys-color-on-secondary);
-  --color-secondary-container: var(--md-sys-color-secondary-container);
-  --color-on-secondary-container: var(--md-sys-color-on-secondary-container);
-  --color-secondary-fixed: var(--md-sys-color-secondary-fixed);
-  --color-secondary-fixed-dim: var(--md-sys-color-secondary-fixed-dim);
-  --color-on-secondary-fixed: var(--md-sys-color-on-secondary-fixed);
-  --color-on-secondary-fixed-variant: var(
-    --md-sys-color-on-secondary-fixed-variant
-  );
-  --color-tertiary: var(--md-sys-color-tertiary);
-  --color-on-tertiary: var(--md-sys-color-on-tertiary);
-  --color-tertiary-container: var(--md-sys-color-tertiary-container);
-  --color-on-tertiary-container: var(--md-sys-color-on-tertiary-container);
-  --color-tertiary-fixed: var(--md-sys-color-tertiary-fixed);
-  --color-tertiary-fixed-dim: var(--md-sys-color-tertiary-fixed-dim);
-  --color-on-tertiary-fixed: var(--md-sys-color-on-tertiary-fixed);
-  --color-on-tertiary-fixed-variant: var(
-    --md-sys-color-on-tertiary-fixed-variant
-  );
   --color-error: var(--md-sys-color-error);
-  --color-on-error: var(--md-sys-color-on-error);
   --color-error-container: var(--md-sys-color-error-container);
-  --color-on-error-container: var(--md-sys-color-on-error-container);
-  --color-surface-tint: var(--md-sys-color-surface-tint);
-  --color-scrim: var(--md-sys-color-scrim);
-  --color-shadow: var(--md-sys-color-shadow);
-
-  /* Shades */
-
-  --color-primary-50: var(--md-ref-palette-primary-95);
-  --color-primary-100: var(--md-ref-palette-primary-90);
-  --color-primary-200: var(--md-ref-palette-primary-80);
-  --color-primary-300: var(--md-ref-palette-primary-70);
-  --color-primary-400: var(--md-ref-palette-primary-60);
-  --color-primary-500: var(--md-ref-palette-primary-50);
-  --color-primary-600: var(--md-ref-palette-primary-40);
-  --color-primary-700: var(--md-ref-palette-primary-30);
-  --color-primary-800: var(--md-ref-palette-primary-20);
-  --color-primary-900: var(--md-ref-palette-primary-10);
-  --color-primary-950: var(--md-ref-palette-primary-5);
-
-  --color-secondary-50: var(--md-ref-palette-secondary-95);
-  --color-secondary-100: var(--md-ref-palette-secondary-90);
-  --color-secondary-200: var(--md-ref-palette-secondary-80);
-  --color-secondary-300: var(--md-ref-palette-secondary-70);
-  --color-secondary-400: var(--md-ref-palette-secondary-60);
-  --color-secondary-500: var(--md-ref-palette-secondary-50);
-  --color-secondary-600: var(--md-ref-palette-secondary-40);
-  --color-secondary-700: var(--md-ref-palette-secondary-30);
-  --color-secondary-800: var(--md-ref-palette-secondary-20);
-  --color-secondary-900: var(--md-ref-palette-secondary-10);
-  --color-secondary-950: var(--md-ref-palette-secondary-5);
-
-  --color-tertiary-50: var(--md-ref-palette-tertiary-95);
-  --color-tertiary-100: var(--md-ref-palette-tertiary-90);
-  --color-tertiary-200: var(--md-ref-palette-tertiary-80);
-  --color-tertiary-300: var(--md-ref-palette-tertiary-70);
-  --color-tertiary-400: var(--md-ref-palette-tertiary-60);
-  --color-tertiary-500: var(--md-ref-palette-tertiary-50);
-  --color-tertiary-600: var(--md-ref-palette-tertiary-40);
-  --color-tertiary-700: var(--md-ref-palette-tertiary-30);
-  --color-tertiary-800: var(--md-ref-palette-tertiary-20);
-  --color-tertiary-900: var(--md-ref-palette-tertiary-10);
-  --color-tertiary-950: var(--md-ref-palette-tertiary-5);
-
-  --color-error-50: var(--md-ref-palette-error-95);
-  --color-error-100: var(--md-ref-palette-error-90);
-  --color-error-200: var(--md-ref-palette-error-80);
-  --color-error-300: var(--md-ref-palette-error-70);
-  --color-error-400: var(--md-ref-palette-error-60);
-  --color-error-500: var(--md-ref-palette-error-50);
-  --color-error-600: var(--md-ref-palette-error-40);
-  --color-error-700: var(--md-ref-palette-error-30);
-  --color-error-800: var(--md-ref-palette-error-20);
-  --color-error-900: var(--md-ref-palette-error-10);
-  --color-error-950: var(--md-ref-palette-error-5);
-
-  --color-neutral-50: var(--md-ref-palette-neutral-95);
-  --color-neutral-100: var(--md-ref-palette-neutral-90);
-  --color-neutral-200: var(--md-ref-palette-neutral-80);
-  --color-neutral-300: var(--md-ref-palette-neutral-70);
-  --color-neutral-400: var(--md-ref-palette-neutral-60);
-  --color-neutral-500: var(--md-ref-palette-neutral-50);
-  --color-neutral-600: var(--md-ref-palette-neutral-40);
-  --color-neutral-700: var(--md-ref-palette-neutral-30);
-  --color-neutral-800: var(--md-ref-palette-neutral-20);
-  --color-neutral-900: var(--md-ref-palette-neutral-10);
-  --color-neutral-950: var(--md-ref-palette-neutral-5);
-
-  --color-neutral-variant-50: var(--md-ref-palette-neutral-variant-95);
-  --color-neutral-variant-100: var(--md-ref-palette-neutral-variant-90);
-  --color-neutral-variant-200: var(--md-ref-palette-neutral-variant-80);
-  --color-neutral-variant-300: var(--md-ref-palette-neutral-variant-70);
-  --color-neutral-variant-400: var(--md-ref-palette-neutral-variant-60);
-  --color-neutral-variant-500: var(--md-ref-palette-neutral-variant-50);
-  --color-neutral-variant-600: var(--md-ref-palette-neutral-variant-40);
-  --color-neutral-variant-700: var(--md-ref-palette-neutral-variant-30);
-  --color-neutral-variant-800: var(--md-ref-palette-neutral-variant-20);
-  --color-neutral-variant-900: var(--md-ref-palette-neutral-variant-10);
-  --color-neutral-variant-950: var(--md-ref-palette-neutral-variant-5);
-
-  /*
-   * Custom colors
-   */
-
-  --color-myCustomColor1: var(--md-sys-color-my-custom-color-1);
-  --color-on-myCustomColor1: var(--md-sys-color-on-my-custom-color-1);
-  --color-myCustomColor1-container: var(
-    --md-sys-color-my-custom-color-1-container
-  );
-  --color-on-myCustomColor1-container: var(
-    --md-sys-color-on-my-custom-color-1-container
-  );
-  /* Shades */
-  --color-myCustomColor1-50: var(--md-ref-palette-my-custom-color-1-95);
-  --color-myCustomColor1-100: var(--md-ref-palette-my-custom-color-1-90);
-  --color-myCustomColor1-200: var(--md-ref-palette-my-custom-color-1-80);
-  --color-myCustomColor1-300: var(--md-ref-palette-my-custom-color-1-70);
-  --color-myCustomColor1-400: var(--md-ref-palette-my-custom-color-1-60);
-  --color-myCustomColor1-500: var(--md-ref-palette-my-custom-color-1-50);
-  --color-myCustomColor1-600: var(--md-ref-palette-my-custom-color-1-40);
-  --color-myCustomColor1-700: var(--md-ref-palette-my-custom-color-1-30);
-  --color-myCustomColor1-800: var(--md-ref-palette-my-custom-color-1-20);
-  --color-myCustomColor1-900: var(--md-ref-palette-my-custom-color-1-10);
-  --color-myCustomColor1-950: var(--md-ref-palette-my-custom-color-1-5);
-
-  --color-myCustomColor2: var(--md-sys-color-my-custom-color-2);
-  --color-on-myCustomColor2: var(--md-sys-color-on-my-custom-color-2);
-  --color-myCustomColor2-container: var(
-    --md-sys-color-my-custom-color-2-container
-  );
-  --color-on-myCustomColor2-container: var(
-    --md-sys-color-on-my-custom-color-2-container
-  );
-  /* Shades */
-  --color-myCustomColor2-50: var(--md-ref-palette-my-custom-color-2-95);
-  --color-myCustomColor2-100: var(--md-ref-palette-my-custom-color-2-90);
-  --color-myCustomColor2-200: var(--md-ref-palette-my-custom-color-2-80);
-  --color-myCustomColor2-300: var(--md-ref-palette-my-custom-color-2-70);
-  --color-myCustomColor2-400: var(--md-ref-palette-my-custom-color-2-60);
-  --color-myCustomColor2-500: var(--md-ref-palette-my-custom-color-2-50);
-  --color-myCustomColor2-600: var(--md-ref-palette-my-custom-color-2-40);
-  --color-myCustomColor2-700: var(--md-ref-palette-my-custom-color-2-30);
-  --color-myCustomColor2-800: var(--md-ref-palette-my-custom-color-2-20);
-  --color-myCustomColor2-900: var(--md-ref-palette-my-custom-color-2-10);
-  --color-myCustomColor2-950: var(--md-ref-palette-my-custom-color-2-5);
+  --color-inverse-on-surface: var(--md-sys-color-inverse-on-surface);
+  --color-inverse-primary: var(--md-sys-color-inverse-primary);
+  --color-inverse-surface: var(--md-sys-color-inverse-surface);
+  --color-on-background: var(--md-sys-color-on-background);
+  --color-on-error: var(--md-sys-color-on-error);
+  /* ... */
 }
 ```
 
-Or simply:
+115 names in all — every M3 scheme token, plus eleven Tailwind shades for each
+of `primary`, `secondary`, `tertiary`, `error`, `neutral` and
+`neutral-variant`.
 
-```css
-@import "material-theme-builder/tailwind.css";
-```
-
-> [!IMPORTANT]
->
-> Do not forget to manually add your custom colors, as in:
->
-> ```css
-> /*
->  * Custom colors
->  */
->
-> --color-myCustomColor1: var(--md-sys-color-my-custom-color-1);
-> --color-on-myCustomColor1: var(--md-sys-color-on-my-custom-color-1);
-> --color-myCustomColor1-container: var(
->   --md-sys-color-my-custom-color-1-container
-> );
-> --color-on-myCustomColor1-container: var(
->   --md-sys-color-on-my-custom-color-1-container
-> );
-> /* Shades */
-> --color-myCustomColor1-50: var(--md-ref-palette-my-custom-color-1-95);
-> --color-myCustomColor1-100: var(--md-ref-palette-my-custom-color-1-90);
-> --color-myCustomColor1-200: var(--md-ref-palette-my-custom-color-1-80);
-> --color-myCustomColor1-300: var(--md-ref-palette-my-custom-color-1-70);
-> --color-myCustomColor1-400: var(--md-ref-palette-my-custom-color-1-60);
-> --color-myCustomColor1-500: var(--md-ref-palette-my-custom-color-1-50);
-> --color-myCustomColor1-600: var(--md-ref-palette-my-custom-color-1-40);
-> --color-myCustomColor1-700: var(--md-ref-palette-my-custom-color-1-30);
-> --color-myCustomColor1-800: var(--md-ref-palette-my-custom-color-1-20);
-> --color-myCustomColor1-900: var(--md-ref-palette-my-custom-color-1-10);
-> --color-myCustomColor1-950: var(--md-ref-palette-my-custom-color-1-5);
->
-> --color-myCustomColor2: var(--md-sys-color-my-custom-color-2);
-> --color-on-myCustomColor2: var(--md-sys-color-on-my-custom-color-2);
-> --color-myCustomColor2-container: var(
->   --md-sys-color-my-custom-color-2-container
-> );
-> --color-on-myCustomColor2-container: var(
->   --md-sys-color-on-my-custom-color-2-container
-> );
-> /* Shades */
-> --color-myCustomColor2-50: var(--md-ref-palette-my-custom-color-2-95);
-> --color-myCustomColor2-100: var(--md-ref-palette-my-custom-color-2-90);
-> --color-myCustomColor2-200: var(--md-ref-palette-my-custom-color-2-80);
-> --color-myCustomColor2-300: var(--md-ref-palette-my-custom-color-2-70);
-> --color-myCustomColor2-400: var(--md-ref-palette-my-custom-color-2-60);
-> --color-myCustomColor2-500: var(--md-ref-palette-my-custom-color-2-50);
-> --color-myCustomColor2-600: var(--md-ref-palette-my-custom-color-2-40);
-> --color-myCustomColor2-700: var(--md-ref-palette-my-custom-color-2-30);
-> --color-myCustomColor2-800: var(--md-ref-palette-my-custom-color-2-20);
-> --color-myCustomColor2-900: var(--md-ref-palette-my-custom-color-2-10);
-> --color-myCustomColor2-950: var(--md-ref-palette-my-custom-color-2-5);
-> ```
+</details>
 
 ## shadcn
 
@@ -476,6 +321,17 @@ $ pnpm run lgtm
 ```
 
 ## CONTRIBUTING
+
+```bash
+pnpm run storybook # the day-to-day loop -- no build needed, tailwind.css regenerates as you edit
+pnpm run build     # dist/, plus the generated tailwind.css -- both gitignored
+pnpm run lgtm      # everything CI checks
+```
+
+`src/tailwind.css` is generated from `toTailwind()` and gitignored. `pnpm run
+build` writes it; in Storybook a Vite plugin (`.storybook/main.ts`) writes it at
+server start and again on every edit under `src/lib/`, so the stories never show
+a stale vocabulary.
 
 When submitting a pull request, please include a changeset to document your
 changes:
