@@ -25,6 +25,7 @@ import {
   buildShadcn,
   buildShadcnAliases,
   buildShadcnRegistryItem,
+  type ShadcnRegistryItemOptions,
 } from "./builder.shadcn";
 import { buildTailwind, type TailwindOptions } from "./builder.tailwind";
 import { DEFAULT_PREFIX, tokenNames } from "./tokens";
@@ -33,6 +34,7 @@ import { DEFAULT_PREFIX, tokenNames } from "./tokens";
 
 export type {
   ShadcnRegistryItem,
+  ShadcnRegistryItemOptions,
   ShadcnTheme,
   ShadcnVarName,
 } from "./builder.shadcn";
@@ -631,7 +633,8 @@ export function builder(
     toTailwind: (options?: TailwindOptions) => buildTailwind(ctx, options),
     toShadcn: () => buildShadcn(ctx),
     toShadcnAliases: () => buildShadcnAliases(ctx),
-    toShadcnRegistryItem: () => buildShadcnRegistryItem(ctx),
+    toShadcnRegistryItem: (options?: ShadcnRegistryItemOptions) =>
+      buildShadcnRegistryItem(ctx, options),
     toFlutter: () => buildFlutter(ctx),
     mergedColorsLight,
     mergedColorsDark,

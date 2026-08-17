@@ -27,7 +27,11 @@ import prettier from "prettier";
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 // The outputs name variables, never colors, so the source is arbitrary -- every
-// exporter here returns the same thing whatever it is asked about.
+// exporter here returns the same thing whatever it is asked about. Keep it that
+// way: an output that varied with the source would mean this file publishing one
+// theme, chosen here, to everyone who installs it. That is why the registry item
+// below is built without `{ fallback: true }` -- the variant that does bake
+// colors in belongs to the CLI, which is given a real source color.
 const SOURCE = "#6750A4";
 
 /**

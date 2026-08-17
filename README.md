@@ -49,7 +49,7 @@ theme.toTailwind();
 theme.toFlutter();
 theme.toShadcn();
 theme.toShadcnAliases();
-theme.toShadcnRegistryItem();
+theme.toShadcnRegistryItem({ fallback: true });
 ```
 
 ## CLI
@@ -225,18 +225,42 @@ Pre-requisites:
 - You should use
   [`tailwind.cssVariables`](https://ui.shadcn.com/docs/theming#css-variables)
 
-Install it the way you install any shadcn theme:
+Generate a registry item for your source color, and install it the way you
+install any shadcn theme:
 
 ```sh
-$ npx shadcn@latest add https://unpkg.com/material-theme-builder/registry-item.json
+$ npx material-theme-builder "#6750A4" --format registry-item > mtb.json
+$ npx shadcn@latest add ./mtb.json && rm mtb.json
 ```
 
 That rewrites the values inside your existing `:root` and `.dark` blocks, in
 place, pointing
 [shadcn's CSS variables](https://ui.shadcn.com/docs/theming#list-of-variables)
 at the M3 custom properties `<Mtb>` emits — so every shadcn component follows
-whichever theme is above it in the tree. The values stay `var()` references:
-nothing is baked in at build time.
+whichever theme is above it in the tree — and leaves that theme's own colors in
+as the `var()` fallbacks:
+
+```css
+:root {
+  --card: var(--md-sys-color-surface-container-low, oklch(0.968 0.012 317.742));
+}
+
+.dark {
+  --card: var(--md-sys-color-surface-container-low, oklch(0.227 0.01 303.714));
+}
+```
+
+So it works both ways round: live under an `<Mtb>`, and static — server-rendered,
+zero client JS — anywhere there is none. Every option lands in those fallbacks,
+`--scheme` and `--contrast` included; `--no-fallback` leaves them out.
+
+> [!WARNING]
+>
+> `shadcn add` overwrites shadcn's own `oklch()` values rather than keeping them
+> anywhere, so they are not a safety net. Where nothing declares the M3
+> properties _and_ there are no fallbacks, every variable resolves to nothing and
+> components render transparent — `git diff` your CSS, or re-run `shadcn init`,
+> to get shadcn's defaults back.
 
 > [!NOTE]
 >
@@ -245,8 +269,27 @@ nothing is baked in at build time.
 > those land _above_ your `:root`, so the real values win. Delete them if they
 > bother you.
 
-For the opposite trade — concrete `oklch()` values, frozen at build time — see
-[`toShadcn()`](#programmatic-api).
+For the opposite trade — concrete `oklch()` values and no `var()` at all, frozen
+at build time — see [`toShadcn()`](#programmatic-api).
+
+<details>
+<summary>Install the mapping alone, without generating anything</summary>
+
+The package publishes one too, so `shadcn add` has something to fetch without a
+build step of yours:
+
+```sh
+$ npx shadcn@latest add https://unpkg.com/material-theme-builder/registry-item.json
+```
+
+It is the mapping and nothing else — 31 `var()` references, no colors. Which is
+why it can be published at all: it is the same file whatever your source color,
+scheme or contrast, because those arrive at runtime from `<Mtb>`. And that is
+also its one requirement — mount an `<Mtb>`, or emit
+[`toCss()`](#programmatic-api) server-side, or nothing resolves. Generate your
+own, as above, to have colors to fall back on.
+
+</details>
 
 <details>
 <summary>Rather import a stylesheet than let the CLI edit your file</summary>
@@ -383,6 +426,12 @@ stylesheets also get a `src/` copy, which is what Storybook `@import`s, and in
 Storybook a Vite plugin (`.storybook/main.ts`) rewrites those at server start
 and again on every edit under `src/lib/`, so the stories never show a stale
 vocabulary.
+
+`generate.mjs` builds the registry item without `{ fallback: true }`, which is
+what keeps every one of those outputs a function of the _mapping_ rather than of
+a color: `SOURCE` there is arbitrary, and has to stay able to be. The fallback
+variant belongs to whoever knows a real source color — the CLI's
+`--format registry-item`.
 
 `src/styles/shadcn.css` is the other half of that arrangement, and is _not_
 generated from anything here: it is pristine `shadcn init --preset b0` output,

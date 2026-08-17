@@ -9,7 +9,7 @@
 @import "../tailwind.css";
 /* And ours, pointing shadcn's variables at the M3 properties -- after theirs
    above, which it overrides. Both files are generated; see
-   `scripts/generate-css.mjs`. */
+   `scripts/generate.mjs`. */
 @import "../shadcn.css";
 
 /* After the imports, which CSS requires to come first. */

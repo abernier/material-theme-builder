@@ -8,6 +8,7 @@
 // $ node dist/cli.js '#6750A4'
 // $ node dist/cli.js '#6750A4' --format css
 // $ node dist/cli.js '#6750A4' --format shadcn
+// $ node dist/cli.js '#6750A4' --format registry-item
 // ```
 
 import * as fs from "node:fs";
@@ -46,7 +47,12 @@ function writeFigmaTokens(theme: Theme, outputDir: string) {
 
 function writeOutput(
   theme: Theme,
-  opts: { format: string; output?: string; shadcn?: boolean },
+  opts: {
+    format: string;
+    output?: string;
+    shadcn?: boolean;
+    fallback?: boolean;
+  },
 ) {
   const json = (value: unknown) => JSON.stringify(value, null, 2) + "\n";
 
@@ -57,6 +63,10 @@ function writeOutput(
       return process.stdout.write(theme.toTailwind({ shadcn: opts.shadcn }));
     case "shadcn":
       return process.stdout.write(json(theme.toShadcn()));
+    case "registry-item":
+      return process.stdout.write(
+        json(theme.toShadcnRegistryItem({ fallback: opts.fallback })),
+      );
     case "flutter":
       return process.stdout.write(theme.toFlutter());
     case "figma":
@@ -95,7 +105,7 @@ program
   )
   .option(
     "--format <type>",
-    "Output format: json, css, figma, tailwind, shadcn, or flutter",
+    "Output format: json, css, figma, tailwind, shadcn, registry-item, or flutter",
     "figma",
   )
   .option("--output <dir>", "Output directory (required for figma format)")
@@ -104,16 +114,34 @@ program
     "Append the shadcn var() alias block to --format tailwind (for concrete values, use --format shadcn)",
   )
   .option(
+    "--no-fallback",
+    "Omit this theme's colors as the var() fallbacks in --format registry-item, so it renders nothing without an <Mtb> above it",
+  )
+  .option(
     "--prefix <string>",
     "CSS variable prefix (e.g. md → --md-sys-color-*, --md-ref-palette-*)",
     DEFAULT_PREFIX,
   )
-  .action((source: string, opts) => {
+  .action((source: string, opts, command: Command) => {
     // --shadcn only ever modified the tailwind output; silently dropping it
     // elsewhere is now a likelier mistake, --format shadcn being one keystroke away.
     if (opts.shadcn && opts.format !== "tailwind") {
       console.error(
         "Error: --shadcn only applies to --format tailwind. For concrete color values, use --format shadcn.",
+      );
+      process.exit(1);
+    }
+
+    // Same reasoning, and the source matters more here: someone who asked for
+    // no fallbacks and got a format that has none anyway would think they had
+    // opted out of something. `fallback` defaults to true, so only an explicit
+    // --no-fallback counts.
+    if (
+      command.getOptionValueSource("fallback") === "cli" &&
+      opts.format !== "registry-item"
+    ) {
+      console.error(
+        "Error: --no-fallback only applies to --format registry-item.",
       );
       process.exit(1);
     }
