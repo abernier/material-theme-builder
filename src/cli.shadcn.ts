@@ -28,7 +28,7 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 
-import type { Command, Option } from "commander";
+import { InvalidArgumentError, type Command, type Option } from "commander";
 import { themeFrom, type Theme } from "./cli.options";
 import { builder } from "./lib/builder";
 
@@ -36,7 +36,7 @@ import { builder } from "./lib/builder";
 // init` works with nothing on disk. `--yes` because the whole point is a command
 // that does not stop to ask.
 const NPX = ["npx", "--yes"];
-const SHADCN = "shadcn@latest";
+const DEFAULT_SHADCN = "shadcn@latest";
 const SELF = "material-theme-builder";
 
 // The shadcn command each chain ends up in, named once: it labels the step in an
@@ -83,6 +83,12 @@ const YES: Defaulted = { long: "--yes", short: "-y" };
 // `--yes` is redundant against today's shadcn, where it already defaults to
 // true, and passed anyway: the printed chain has to stay non-interactive on its
 // own terms rather than on an upstream default that could move.
+//
+// Which also bounds how far back `--shadcn-cli <spec>` can usefully pin: this list is
+// shadcn 4.x vocabulary. Preset *codes* and `shadcn preset decode` are a 4.x
+// thing, so an older CLI would reject `--preset b0` outright. Pinning is an
+// escape hatch for the neighbouring versions, not a time machine -- travelling
+// further means passing a preset of that era after the `--` as well.
 const INIT_DEFAULTS: Defaulted[] = [
   { long: "--preset", short: "-p", value: "b0" },
   { long: "--template", short: "-t", value: "vite" },
@@ -93,6 +99,65 @@ const INIT_DEFAULTS: Defaulted[] = [
 // `shadcn add` has no prompt worth pre-answering beyond confirmation, so this is
 // the whole list.
 const ADD_DEFAULTS: Defaulted[] = [YES];
+
+// ─── The chain's own options ─────────────────────────────────────────────
+
+// A spec is whatever `npx` will resolve -- a version, a tag, a fork, a tarball --
+// so this validates only the two ways it can be wrong beyond doubt. Anything else
+// is npx's business, and guessing at package names here would reject specs that
+// work.
+function parseShadcnSpec(value: string) {
+  // It lands in the argv position where npx reads its own options, so a leading
+  // dash would silently become one.
+  if (value.startsWith("-"))
+    throw new InvalidArgumentError(
+      "A package spec cannot start with '-': npx would read it as one of its own options.",
+    );
+
+  // The likely slip, and worth naming: a version alone resolves to nothing.
+  // Leading digit is the whole test -- deciding what is a package name is harder
+  // and buys nothing.
+  if (/^\d/.test(value))
+    throw new InvalidArgumentError(
+      `That is a version, not a package spec -- write 'shadcn@${value}'.`,
+    );
+
+  return value;
+}
+
+/**
+ * Declare the options that describe the chain itself rather than the theme it
+ * installs — which shadcn runs it, and whether it runs at all.
+ *
+ * `--shadcn-cli` rather than the obvious `--shadcn`, which is taken: the root
+ * command has shipped a boolean `--shadcn` since 3.2.0 (it appends the alias
+ * block to `--format tailwind`). Positional options would in fact keep the two
+ * apart, each command matching only what it declares — but one word meaning a
+ * boolean here and a package spec there is a trap for whoever reads `--help`
+ * twice, and the released one is the one that cannot move. So this is the name
+ * that gave way; simplifying it back to `--shadcn` would be a breaking change to
+ * a flag people already pass.
+ *
+ * An option at all, rather than a version in the subcommand name
+ * (`shadcn-init@4.18.0`, the way `npm create vite@latest` reads): a name carrying
+ * a spec means giving up commander's subcommand routing for a catch-all that
+ * parses the name itself, and — the deciding cost — `--help` has nowhere to
+ * mention that `@4.18.0` is allowed, where an option prints its own default on
+ * the line beside it.
+ */
+export function addChainOptions(command: Command) {
+  return command
+    .option(
+      "--shadcn-cli <spec>",
+      "npx package spec for the shadcn CLI to run (a version, tag, fork or tarball — anything npx resolves)",
+      parseShadcnSpec,
+      DEFAULT_SHADCN,
+    )
+    .option(
+      "--print",
+      "Print the equivalent shell chain instead of running it",
+    );
+}
 
 // ─── Argument merging ────────────────────────────────────────────────────
 
@@ -228,9 +293,32 @@ export type Plan = {
   steps: Step[];
 };
 
+/**
+ * What the invoked subcommand contributes to a chain, beyond the args it
+ * forwards.
+ *
+ * Read off the command in one place, so a plan can be built in a test without
+ * one.
+ */
+export type ChainOptions = {
+  /** The theme the registry item is generated with. */
+  theme: Theme;
+  /** The `npx` package spec the shadcn steps run. */
+  shadcn: string;
+};
+
 // A theme asked for at every default -- what both plans describe when no theme
 // option was given, and what the tests below build on.
 const DEFAULT_THEME: Theme = { options: {}, fallback: true, args: [] };
+
+/**
+ * Everything a chain needs from the command that invoked it.
+ *
+ * @param command the invoked subcommand, after parsing
+ */
+export function chainOptionsFrom(command: Command): ChainOptions {
+  return { theme: themeFrom(command), shadcn: command.opts().shadcnCli };
+}
 
 /**
  * The `init` chain: scaffold a stock shadcn app, theme it, and hand over to its
@@ -244,7 +332,10 @@ const DEFAULT_THEME: Theme = { options: {}, fallback: true, args: [] };
 export function initPlan(
   source: string,
   forwarded: string[] = [],
-  theme: Theme = DEFAULT_THEME,
+  {
+    theme = DEFAULT_THEME,
+    shadcn = DEFAULT_SHADCN,
+  }: Partial<ChainOptions> = {},
 ): Plan {
   const args = mergeDefaults(INIT_DEFAULTS, forwarded);
   const dir = lastName(args) ?? APP_NAME;
@@ -257,17 +348,21 @@ export function initPlan(
       {
         kind: "spawn",
         label: INIT_TARGET,
-        argv: [...NPX, SHADCN, "init", ...args],
+        argv: [...NPX, shadcn, "init", ...args],
         where: "cwd",
       },
       { kind: "cd", dir },
       { kind: "item", file: ITEM },
+      // The same spec as the step above, deliberately: a chain pinned for the
+      // scaffold and floating for the install is worse than one that floats
+      // throughout, since the two would disagree about the registry format
+      // without saying so.
       {
         kind: "spawn",
         label: ADD_TARGET,
         argv: [
           ...NPX,
-          SHADCN,
+          shadcn,
           "add",
           `./${ITEM}`,
           ...mergeDefaults(ADD_DEFAULTS, []),
@@ -304,7 +399,10 @@ export function initPlan(
 export function applyPlan(
   source: string,
   forwarded: string[] = [],
-  theme: Theme = DEFAULT_THEME,
+  {
+    theme = DEFAULT_THEME,
+    shadcn = DEFAULT_SHADCN,
+  }: Partial<ChainOptions> = {},
 ): Plan {
   return {
     source,
@@ -316,7 +414,7 @@ export function applyPlan(
         label: ADD_TARGET,
         argv: [
           ...NPX,
-          SHADCN,
+          shadcn,
           "add",
           `./${ITEM}`,
           ...mergeDefaults(ADD_DEFAULTS, forwarded),
@@ -463,7 +561,7 @@ function execute(plan: Plan, command: Command) {
  */
 export function runInit(source: string, forwarded: string[], command: Command) {
   refuseOwnOptions(command, forwarded, INIT_TARGET);
-  execute(initPlan(source, forwarded, themeFrom(command)), command);
+  execute(initPlan(source, forwarded, chainOptionsFrom(command)), command);
 }
 
 /**
@@ -479,5 +577,5 @@ export function runApply(
   command: Command,
 ) {
   refuseOwnOptions(command, forwarded, ADD_TARGET);
-  execute(applyPlan(source, forwarded, themeFrom(command)), command);
+  execute(applyPlan(source, forwarded, chainOptionsFrom(command)), command);
 }

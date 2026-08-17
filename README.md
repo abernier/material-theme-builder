@@ -245,6 +245,15 @@ ours go before the separator; one written after it is refused, rather than
 forwarded into an error from shadcn about a flag it has never heard of. `--print`
 writes the equivalent shell chain and runs nothing.
 
+`--shadcn-cli <spec>` pins which shadcn runs — `--shadcn-cli shadcn@4.18.0`, a
+tag, a fork, anything `npx` resolves — defaulting to `shadcn@latest`. (Not
+`--shadcn`: the root command has used that name since 3.2.0 for something else
+entirely, a boolean that appends the alias block to `--format tailwind`.) It
+reaches for neighbouring versions rather than back in
+time, though: the defaults these commands pass are shadcn 4.x vocabulary
+(`--preset b0` is a 4.x preset code), so pinning far enough back also means
+passing that era's preset after the `--`.
+
 Both do the same two things by hand, if you would rather: generate a registry
 item for your source color, and install it the way you install any shadcn theme.
 

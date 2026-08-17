@@ -19,7 +19,7 @@ import * as path from "node:path";
 import { Command } from "commander";
 import { z } from "zod";
 import { addThemeOptions, builderOptions } from "./cli.options";
-import { runApply, runInit } from "./cli.shadcn";
+import { addChainOptions, runApply, runInit } from "./cli.shadcn";
 import { builder, DEFAULT_BLEND, type HexCustomColor } from "./lib/builder";
 
 const customColorSchema = z.array(
@@ -166,36 +166,36 @@ addThemeOptions(
 // motivated them -- the published item is impersonal precisely because it cannot
 // be asked for a scheme.
 
-addThemeOptions(
-  program
-    .command("init")
-    .description(
-      "Scaffold a new shadcn app themed from a source color, and start it",
-    )
-    .argument("<source>", "Source color in hex format (e.g. #6750A4)")
-    .argument(
-      "[shadcn-args...]",
-      "Options after a `--`, forwarded verbatim to `shadcn init`",
-    ),
-)
-  .option("--print", "Print the equivalent shell chain instead of running it")
-  .action((source: string, shadcnArgs: string[], _opts, command: Command) =>
-    runInit(source, shadcnArgs, command),
-  );
+addChainOptions(
+  addThemeOptions(
+    program
+      .command("init")
+      .description(
+        "Scaffold a new shadcn app themed from a source color, and start it",
+      )
+      .argument("<source>", "Source color in hex format (e.g. #6750A4)")
+      .argument(
+        "[shadcn-args...]",
+        "Options after a `--`, forwarded verbatim to `shadcn init`",
+      ),
+  ),
+).action((source: string, shadcnArgs: string[], _opts, command: Command) =>
+  runInit(source, shadcnArgs, command),
+);
 
-addThemeOptions(
-  program
-    .command("apply")
-    .description("Theme the shadcn project in the current directory")
-    .argument("<source>", "Source color in hex format (e.g. #6750A4)")
-    .argument(
-      "[shadcn-args...]",
-      "Options after a `--`, forwarded verbatim to `shadcn add`",
-    ),
-)
-  .option("--print", "Print the equivalent shell chain instead of running it")
-  .action((source: string, shadcnArgs: string[], _opts, command: Command) =>
-    runApply(source, shadcnArgs, command),
-  );
+addChainOptions(
+  addThemeOptions(
+    program
+      .command("apply")
+      .description("Theme the shadcn project in the current directory")
+      .argument("<source>", "Source color in hex format (e.g. #6750A4)")
+      .argument(
+        "[shadcn-args...]",
+        "Options after a `--`, forwarded verbatim to `shadcn add`",
+      ),
+  ),
+).action((source: string, shadcnArgs: string[], _opts, command: Command) =>
+  runApply(source, shadcnArgs, command),
+);
 
 program.parse();

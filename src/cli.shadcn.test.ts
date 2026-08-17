@@ -7,7 +7,9 @@ import { describe, expect, it } from "vitest";
 
 import { addThemeOptions, themeFrom } from "./cli.options";
 import {
+  addChainOptions,
   applyPlan,
+  chainOptionsFrom,
   initPlan,
   mergeDefaults,
   ownOptionIn,
@@ -207,13 +209,16 @@ function themeCommand(argv: string[]) {
     new Command().argument("<source>"),
   ).enablePositionalOptions();
 
-  addThemeOptions(
-    program.command("apply").argument("<source>").argument("[shadcn-args...]"),
-  )
-    .option("--print", "print")
-    .action((_source, _args, _opts, command: Command) => {
-      captured = command;
-    });
+  addChainOptions(
+    addThemeOptions(
+      program
+        .command("apply")
+        .argument("<source>")
+        .argument("[shadcn-args...]"),
+    ),
+  ).action((_source, _args, _opts, command: Command) => {
+    captured = command;
+  });
 
   program.parse(["apply", "#769CDF", ...argv], { from: "user" });
 
@@ -271,8 +276,19 @@ describe("theme options", () => {
   it("should carry into the printed item step, ahead of --format", () => {
     const theme = themeFrom(themeCommand([...given, "--no-fallback"]));
 
-    expect(itemStep(renderChain(applyPlan("#769CDF", [], theme)))).toBe(
+    expect(itemStep(renderChain(applyPlan("#769CDF", [], { theme })))).toBe(
       "npx --yes material-theme-builder '#769CDF' --scheme vibrant --contrast 0.5 --no-fallback --prefix my --format registry-item > mtb.json",
+    );
+  });
+
+  it("should leave --shadcn-cli out of the item step", () => {
+    // That line generates the registry item; which shadcn installs it is a
+    // question about the step after.
+    const theme = themeFrom(themeCommand(given));
+    const plan = applyPlan("#769CDF", [], { theme, shadcn: "shadcn@4.18.0" });
+
+    expect(itemStep(renderChain(plan))).toBe(
+      "npx --yes material-theme-builder '#769CDF' --scheme vibrant --contrast 0.5 --prefix my --format registry-item > mtb.json",
     );
   });
 
@@ -284,7 +300,7 @@ describe("theme options", () => {
     expect(theme.args).toEqual([]);
     expect(theme.fallback).toBe(true);
     expect(theme.options.scheme).toBe("tonalSpot");
-    expect(itemStep(renderChain(applyPlan("#769CDF", [], theme)))).toBe(
+    expect(itemStep(renderChain(applyPlan("#769CDF", [], { theme })))).toBe(
       "npx --yes material-theme-builder '#769CDF' --format registry-item > mtb.json",
     );
   });
@@ -325,6 +341,42 @@ describe("renderChain() › init", () => {
         "rm mtb.json && " +
         "npm run dev",
     );
+  });
+});
+
+/** The `npx` package spec each shadcn spawn of a plan runs, in order. */
+const shadcnSpecs = (plan: Plan) =>
+  spawnArgv(plan)
+    .filter(([command]) => command === "npx")
+    .map((argv) => argv[2]);
+
+describe("--shadcn-cli <spec>", () => {
+  const pinned = { shadcn: "shadcn@4.18.0" };
+
+  // Both of init's, not just the scaffold: a chain pinned for `init` and floating
+  // for the `add` that installs into it is worse than one that floats throughout.
+  it("should pin every shadcn spawn of the chain", () => {
+    expect(shadcnSpecs(initPlan("#769CDF", [], pinned))).toEqual([
+      "shadcn@4.18.0",
+      "shadcn@4.18.0",
+    ]);
+    expect(shadcnSpecs(applyPlan("#769CDF", [], pinned))).toEqual([
+      "shadcn@4.18.0",
+    ]);
+  });
+
+  it("should default to shadcn@latest", () => {
+    expect(shadcnSpecs(initPlan("#769CDF"))).toEqual([
+      "shadcn@latest",
+      "shadcn@latest",
+    ]);
+    expect(chainOptionsFrom(themeCommand([])).shadcn).toBe("shadcn@latest");
+  });
+
+  it("should be read off the command", () => {
+    expect(
+      chainOptionsFrom(themeCommand(["--shadcn-cli", "shadcn@next"])).shadcn,
+    ).toBe("shadcn@next");
   });
 });
 
@@ -417,6 +469,16 @@ describe("cli › backward compatibility", () => {
       "--print",
       "shadcn add",
     ],
+    // Covered by the same check without it being taught about `--shadcn-cli`,
+    // which is the point of reading the declarations rather than a list -- and
+    // covered under the new name only, the subcommand having no `--shadcn` of its
+    // own to claim.
+    [
+      "apply, --shadcn-cli",
+      ["apply", "#769CDF", "--", "--shadcn-cli", "shadcn@4.18.0"],
+      "--shadcn-cli",
+      "shadcn add",
+    ],
   ] as const)(
     "should refuse an option of ours after the `--` (%s)",
     (_, args, flag, target) => {
@@ -425,4 +487,18 @@ describe("cli › backward compatibility", () => {
       );
     },
   );
+
+  // The value reaches `npx` in the position where npx reads its own options, so
+  // these two are worth rejecting ourselves rather than letting npx fail at them
+  // several seconds later.
+  it.runIf(fs.existsSync(cli)).each([
+    ["a bare version", ["--shadcn-cli", "4.18.0"], "write 'shadcn@4.18.0'"],
+    [
+      "a leading dash",
+      ["--shadcn-cli", "--overwrite"],
+      "cannot start with '-'",
+    ],
+  ] as const)("should reject %s as a --shadcn-cli spec", (_, args, message) => {
+    expect(() => run(["apply", "#769CDF", ...args])).toThrow(message);
+  });
 });

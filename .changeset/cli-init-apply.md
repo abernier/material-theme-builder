@@ -67,6 +67,25 @@ one-liner. `b0` is Base UI, style nova, neutral, lucide and Inter — the bundle
 this repo dogfoods. None of it reaches the mapping, which only ever rewrites the
 31 standard color variables every preset writes.
 
+`--shadcn-cli <spec>` says which shadcn to run, defaulting to `shadcn@latest`:
+
+```sh
+$ npx material-theme-builder apply "#6750A4" --shadcn-cli shadcn@4.18.0
+```
+
+Any spec `npx` resolves — a version, a tag, a fork, a tarball — and `init` pins
+both of its shadcn steps with it, a chain pinned for the scaffold and floating for
+the install being worse than one that floats throughout. It is an escape hatch for
+the neighbouring versions rather than a time machine, though, and honestly so:
+`--preset b0` is itself 4.x vocabulary, so pinning far enough back means passing
+that era's preset after the `--` as well.
+
+The `-cli` is not decoration: `--shadcn` is taken, by the root command's boolean
+that appends the alias block to `--format tailwind`. Nothing would actually
+mis-parse — each command matches only the options it declares — but one word
+meaning a boolean here and a package spec there is a trap for whoever reads
+`--help` twice, and of the two it is the unreleased one that can give way.
+
 `--print` writes the equivalent shell chain to stdout and runs nothing — for the
 docs, for debugging, and for anyone who would rather read what a command is about
 to do, or paste it themselves, than let it spawn `npx` on their machine.
