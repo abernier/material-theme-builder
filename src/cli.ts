@@ -9,22 +9,18 @@
 // $ node dist/cli.js '#6750A4' --format css
 // $ node dist/cli.js '#6750A4' --format shadcn
 // $ node dist/cli.js '#6750A4' --format registry-item
+// $ node dist/cli.js init '#6750A4'
+// $ node dist/cli.js apply '#6750A4' --print
 // ```
 
 import * as fs from "node:fs";
 import * as path from "node:path";
 
-import { Command, Option } from "commander";
+import { Command } from "commander";
 import { z } from "zod";
-import {
-  builder,
-  DEFAULT_BLEND,
-  DEFAULT_CONTRAST,
-  DEFAULT_PREFIX,
-  DEFAULT_SCHEME,
-  type HexCustomColor,
-  schemeNames,
-} from "./lib/builder";
+import { addThemeOptions, builderOptions } from "./cli.options";
+import { runApply, runInit } from "./cli.shadcn";
+import { builder, DEFAULT_BLEND, type HexCustomColor } from "./lib/builder";
 
 const customColorSchema = z.array(
   z.object({
@@ -78,27 +74,23 @@ function writeOutput(
 
 const program = new Command();
 
-program
-  .name("material-theme-builder")
-  .description("Generate a color theme from a source color")
-  .argument("<source>", "Source color in hex format (e.g. #6750A4)")
-  .addOption(
-    new Option("--scheme <name>", "Color scheme variant")
-      .choices(schemeNames)
-      .default(DEFAULT_SCHEME),
-  )
-  .option(
-    "--contrast <number>",
-    "Contrast level from -1.0 to 1.0",
-    parseFloat,
-    DEFAULT_CONTRAST,
-  )
-  .option("--primary <hex>", "Primary color override")
-  .option("--secondary <hex>", "Secondary color override")
-  .option("--tertiary <hex>", "Tertiary color override")
-  .option("--error <hex>", "Error color override")
-  .option("--neutral <hex>", "Neutral color override")
-  .option("--neutral-variant <hex>", "Neutral variant color override")
+addThemeOptions(
+  program
+    .name("material-theme-builder")
+    .description("Generate a color theme from a source color")
+    .argument("<source>", "Source color in hex format (e.g. #6750A4)")
+    // Required now that the theme options are declared on all three commands:
+    // without it, commander matches an option against the program first, so
+    // `init '#x' --scheme vibrant` would set the *program's* `--scheme` and hand
+    // `init` a default theme. Positional options recognize an option only where
+    // it was declared, which stops at the subcommand name. Nothing about the
+    // root command's own parsing changes -- the rule only applies to the operand
+    // that names a subcommand.
+    .enablePositionalOptions(),
+)
+  // The root command's own: `--custom-colors` because only its formats can carry
+  // them, and the three that say what to do with the theme rather than what it
+  // is.
   .option(
     "--custom-colors <json>",
     'Custom colors as JSON array (e.g. \'[{"name":"brand","hex":"#FF5733","blend":true}]\')',
@@ -112,15 +104,6 @@ program
   .option(
     "--shadcn",
     "Append the shadcn var() alias block to --format tailwind (for concrete values, use --format shadcn)",
-  )
-  .option(
-    "--no-fallback",
-    "Omit this theme's colors as the var() fallbacks in --format registry-item, so it renders nothing without an <Mtb> above it",
-  )
-  .option(
-    "--prefix <string>",
-    "CSS variable prefix (e.g. md → --md-sys-color-*, --md-ref-palette-*)",
-    DEFAULT_PREFIX,
   )
   .action((source: string, opts, command: Command) => {
     // --shadcn only ever modified the tailwind output; silently dropping it
@@ -157,19 +140,62 @@ program
     }
 
     const result = builder(source, {
-      scheme: opts.scheme,
-      contrast: opts.contrast,
-      primary: opts.primary,
-      secondary: opts.secondary,
-      tertiary: opts.tertiary,
-      error: opts.error,
-      neutral: opts.neutral,
-      neutralVariant: opts.neutralVariant,
+      ...builderOptions(opts),
       customColors,
-      prefix: opts.prefix,
     });
 
     writeOutput(result, opts);
   });
+
+// The subcommands live alongside the program's own action rather than turning it
+// into `.command(..., { isDefault: true })`: commander looks for a subcommand in
+// the first operand before reaching its own handler, so `<source>` keeps working
+// exactly as it did -- no hex color can collide with a subcommand name -- and
+// `--help` gains a Commands section without every existing invocation moving one
+// level down.
+//
+// `[shadcn-args...]` collects whatever follows the `--`. Commander classifies
+// everything after the separator as operands, never as options, so those arrive
+// here untouched -- which is what `allowUnknownOption()` would *not* have given
+// us: it would also swallow a typo in one of our own flags and forward it
+// downstream, silently.
+//
+// Both carry the theme options too. They each generate a registry item, and a
+// command that could only ever generate the default theme would reproduce, inside
+// the two commands meant to remove the by-hand recipe, the very limitation that
+// motivated them -- the published item is impersonal precisely because it cannot
+// be asked for a scheme.
+
+addThemeOptions(
+  program
+    .command("init")
+    .description(
+      "Scaffold a new shadcn app themed from a source color, and start it",
+    )
+    .argument("<source>", "Source color in hex format (e.g. #6750A4)")
+    .argument(
+      "[shadcn-args...]",
+      "Options after a `--`, forwarded verbatim to `shadcn init`",
+    ),
+)
+  .option("--print", "Print the equivalent shell chain instead of running it")
+  .action((source: string, shadcnArgs: string[], _opts, command: Command) =>
+    runInit(source, shadcnArgs, command),
+  );
+
+addThemeOptions(
+  program
+    .command("apply")
+    .description("Theme the shadcn project in the current directory")
+    .argument("<source>", "Source color in hex format (e.g. #6750A4)")
+    .argument(
+      "[shadcn-args...]",
+      "Options after a `--`, forwarded verbatim to `shadcn add`",
+    ),
+)
+  .option("--print", "Print the equivalent shell chain instead of running it")
+  .action((source: string, shadcnArgs: string[], _opts, command: Command) =>
+    runApply(source, shadcnArgs, command),
+  );
 
 program.parse();

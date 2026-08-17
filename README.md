@@ -225,16 +225,36 @@ Pre-requisites:
 - You should use
   [`tailwind.cssVariables`](https://ui.shadcn.com/docs/theming#css-variables)
 
-Generate a registry item for your source color, and install it the way you
-install any shadcn theme:
+One command, from inside your project:
+
+```sh
+$ npx material-theme-builder apply "#6750A4"
+```
+
+Or from nothing at all — `init` scaffolds a stock shadcn app
+(`shadcn init --preset b0 --template vite`), themes it and starts it:
+
+```sh
+$ npx material-theme-builder init "#6750A4"
+```
+
+Anything after a `--` is forwarded verbatim to the shadcn command underneath —
+`shadcn init` for `init`, `shadcn add` for `apply` — so
+`init "#6750A4" -- --template next -n my-app` scaffolds Next instead. Options of
+ours go before the separator; one written after it is refused, rather than
+forwarded into an error from shadcn about a flag it has never heard of. `--print`
+writes the equivalent shell chain and runs nothing.
+
+Both do the same two things by hand, if you would rather: generate a registry
+item for your source color, and install it the way you install any shadcn theme.
 
 ```sh
 $ npx material-theme-builder "#6750A4" --format registry-item > mtb.json
 $ npx shadcn@latest add ./mtb.json && rm mtb.json
 ```
 
-That rewrites the values inside your existing `:root` and `.dark` blocks, in
-place, pointing
+Either way, that rewrites the values inside your existing `:root` and `.dark`
+blocks, in place, pointing
 [shadcn's CSS variables](https://ui.shadcn.com/docs/theming#list-of-variables)
 at the M3 custom properties `<Mtb>` emits — so every shadcn component follows
 whichever theme is above it in the tree — and leaves that theme's own colors in
@@ -251,8 +271,20 @@ as the `var()` fallbacks:
 ```
 
 So it works both ways round: live under an `<Mtb>`, and static — server-rendered,
-zero client JS — anywhere there is none. Every option lands in those fallbacks,
-`--scheme` and `--contrast` included; `--no-fallback` leaves them out.
+zero client JS — anywhere there is none.
+
+Every option lands in those fallbacks, `--scheme` and `--contrast` included, and
+`init` and `apply` take them all — so the item they generate is the one the
+by-hand route would have produced:
+
+```sh
+$ npx material-theme-builder apply "#6750A4" --scheme vibrant --contrast 0.5
+```
+
+`--no-fallback` leaves the fallbacks out, on all three. `--custom-colors` is the
+one option the two subcommands do not take, and that is not an oversight:
+shadcn's variable set is fixed, so no component reads a custom color and a
+registry item cannot carry one.
 
 > [!WARNING]
 >
