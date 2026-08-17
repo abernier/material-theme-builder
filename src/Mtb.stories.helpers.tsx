@@ -166,8 +166,10 @@ export function Scheme({
    * Show the 12 `*-fixed`, `*-fixed-dim` and `on-*-fixed*` roles, which keep
    * the same color between light and dark themes.
    *
-   * Current M3 roles, hence the only extra one on by default. The official
-   * app's poster does not draw them, so pass `false` to match it exactly.
+   * Current M3 roles, hence the only extra one on by default — though the spec
+   * files them under "add-on color roles", warning that "most products won't
+   * need to use these". The official app's poster does not draw them, so pass
+   * `false` to match it exactly.
    *
    * @see https://m3.material.io/styles/color/roles
    */
@@ -175,11 +177,12 @@ export function Scheme({
   /**
    * Show `surface-tint`, the elevation tint.
    *
-   * *Not* deprecated anywhere, Flutter included, but hollowed out: the
-   * tone-based surface roles dropped the opacity overlay model and with it the
-   * need for a tint. `material-color-utilities` aliases it straight onto
-   * `primary` from spec version 2025 on, and Flutter defaults every widget's
-   * `surfaceTintColor` to `null`.
+   * *Not* deprecated anywhere, Flutter included, but hollowed out: the spec
+   * dropped it from its role pages along with the elevation overlay model it
+   * served — "tone-based surface color roles have replaced the previous
+   * approach of surfaces at +1 to +5 elevation" (Feb 2023).
+   * `material-color-utilities` aliases it straight onto `primary` from spec
+   * version 2025 on, and Flutter defaults `surfaceTintColor` to `null`.
    *
    * @see https://github.com/material-foundation/material-color-utilities/blob/main/typescript/dynamiccolor/color_spec_2025.ts
    * @see https://github.com/flutter/flutter/issues/115912
@@ -188,35 +191,40 @@ export function Scheme({
   /**
    * Show `background` and `on-background`.
    *
-   * @deprecated Use `surface` and `on-surface` instead. Both are gone from the
-   * spec's current role list, and `material-color-utilities` aliases them onto
-   * `surface` / `on-surface` from spec version 2025 on.
+   * @deprecated Use `surface` and `on-surface` instead. Neither appears
+   * anywhere in the spec's current role pages: the inventory is "26 standard
+   * color roles organized into six groups", and these are not among them. Not
+   * flagged as deprecated — simply dropped. `material-color-utilities` aliases
+   * them onto `surface` / `on-surface` from spec version 2025 on, and Flutter
+   * deprecated them in `ColorScheme` after v3.18.
    *
-   * Weakest of the two deprecations here: no Material-authored text was found
-   * saying so outright, only Flutter's migration (by a Google engineer, but a
-   * framework channel), and Jetpack Compose still exposes them undeprecated.
-   * Treat as "on the way out" rather than gone.
+   * Jetpack Compose still exposes them undeprecated, so they will not vanish
+   * from every implementation at once.
+   * @see https://m3.material.io/styles/color/roles
    * @see https://github.com/material-foundation/material-color-utilities/blob/main/typescript/dynamiccolor/color_spec_2025.ts
    * @see https://docs.flutter.dev/release/breaking-changes/new-color-scheme-roles
-   * @see https://github.com/flutter/flutter/pull/138521
    */
   background?: boolean;
   /**
    * Show `surface-variant`.
    *
-   * Note that its `on-surface-variant` counterpart is *not* deprecated, and is
-   * part of the poster — hence the asymmetry.
+   * Note that its `on-surface-variant` counterpart is very much alive — the
+   * spec lists "three surface roles: Surface / On surface / On surface
+   * variant", the fill being the one that got dropped. Hence the asymmetry:
+   * the ink survives its own background.
    *
-   * @deprecated Use `surface-container-highest` instead. The best-sourced of
-   * the two deprecations here: the Material Design blog announcing tone-based
-   * surfaces states that "Surface Variant becomes Surface Container Highest",
-   * and `material-color-utilities` aliases the two from spec version 2025 on.
+   * @deprecated Use `surface-container-highest` instead. The Material Design
+   * blog announcing tone-based surfaces states that "Surface Variant becomes
+   * Surface Container Highest", and `material-color-utilities` aliases the two
+   * from spec version 2025 on.
    *
-   * Same caveat as {@link background} all the same: still undeprecated in
-   * Jetpack Compose, and still emitted here.
+   * Careful with a blind substitution though: this package generates spec-2021
+   * values, where `surface-variant` is still its own neutral-variant tone and
+   * does *not* equal `surface-container-highest` (`#E0E2EC` vs `#E2E2E9` for
+   * source `#769CDF`). Swapping one for the other changes the color today.
    * @see https://m3.material.io/blog/tone-based-surface-color-m3
+   * @see https://m3.material.io/styles/color/roles
    * @see https://github.com/material-foundation/material-color-utilities/blob/main/typescript/dynamiccolor/color_spec_2025.ts
-   * @see https://docs.flutter.dev/release/breaking-changes/new-color-scheme-roles
    */
   surfaceVariant?: boolean;
 } & VariantProps<typeof schemeVariants> &
