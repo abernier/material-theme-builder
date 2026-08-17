@@ -178,40 +178,28 @@ export const OfficialPosterSt: Story = {
   render: renderSchemes({ fixedAccents: false }),
 };
 
-/** The remaining current extra — `surface-tint` is opt-in. */
-export const SurfaceTintSt: Story = {
-  name: "[surfaceTint]",
-  args: St1.args,
-  render: renderSchemes({ surfaceTint: true }),
-};
-
 /**
- * The three colors Material Design 3 removed — `background`, `on-background`
- * and `surface-variant` — still emitted for backwards compatibility.
+ * The four roles the current spec no longer lists — `background`,
+ * `on-background`, `surface-variant`, `surface-tint` — still emitted here, and
+ * still in the official export.
  *
- * @see https://docs.flutter.dev/release/breaking-changes/new-color-scheme-roles
- */
-export const LegacyRolesSt: Story = {
-  name: "[background][surfaceVariant] (deprecated)",
-  args: St1.args,
-  render: renderSchemes({ background: true, surfaceVariant: true }),
-};
-
-/**
- * Every `sys.color` role the library emits — all four extras at once, matching
- * the official Material Theme Builder *export* rather than its abridged
- * on-screen poster.
+ * They fill the extra row exactly, because that row *is* this set. Two of them
+ * carry `@deprecated` (Flutter dropped them from `ColorScheme`); `surface-tint`
+ * does not, it was merely left behind when elevation stopped being an overlay.
  *
- * @see https://material-foundation.github.io/material-theme-builder/
+ * With the default `fixedAccents` on top, this also happens to be every
+ * `sys.color` role the library emits — the official Material Theme Builder
+ * *export*, rather than its abridged on-screen poster.
+ *
+ * @see https://m3.material.io/styles/color/roles
  */
-export const AllRolesSt: Story = {
-  name: "[fixedAccents][surfaceTint][background][surfaceVariant]",
+export const DroppedRolesSt: Story = {
+  name: "[background][surfaceVariant][surfaceTint] (dropped from the spec)",
   args: St1.args,
   render: renderSchemes({
-    fixedAccents: true,
-    surfaceTint: true,
     background: true,
     surfaceVariant: true,
+    surfaceTint: true,
   }),
 };
 

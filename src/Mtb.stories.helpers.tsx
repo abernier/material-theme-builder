@@ -101,10 +101,14 @@ const schemeVariants = cva(
 );
 
 /**
- * The surface roles the poster omits, as an extra row under `on-surface`.
+ * The four roles the current spec no longer lists, as an extra row under
+ * `on-surface` — `background`, `on-background`, `surface-variant` and
+ * `surface-tint`. They fill the row exactly, one cell each.
  *
  * Kept on a 4-column grid so each cell stays aligned with the row above,
  * whichever subset is displayed.
+ *
+ * @see https://m3.material.io/styles/color/roles
  */
 function SurfaceExtraRoles({
   background = false,
