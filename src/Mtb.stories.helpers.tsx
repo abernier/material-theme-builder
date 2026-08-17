@@ -1,8 +1,8 @@
 import { cva, type VariantProps } from "class-variance-authority";
-import { kebabCase, upperFirst } from "lodash-es";
-import { type ComponentProps } from "react";
+import { kebabCase, startCase, upperFirst } from "lodash-es";
+import { createContext, useContext, type ComponentProps } from "react";
 import { ExportButton } from "./ExportButton";
-import { STANDARD_TONES } from "./lib/builder";
+import { STANDARD_TONES, type TokenName } from "./lib/builder";
 import { cn } from "./lib/utils";
 import type { Mtb } from "./Mtb";
 import { useMtb } from "./Mtb.context";
@@ -23,6 +23,117 @@ function FooTop({ children, ...props }: ComponentProps<"div">) {
 }
 function FooBottom({ children, ...props }: ComponentProps<"div">) {
   return <div {...props}>{children || "FooBottom"}</div>;
+}
+
+/**
+ * How a `Swatch` paints itself: `false` (the default) uses the raw
+ * `var(--md-sys-color-*)`, `true` uses the Tailwind utility.
+ *
+ * The var is the default on purpose — Tailwind is an *option* of this package,
+ * so every story but the Tailwind one must keep working without it, and be seen
+ * to.
+ */
+const TwContext = createContext(false);
+
+/**
+ * Each M3 token, mapped to its Tailwind utility.
+ *
+ * The utility is spelled out — and only the utility, the token list itself
+ * being `tokenDescriptions`' — because `bg-${kebabCase(token)}` would never be
+ * seen by Tailwind's source scanner, so the class would never be generated.
+ * `satisfies` is what keeps this exhaustive: a token added to the library
+ * breaks the build here until its utility is written down.
+ */
+const twClasses = {
+  primary: "bg-primary",
+  onPrimary: "bg-on-primary",
+  primaryContainer: "bg-primary-container",
+  onPrimaryContainer: "bg-on-primary-container",
+  secondary: "bg-secondary",
+  onSecondary: "bg-on-secondary",
+  secondaryContainer: "bg-secondary-container",
+  onSecondaryContainer: "bg-on-secondary-container",
+  tertiary: "bg-tertiary",
+  onTertiary: "bg-on-tertiary",
+  tertiaryContainer: "bg-tertiary-container",
+  onTertiaryContainer: "bg-on-tertiary-container",
+
+  error: "bg-error",
+  onError: "bg-on-error",
+  errorContainer: "bg-error-container",
+  onErrorContainer: "bg-on-error-container",
+
+  primaryFixed: "bg-primary-fixed",
+  primaryFixedDim: "bg-primary-fixed-dim",
+  onPrimaryFixed: "bg-on-primary-fixed",
+  onPrimaryFixedVariant: "bg-on-primary-fixed-variant",
+  secondaryFixed: "bg-secondary-fixed",
+  secondaryFixedDim: "bg-secondary-fixed-dim",
+  onSecondaryFixed: "bg-on-secondary-fixed",
+  onSecondaryFixedVariant: "bg-on-secondary-fixed-variant",
+  tertiaryFixed: "bg-tertiary-fixed",
+  tertiaryFixedDim: "bg-tertiary-fixed-dim",
+  onTertiaryFixed: "bg-on-tertiary-fixed",
+  onTertiaryFixedVariant: "bg-on-tertiary-fixed-variant",
+
+  surfaceDim: "bg-surface-dim",
+  surface: "bg-surface",
+  surfaceBright: "bg-surface-bright",
+  surfaceContainerLowest: "bg-surface-container-lowest",
+  surfaceContainerLow: "bg-surface-container-low",
+  surfaceContainer: "bg-surface-container",
+  surfaceContainerHigh: "bg-surface-container-high",
+  surfaceContainerHighest: "bg-surface-container-highest",
+  onSurface: "bg-on-surface",
+  onSurfaceVariant: "bg-on-surface-variant",
+  outline: "bg-outline",
+  outlineVariant: "bg-outline-variant",
+
+  inverseSurface: "bg-inverse-surface",
+  inverseOnSurface: "bg-inverse-on-surface",
+  inversePrimary: "bg-inverse-primary",
+  scrim: "bg-scrim",
+  shadow: "bg-shadow",
+
+  // Dropped from the current spec, still emitted — see `Scheme`'s props
+  background: "bg-background",
+  onBackground: "bg-on-background",
+  surfaceVariant: "bg-surface-variant",
+  surfaceTint: "bg-surface-tint",
+} satisfies Record<TokenName, string>;
+
+/**
+ * One color cell: the role as `title`, its human name as label, the color
+ * itself from `var(--md-sys-color-<role>)` — or from the Tailwind utility when
+ * under a `tw` `Scheme`.
+ */
+function Swatch({
+  role,
+  className,
+  style,
+  children,
+  ...props
+}: {
+  /** The M3 token to paint, named as the library names it. */
+  role: TokenName;
+} & ComponentProps<"div">) {
+  const tw = useContext(TwContext);
+  const name = kebabCase(role);
+
+  return (
+    <div
+      title={name}
+      className={cn(tw && twClasses[role], className)}
+      style={
+        tw
+          ? style
+          : { backgroundColor: `var(--md-sys-color-${name})`, ...style }
+      }
+      {...props}
+    >
+      {children ?? <p>{startCase(role)}</p>}
+    </div>
+  );
 }
 
 /**
@@ -125,24 +236,14 @@ function SurfaceExtraRoles({
     <div className="grid grid-cols-4 grid-rows-1">
       {background && (
         <>
-          <div className="bg-background" title="background">
-            <p>Background</p>
-          </div>
-          <div className="bg-on-background" title="on-background">
-            <p>On Background</p>
-          </div>
+          <Swatch role="background" />
+          <Swatch role="onBackground" />
         </>
       )}
       {surfaceVariant && (
-        <div className="col-start-3 bg-surface-variant" title="surface-variant">
-          <p>Surface Variant</p>
-        </div>
+        <Swatch role="surfaceVariant" className="col-start-3" />
       )}
-      {surfaceTint && (
-        <div className="col-start-4 bg-surface-tint" title="surface-tint">
-          <p>Surface Tint</p>
-        </div>
-      )}
+      {surfaceTint && <Swatch role="surfaceTint" className="col-start-4" />}
     </div>
   );
 }
@@ -158,12 +259,22 @@ export function Scheme({
   surfaceTint = false,
   background = false,
   surfaceVariant = false,
+  tw = false,
   children,
   className,
   ...props
 }: {
   /** Heading displayed above the scheme. */
   title?: string;
+  /**
+   * Paint the swatches with Tailwind utilities (`bg-primary`) instead of the
+   * raw `var(--md-sys-color-primary)`.
+   *
+   * Off by default: Tailwind is optional here, so the stories are better proof
+   * of the theme when they do without it. Only the Tailwind story turns it on —
+   * that one is precisely about the utilities resolving.
+   */
+  tw?: boolean;
   /** Custom colors forwarded to the inner `<Mtb>`. */
   customColors?: ComponentProps<typeof Mtb>["customColors"];
   /**
@@ -235,401 +346,253 @@ export function Scheme({
 } & VariantProps<typeof schemeVariants> &
   Omit<ComponentProps<"div">, "title">) {
   return (
-    <div className={cn(schemeVariants({ theme }), className)} {...props}>
-      {title && <h3 className="font-bold capitalize">{title}</h3>}
+    <TwContext.Provider value={tw}>
+      <div className={cn(schemeVariants({ theme }), className)} {...props}>
+        {title && <h3 className="font-bold capitalize">{title}</h3>}
 
-      <div className="grid grid-cols-[3fr_1fr] gap-(--gap1)">
-        {
-          //
-          //  █████
-          // ██   ██
-          // ███████
-          // ██   ██
-          // ██   ██
-          //
-        }
+        <div className="grid grid-cols-[3fr_1fr] gap-(--gap1)">
+          {
+            //
+            //  █████
+            // ██   ██
+            // ███████
+            // ██   ██
+            // ██   ██
+            //
+          }
 
-        <div className="grid grid-cols-3 grid-rows-2 gap-(--gap2)">
-          <Foo>
-            <FooTop className="h-20 bg-primary" title="primary">
-              <p>Primary</p>
-            </FooTop>
-            <FooBottom className="bg-on-primary" title="on-primary">
-              <p>On Primary</p>
-            </FooBottom>
-          </Foo>
-          <Foo>
-            <FooTop className="h-20 bg-secondary" title="secondary">
-              <p>Secondary</p>
-            </FooTop>
-            <FooBottom className="bg-on-secondary" title="on-secondary">
-              <p>On Secondary</p>
-            </FooBottom>
-          </Foo>
-          <Foo>
-            <FooTop className="h-20 bg-tertiary" title="tertiary">
-              <p>Tertiary</p>
-            </FooTop>
-            <FooBottom className="bg-on-tertiary" title="on-tertiary">
-              <p>On Tertiary</p>
-            </FooBottom>
-          </Foo>
-          <Foo>
-            <FooTop
-              className="h-20 bg-primary-container"
-              title="primary-container"
-            >
-              <p>Primary Container</p>
-            </FooTop>
-            <FooBottom
-              className="bg-on-primary-container"
-              title="on-primary-container"
-            >
-              <p>On Primary Container</p>
-            </FooBottom>
-          </Foo>
-          <Foo>
-            <FooTop
-              className="h-20 bg-secondary-container"
-              title="secondary-container"
-            >
-              <p>Secondary Container</p>
-            </FooTop>
-            <FooBottom
-              className="bg-on-secondary-container"
-              title="on-secondary-container"
-            >
-              <p>On Secondary Container</p>
-            </FooBottom>
-          </Foo>
-          <Foo>
-            <FooTop
-              className="h-20 bg-tertiary-container"
-              title="tertiary-container"
-            >
-              <p>Tertiary Container</p>
-            </FooTop>
-            <FooBottom
-              className="bg-on-tertiary-container"
-              title="on-tertiary-container"
-            >
-              <p>On Tertiary Container</p>
-            </FooBottom>
-          </Foo>
-        </div>
+          <div className="grid grid-cols-3 grid-rows-2 gap-(--gap2)">
+            <Foo>
+              <Swatch role="primary" className="h-20" />
+              <Swatch role="onPrimary" />
+            </Foo>
+            <Foo>
+              <Swatch role="secondary" className="h-20" />
+              <Swatch role="onSecondary" />
+            </Foo>
+            <Foo>
+              <Swatch role="tertiary" className="h-20" />
+              <Swatch role="onTertiary" />
+            </Foo>
+            <Foo>
+              <Swatch role="primaryContainer" className="h-20" />
+              <Swatch role="onPrimaryContainer" />
+            </Foo>
+            <Foo>
+              <Swatch role="secondaryContainer" className="h-20" />
+              <Swatch role="onSecondaryContainer" />
+            </Foo>
+            <Foo>
+              <Swatch role="tertiaryContainer" className="h-20" />
+              <Swatch role="onTertiaryContainer" />
+            </Foo>
+          </div>
 
-        {
-          //
-          // ██████
-          // ██   ██
-          // ██████
-          // ██   ██
-          // ██████
-          //
-        }
+          {
+            //
+            // ██████
+            // ██   ██
+            // ██████
+            // ██   ██
+            // ██████
+            //
+          }
 
-        <div className="grid grid-cols-1 grid-rows-2 gap-(--gap2)">
-          <Foo>
-            <FooTop className="h-20 bg-error" title="error">
-              <p>Error</p>
-            </FooTop>
-            <FooBottom className="bg-on-error" title="on-error">
-              <p>On Error</p>
-            </FooBottom>
-          </Foo>
-          <Foo>
-            <FooTop className="h-20 bg-error-container" title="error-container">
-              <p>Error Container</p>
-            </FooTop>
-            <FooBottom
-              className="bg-on-error-container"
-              title="on-error-container"
-            >
-              <p>On Error Container</p>
-            </FooBottom>
-          </Foo>
-        </div>
+          <div className="grid grid-cols-1 grid-rows-2 gap-(--gap2)">
+            <Foo>
+              <Swatch role="error" className="h-20" />
+              <Swatch role="onError" />
+            </Foo>
+            <Foo>
+              <Swatch role="errorContainer" className="h-20" />
+              <Swatch role="onErrorContainer" />
+            </Foo>
+          </div>
 
-        {
-          //
-          //  ██████
-          // ██
-          // ██
-          // ██
-          //  ██████
-          //
-        }
+          {
+            //
+            //  ██████
+            // ██
+            // ██
+            // ██
+            //  ██████
+            //
+          }
 
-        {fixedAccents && (
-          <>
-            <div className="grid grid-cols-3 grid-rows-1 gap-(--gap2)">
-              <Foo>
-                <FooTop className="h-20 grid grid-cols-2 grid-rows-1">
-                  <div className="bg-primary-fixed" title="primary-fixed">
-                    <p>Primary Fixed</p>
-                  </div>
-                  <div
-                    className="bg-primary-fixed-dim"
-                    title="primary-fixed-dim"
-                  >
-                    <p>Primary Fixed Dim</p>
-                  </div>
-                </FooTop>
-                <FooBottom className="grid grid-cols-1 grid-rows-2">
-                  <div className="bg-on-primary-fixed" title="on-primary-fixed">
-                    <p>On Primary Fixed</p>
-                  </div>
-                  <div
-                    className="bg-on-primary-fixed-variant"
-                    title="on-primary-fixed-variant"
-                  >
-                    <p>On Primary Fixed Variant</p>
-                  </div>
-                </FooBottom>
-              </Foo>
-              <Foo>
-                <FooTop className="h-20 grid grid-cols-2 grid-rows-1">
-                  <div className="bg-secondary-fixed" title="secondary-fixed">
-                    <p>Secondary Fixed</p>
-                  </div>
-                  <div
-                    className="bg-secondary-fixed-dim"
-                    title="secondary-fixed-dim"
-                  >
-                    <p>Secondary Fixed Dim</p>
-                  </div>
-                </FooTop>
-                <FooBottom className="grid grid-cols-1 grid-rows-2">
-                  <div
-                    className="bg-on-secondary-fixed"
-                    title="on-secondary-fixed"
-                  >
-                    <p>On Secondary Fixed</p>
-                  </div>
-                  <div
-                    className="bg-on-secondary-fixed-variant"
-                    title="on-secondary-fixed-variant"
-                  >
-                    <p>On Secondary Fixed Variant</p>
-                  </div>
-                </FooBottom>
-              </Foo>
-              <Foo>
-                <FooTop className="h-20 grid grid-cols-2 grid-rows-1">
-                  <div className="bg-tertiary-fixed" title="tertiary-fixed">
-                    <p>Tertiary Fixed</p>
-                  </div>
-                  <div
-                    className="bg-tertiary-fixed-dim"
-                    title="tertiary-fixed-dim"
-                  >
-                    <p>Tertiary Fixed Dim</p>
-                  </div>
-                </FooTop>
-                <FooBottom className="grid grid-cols-1 grid-rows-2">
-                  <div
-                    className="bg-on-tertiary-fixed"
-                    title="on-tertiary-fixed"
-                  >
-                    <p>On Tertiary Fixed</p>
-                  </div>
-                  <div
-                    className="bg-on-tertiary-fixed-variant"
-                    title="on-tertiary-fixed-variant"
-                  >
-                    <p>On Tertiary Fixed Variant</p>
-                  </div>
-                </FooBottom>
-              </Foo>
+          {fixedAccents && (
+            <>
+              <div className="grid grid-cols-3 grid-rows-1 gap-(--gap2)">
+                <Foo>
+                  <FooTop className="h-20 grid grid-cols-2 grid-rows-1">
+                    <Swatch role="primaryFixed" />
+                    <Swatch role="primaryFixedDim" />
+                  </FooTop>
+                  <FooBottom className="grid grid-cols-1 grid-rows-2">
+                    <Swatch role="onPrimaryFixed" />
+                    <Swatch role="onPrimaryFixedVariant" />
+                  </FooBottom>
+                </Foo>
+                <Foo>
+                  <FooTop className="h-20 grid grid-cols-2 grid-rows-1">
+                    <Swatch role="secondaryFixed" />
+                    <Swatch role="secondaryFixedDim" />
+                  </FooTop>
+                  <FooBottom className="grid grid-cols-1 grid-rows-2">
+                    <Swatch role="onSecondaryFixed" />
+                    <Swatch role="onSecondaryFixedVariant" />
+                  </FooBottom>
+                </Foo>
+                <Foo>
+                  <FooTop className="h-20 grid grid-cols-2 grid-rows-1">
+                    <Swatch role="tertiaryFixed" />
+                    <Swatch role="tertiaryFixedDim" />
+                  </FooTop>
+                  <FooBottom className="grid grid-cols-1 grid-rows-2">
+                    <Swatch role="onTertiaryFixed" />
+                    <Swatch role="onTertiaryFixedVariant" />
+                  </FooBottom>
+                </Foo>
+              </div>
+
+              {
+                //
+                // ██████
+                // ██   ██
+                // ██   ██
+                // ██   ██
+                // ██████
+                //
+              }
+
+              <div></div>
+            </>
+          )}
+
+          {
+            //
+            // ███████
+            // ██
+            // █████
+            // ██
+            // ███████
+            //
+          }
+
+          <div className="grid grid-cols-1 gap-(--gap2)">
+            <div className="h-20 grid grid-cols-3 grid-rows-1">
+              <Swatch role="surfaceDim" />
+              <Swatch role="surface" />
+              <Swatch role="surfaceBright" />
             </div>
+            <div className="h-20 grid grid-cols-5 grid-rows-1">
+              <Swatch role="surfaceContainerLowest" />
+              <Swatch role="surfaceContainerLow" />
+              <Swatch role="surfaceContainer" />
+              <Swatch role="surfaceContainerHigh" />
+              <Swatch role="surfaceContainerHighest" />
+            </div>
+            <div className="grid grid-cols-4 grid-rows-1">
+              <Swatch role="onSurface" />
+              <Swatch role="onSurfaceVariant" />
+              <Swatch role="outline" />
+              <Swatch role="outlineVariant" />
+            </div>
+            <SurfaceExtraRoles
+              background={background}
+              surfaceVariant={surfaceVariant}
+              surfaceTint={surfaceTint}
+            />
+          </div>
 
-            {
-              //
-              // ██████
-              // ██   ██
-              // ██   ██
-              // ██   ██
-              // ██████
-              //
-            }
+          {
+            //
+            // ███████
+            // ██
+            // █████
+            // ██
+            // ██
+            //
+          }
 
-            <div></div>
-          </>
+          <div className="flex flex-col gap-1">
+            <Foo>
+              <Swatch role="inverseSurface" className="h-20" />
+              <Swatch role="inverseOnSurface" />
+            </Foo>
+            <Foo>
+              <Swatch role="inversePrimary" />
+            </Foo>
+            <div className="grid grid-cols-2 gap-(--gap2)">
+              <Swatch role="scrim" />
+              <Swatch role="shadow" />
+            </div>
+          </div>
+        </div>
+        {
+          //
+          //  ██████ ██    ██ ███████ ████████  ██████  ███    ███      ██████  ██████  ██       ██████  ██████  ███████
+          // ██      ██    ██ ██         ██    ██    ██ ████  ████     ██      ██    ██ ██      ██    ██ ██   ██ ██
+          // ██      ██    ██ ███████    ██    ██    ██ ██ ████ ██     ██      ██    ██ ██      ██    ██ ██████  ███████
+          // ██      ██    ██      ██    ██    ██    ██ ██  ██  ██     ██      ██    ██ ██      ██    ██ ██   ██      ██
+          //  ██████  ██████  ███████    ██     ██████  ██      ██      ██████  ██████  ███████  ██████  ██   ██ ███████
+          //
+        }
+        {customColors && customColors.length > 0 && (
+          <div className="flex flex-col gap-(--gap2)">
+            {customColors?.map((customColor) => (
+              <div key={customColor.name} className="grid grid-cols-4">
+                <Foo>
+                  <FooTop
+                    title={kebabCase(customColor.name)}
+                    className="h-20"
+                    style={{
+                      backgroundColor: `var(--md-sys-color-${kebabCase(customColor.name)})`,
+                    }}
+                  >
+                    <p>{upperFirst(customColor.name)}</p>
+                  </FooTop>
+                </Foo>
+                <Foo>
+                  <FooTop
+                    title={`on-${kebabCase(customColor.name)}`}
+                    className="h-20"
+                    style={{
+                      backgroundColor: `var(--md-sys-color-on-${kebabCase(customColor.name)})`,
+                    }}
+                  >
+                    <p>On {upperFirst(customColor.name)}</p>
+                  </FooTop>
+                </Foo>
+                <Foo>
+                  <FooTop
+                    title={`${kebabCase(customColor.name)}-container`}
+                    className="h-20"
+                    style={{
+                      backgroundColor: `var(--md-sys-color-${kebabCase(customColor.name)}-container)`,
+                    }}
+                  >
+                    <p>{upperFirst(customColor.name)} Container</p>
+                  </FooTop>
+                </Foo>
+                <Foo>
+                  <FooTop
+                    title={`on-${kebabCase(customColor.name)}-container`}
+                    className="h-20"
+                    style={{
+                      backgroundColor: `var(--md-sys-color-on-${kebabCase(customColor.name)}-container)`,
+                    }}
+                  >
+                    <p>On {upperFirst(customColor.name)} Container</p>
+                  </FooTop>
+                </Foo>
+              </div>
+            ))}
+          </div>
         )}
 
-        {
-          //
-          // ███████
-          // ██
-          // █████
-          // ██
-          // ███████
-          //
-        }
-
-        <div className="grid grid-cols-1 gap-(--gap2)">
-          <div className="h-20 grid grid-cols-3 grid-rows-1">
-            <div className="bg-surface-dim" title="surface-dim">
-              <p>Surface Dim</p>
-            </div>
-            <div className="bg-surface" title="surface">
-              <p>Surface</p>
-            </div>
-            <div className="bg-surface-bright" title="surface-bright">
-              <p>Surface Bright</p>
-            </div>
-          </div>
-          <div className="h-20 grid grid-cols-5 grid-rows-1">
-            <div
-              className="bg-surface-container-lowest"
-              title="surface-container-lowest"
-            >
-              <p>Surface Container Lowest</p>
-            </div>
-            <div
-              className="bg-surface-container-low"
-              title="surface-container-low"
-            >
-              <p>Surface Container Low</p>
-            </div>
-            <div className="bg-surface-container" title="surface-container">
-              <p>Surface Container</p>
-            </div>
-            <div
-              className="bg-surface-container-high"
-              title="surface-container-high"
-            >
-              <p>Surface Container High</p>
-            </div>
-            <div
-              className="bg-surface-container-highest"
-              title="surface-container-highest"
-            >
-              <p>Surface Container Highest</p>
-            </div>
-          </div>
-          <div className="grid grid-cols-4 grid-rows-1">
-            <div className="bg-on-surface" title="on-surface">
-              <p>On Surface</p>
-            </div>
-            <div className="bg-on-surface-variant" title="on-surface-variant">
-              <p>On Surface Variant</p>
-            </div>
-            <div className="bg-outline" title="outline">
-              <p>Outline</p>
-            </div>
-            <div className="bg-outline-variant" title="outline-variant">
-              <p>Outline Variant</p>
-            </div>
-          </div>
-          <SurfaceExtraRoles
-            background={background}
-            surfaceVariant={surfaceVariant}
-            surfaceTint={surfaceTint}
-          />
-        </div>
-
-        {
-          //
-          // ███████
-          // ██
-          // █████
-          // ██
-          // ██
-          //
-        }
-
-        <div className="flex flex-col gap-1">
-          <Foo>
-            <FooTop className="h-20 bg-inverse-surface" title="inverse-surface">
-              <p>Inverse Surface</p>
-            </FooTop>
-            <FooBottom
-              className="bg-inverse-on-surface"
-              title="inverse-on-surface"
-            >
-              <p>Inverse On Surface</p>
-            </FooBottom>
-          </Foo>
-          <Foo>
-            <FooTop className="bg-inverse-primary" title="inverse-primary">
-              <p>Inverse Primary</p>
-            </FooTop>
-          </Foo>
-          <div className="grid grid-cols-2 gap-(--gap2)">
-            <div className="bg-scrim" title="scrim">
-              <p>Scrim</p>
-            </div>
-            <div className="bg-shadow" title="shadow">
-              <p>Shadow</p>
-            </div>
-          </div>
-        </div>
+        {children}
       </div>
-      {
-        //
-        //  ██████ ██    ██ ███████ ████████  ██████  ███    ███      ██████  ██████  ██       ██████  ██████  ███████
-        // ██      ██    ██ ██         ██    ██    ██ ████  ████     ██      ██    ██ ██      ██    ██ ██   ██ ██
-        // ██      ██    ██ ███████    ██    ██    ██ ██ ████ ██     ██      ██    ██ ██      ██    ██ ██████  ███████
-        // ██      ██    ██      ██    ██    ██    ██ ██  ██  ██     ██      ██    ██ ██      ██    ██ ██   ██      ██
-        //  ██████  ██████  ███████    ██     ██████  ██      ██      ██████  ██████  ███████  ██████  ██   ██ ███████
-        //
-      }
-      {customColors && customColors.length > 0 && (
-        <div className="flex flex-col gap-(--gap2)">
-          {customColors?.map((customColor) => (
-            <div key={customColor.name} className="grid grid-cols-4">
-              <Foo>
-                <FooTop
-                  title={kebabCase(customColor.name)}
-                  className="h-20"
-                  style={{
-                    backgroundColor: `var(--md-sys-color-${kebabCase(customColor.name)})`,
-                  }}
-                >
-                  <p>{upperFirst(customColor.name)}</p>
-                </FooTop>
-              </Foo>
-              <Foo>
-                <FooTop
-                  title={`on-${kebabCase(customColor.name)}`}
-                  className="h-20"
-                  style={{
-                    backgroundColor: `var(--md-sys-color-on-${kebabCase(customColor.name)})`,
-                  }}
-                >
-                  <p>On {upperFirst(customColor.name)}</p>
-                </FooTop>
-              </Foo>
-              <Foo>
-                <FooTop
-                  title={`${kebabCase(customColor.name)}-container`}
-                  className="h-20"
-                  style={{
-                    backgroundColor: `var(--md-sys-color-${kebabCase(customColor.name)}-container)`,
-                  }}
-                >
-                  <p>{upperFirst(customColor.name)} Container</p>
-                </FooTop>
-              </Foo>
-              <Foo>
-                <FooTop
-                  title={`on-${kebabCase(customColor.name)}-container`}
-                  className="h-20"
-                  style={{
-                    backgroundColor: `var(--md-sys-color-on-${kebabCase(customColor.name)}-container)`,
-                  }}
-                >
-                  <p>On {upperFirst(customColor.name)} Container</p>
-                </FooTop>
-              </Foo>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {children}
-    </div>
+    </TwContext.Provider>
   );
 }
 
@@ -774,14 +737,16 @@ function TailwindCustomColors() {
 /**
  * Renders every M3 role as a Tailwind utility class.
  *
- * Reuses the `Scheme` layout — which is already written entirely in `bg-*`
- * utilities — and completes it with what `Scheme` cannot express as classes:
- * the custom colors, and the tonal shades.
+ * Reuses the `Scheme` layout — switched to its `tw` mode, where each swatch
+ * takes its color from `bg-*` instead of `var(--md-sys-color-*)` — and
+ * completes it with what `Scheme` cannot express as classes: the custom colors,
+ * and the tonal shades.
  */
 export function TailwindScheme() {
   return (
     <>
       <Scheme
+        tw
         theme="light"
         title="Light scheme"
         fixedAccents
@@ -793,6 +758,7 @@ export function TailwindScheme() {
       </Scheme>
 
       <Scheme
+        tw
         theme="dark"
         title="Dark scheme"
         fixedAccents
