@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { useMemo } from "react";
+import { type ComponentProps, useMemo } from "react";
 import { allModes } from "../.storybook/modes";
 import { type MtbConfig, schemeNames } from "./lib/builder";
 import { recolorizeSvg } from "./lib/recolorizeSvg";
@@ -125,6 +125,83 @@ export const St1: Story = {
       </Layout>
     </Mtb>
   ),
+};
+
+/**
+ * The light and dark schemes side by side, with the given extra roles switched
+ * on. With none of them, `Scheme` renders exactly the official Material Theme
+ * Builder poster.
+ */
+const renderSchemes =
+  (extraRoles: Partial<ComponentProps<typeof Scheme>>): Story["render"] =>
+  (args) => (
+    <Mtb {...args}>
+      <Layout>
+        <Scheme
+          theme="light"
+          title="Light scheme"
+          {...extraRoles}
+          customColors={args.customColors}
+        />
+
+        <Scheme
+          theme="dark"
+          title="Dark scheme"
+          {...extraRoles}
+          customColors={args.customColors}
+        />
+      </Layout>
+    </Mtb>
+  );
+
+/** The current, non-deprecated extras — one at a time, then both. */
+export const FixedAccentsSt: Story = {
+  name: "[fixedAccents]",
+  args: St1.args,
+  render: renderSchemes({ fixedAccents: true }),
+};
+
+export const SurfaceTintSt: Story = {
+  name: "[surfaceTint]",
+  args: St1.args,
+  render: renderSchemes({ surfaceTint: true }),
+};
+
+export const FixedAccentsSurfaceTintSt: Story = {
+  name: "[fixedAccents][surfaceTint]",
+  args: St1.args,
+  render: renderSchemes({ fixedAccents: true, surfaceTint: true }),
+};
+
+/**
+ * The three colors Material Design 3 removed — `background`, `on-background`
+ * and `surface-variant` — still emitted for backwards compatibility.
+ *
+ * @see https://docs.flutter.dev/release/breaking-changes/new-color-scheme-roles
+ */
+export const LegacyRolesSt: Story = {
+  name: "[background][surfaceVariant] (deprecated)",
+  args: St1.args,
+  render: renderSchemes({ background: true, surfaceVariant: true }),
+};
+
+/**
+ * Every `sys.color` role the library emits — all four extras at once.
+ *
+ * With none of them, the default mirrors the official Material Theme Builder
+ * app, whose on-screen poster is an abridged view of its own export.
+ *
+ * @see https://material-foundation.github.io/material-theme-builder/
+ */
+export const AllRolesSt: Story = {
+  name: "[fixedAccents][surfaceTint][background][surfaceVariant]",
+  args: St1.args,
+  render: renderSchemes({
+    fixedAccents: true,
+    surfaceTint: true,
+    background: true,
+    surfaceVariant: true,
+  }),
 };
 
 //
@@ -633,7 +710,9 @@ export const TailwindSt: Story = {
   args: CustomColorsSt.args,
   render: (args) => (
     <Mtb {...args}>
-      <TailwindScheme />
+      <Layout>
+        <TailwindScheme />
+      </Layout>
     </Mtb>
   ),
 };

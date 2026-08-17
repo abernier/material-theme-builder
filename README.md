@@ -146,6 +146,7 @@ Compatible through [theme variables](https://tailwindcss.com/docs/theme):
     --md-sys-color-surface-container-highest
   );
   --color-on-surface: var(--md-sys-color-on-surface);
+  --color-surface-variant: var(--md-sys-color-surface-variant);
   --color-on-surface-variant: var(--md-sys-color-on-surface-variant);
   --color-outline: var(--md-sys-color-outline);
   --color-outline-variant: var(--md-sys-color-outline-variant);
@@ -186,6 +187,7 @@ Compatible through [theme variables](https://tailwindcss.com/docs/theme):
   --color-on-error: var(--md-sys-color-on-error);
   --color-error-container: var(--md-sys-color-error-container);
   --color-on-error-container: var(--md-sys-color-on-error-container);
+  --color-surface-tint: var(--md-sys-color-surface-tint);
   --color-scrim: var(--md-sys-color-scrim);
   --color-shadow: var(--md-sys-color-shadow);
 
