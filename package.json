@@ -21,7 +21,8 @@
       "import": "./dist/tailwind-plugin.js",
       "default": "./dist/tailwind-plugin.js"
     },
-    "./tailwind.css": "./dist/tailwind.css"
+    "./tailwind.css": "./dist/tailwind.css",
+    "./shadcn.css": "./dist/shadcn.css"
   },
   "homepage": "https://github.com/abernier/material-theme-builder",
   "bugs": {

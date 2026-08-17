@@ -48,6 +48,7 @@ theme.toCss();
 theme.toTailwind();
 theme.toFlutter();
 theme.toShadcn();
+theme.toShadcnAliases();
 ```
 
 ## CLI
@@ -223,17 +224,35 @@ Pre-requisites:
 - You should use
   [`tailwind.cssVariables`](https://ui.shadcn.com/docs/theming#css-variables)
 
-Simply override/remap
-[shadcn's CSS variables](https://ui.shadcn.com/docs/theming#list-of-variables):
+Import the stylesheet, after shadcn's own blocks:
 
 ```css
-:root {
-  /* ... */
-}
-.dark {
-  /* ... */
-}
+@import "tailwindcss";
+@import "./shadcn.css"; /* shadcn's own `:root` and `.dark` */
+@import "material-theme-builder/shadcn.css";
+```
 
+It points
+[shadcn's CSS variables](https://ui.shadcn.com/docs/theming#list-of-variables)
+at the M3 custom properties `<Mtb>` emits, so every shadcn component follows
+whichever theme is above it in the tree — nothing is baked in at build time.
+
+> [!IMPORTANT]
+>
+> It has to come AFTER shadcn's own `:root { ... }` and `.dark { ... }`, which
+> it overrides.
+
+For the opposite trade — concrete `oklch()` values, frozen at build time, shaped
+like a shadcn registry item's `cssVars` — see
+[`toShadcn()`](#programmatic-api).
+
+<details>
+<summary>The variables the stylesheet remaps</summary>
+
+Generated from [`toShadcnAliases()`](#programmatic-api), so the two cannot
+drift:
+
+```css
 :root,
 .dark {
   --background: var(--md-sys-color-surface);
@@ -270,6 +289,8 @@ Simply override/remap
 }
 ```
 
+</details>
+
 <details>
   <summary>mapping details</summary>
   see:
@@ -277,11 +298,6 @@ Simply override/remap
     - https://chatgpt.com/share/6899f20a-422c-8011-a072-62fb649589a0
     - https://gemini.google.com/share/51e072b6f1d2
 </details>
-
-> [!IMPORTANT]
->
-> Make sure `:root, .dark { ... }` comes AFTER `.root { ... } .dark { ... }` to
-> take precedence.
 
 # Dev
 
@@ -323,15 +339,16 @@ $ pnpm run lgtm
 ## CONTRIBUTING
 
 ```bash
-pnpm run storybook # the day-to-day loop -- no build needed, tailwind.css regenerates as you edit
-pnpm run build     # dist/, plus the generated tailwind.css -- both gitignored
+pnpm run storybook # the day-to-day loop -- no build needed, the stylesheets regenerate as you edit
+pnpm run build     # dist/, plus the generated stylesheets -- both gitignored
 pnpm run lgtm      # everything CI checks
 ```
 
-`src/tailwind.css` is generated from `toTailwind()` and gitignored. `pnpm run
-build` writes it; in Storybook a Vite plugin (`.storybook/main.ts`) writes it at
-server start and again on every edit under `src/lib/`, so the stories never show
-a stale vocabulary.
+`src/tailwind.css` and `src/shadcn.css` are generated — from `toTailwind()` and
+`toShadcnAliases()` — and gitignored. `pnpm run build` writes them
+(`scripts/generate-css.mjs`); in Storybook a Vite plugin (`.storybook/main.ts`)
+writes them at server start and again on every edit under `src/lib/`, so the
+stories never show a stale vocabulary.
 
 When submitting a pull request, please include a changeset to document your
 changes:

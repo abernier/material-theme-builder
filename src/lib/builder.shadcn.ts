@@ -128,6 +128,30 @@ function toShadcnVars(mergedColors: Record<string, number>) {
 }
 
 /**
+ * Generate the shadcn alias block — shadcn's variables pointing at the
+ * `--{prefix}-sys-color-*` custom properties `toCss()` / `<Mtb>` emit.
+ *
+ * The counterpart of `buildShadcn()`: same mapping, but `var()` references
+ * rather than concrete values, so the colors follow whichever `<Mtb>` is above
+ * them in the tree instead of being frozen at build time. This is what
+ * `material-theme-builder/shadcn.css` is generated from, and what
+ * `toTailwind({ shadcn: true })` appends.
+ *
+ * `:root, .dark` rather than one or the other: both modes read the same M3
+ * properties, which is where the light/dark split already happened. It has to
+ * come after shadcn's own `:root` and `.dark` blocks to win.
+ */
+export function buildShadcnAliases(ctx: BuilderContext) {
+  const { prefix } = ctx;
+
+  const lines = SHADCN_MAPPING.map(
+    ([cssVar, m3Token]) => `${cssVar}: var(--${prefix}-sys-color-${m3Token});`,
+  );
+
+  return `:root,\n.dark {\n  ${lines.join("\n  ")}\n}\n`;
+}
+
+/**
  * Generate a shadcn theme — concrete per-mode color values keyed by bare
  * shadcn variable name — from the builder context.
  *

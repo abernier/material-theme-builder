@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import { compile } from "tailwindcss";
 import { beforeAll, describe, expect, it } from "vitest";
 
-import { formatTailwindCss } from "../scripts/generate-tailwind-css.mjs";
+import { formatCss } from "../scripts/generate-css.mjs";
 import { builder } from "./lib/builder";
 import mtbTailwindPlugin, {
   mtbColors,
@@ -18,7 +18,7 @@ const require_ = createRequire(import.meta.url);
 
 /** `tailwind.css` as the generator writes it. */
 const generateStylesheet = (source = "#6750A4") =>
-  formatTailwindCss(builder(source).toTailwind());
+  formatCss("tailwind.css", builder(source).toTailwind());
 
 // Generated here rather than read from disk: the file is a build artifact, and
 // the suite has to pass without a build having run.
@@ -339,6 +339,35 @@ describe("tailwind.css", () => {
     expect(
       declarations.filter((line) => /--color-\w*[A-Z]/.test(line)),
     ).toEqual([]);
+  });
+});
+
+describe("shadcn.css", () => {
+  it("should make shadcn's own utilities resolve to the M3 properties", async () => {
+    // The file is generated from `toShadcnAliases()`, so what is checked here
+    // is the end of the chain rather than the mapping: shadcn's `@theme
+    // inline` aliases `--color-card` to `--card`, and the block we ship points
+    // `--card` at an M3 property. `bg-card` has to come out following `<Mtb>`.
+    const shadcnCss = await formatCss(
+      "shadcn.css",
+      builder("#6750A4").toShadcnAliases(),
+    );
+    const shadcnTheme = fs.readFileSync(
+      path.join(here, "fixtures/shadcn/theme.css"),
+      "utf8",
+    );
+
+    const css = await build(`${TAILWIND}${shadcnTheme}\n${shadcnCss}`, [
+      "bg-card",
+      "text-muted-foreground",
+    ]);
+
+    expect(css).toContain("--card: var(--md-sys-color-surface-container-low);");
+    expect(css).toContain("background-color: var(--card)");
+    expect(css).toContain(
+      "--muted-foreground: var(--md-sys-color-on-surface-variant);",
+    );
+    expect(css).toContain("color: var(--muted-foreground)");
   });
 });
 

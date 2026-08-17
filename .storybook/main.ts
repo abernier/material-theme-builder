@@ -1,18 +1,22 @@
 import type { StorybookConfig } from "@storybook/react-vite";
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Plugin } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 
-import { tailwindCssFrom } from "../scripts/generate-tailwind-css.mjs";
+import {
+  CSS_FILES,
+  cssFrom,
+  writeIfChanged,
+} from "../scripts/generate-css.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 /**
- * Keep `src/tailwind.css` current while the dev server runs.
+ * Keep `src/tailwind.css` and `src/shadcn.css` current while the dev server
+ * runs.
  *
- * The file is generated from `toTailwind()` by `pnpm run build`, which fires
+ * They are generated from their exporters by `pnpm run build`, which fires
  * once — so without this, editing the M3 vocabulary would leave the stories
  * showing the tokens as they were at boot, while everything around them hot
  * reloaded. Reading `builder` through `ssrLoadModule` is what makes it live:
@@ -22,24 +26,22 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
  * Dev only. `storybook build` has no server to load modules through, and needs
  * none: `pnpm run build-storybook` builds first.
  */
-function generateTailwindCss(): Plugin {
-  const target = join(root, "src/tailwind.css");
-
+function generateCss(): Plugin {
   return {
-    name: "mtb:generate-tailwind-css",
+    name: "mtb:generate-css",
     apply: "serve",
 
     async configureServer(server) {
       const write = async () => {
         const { builder } = await server.ssrLoadModule("/src/lib/builder.ts");
-        const css = await tailwindCssFrom(builder);
 
-        // Writing unconditionally would have every unrelated edit under
-        // `src/lib/` invalidate the stylesheet, and with it every utility.
-        if (existsSync(target) && readFileSync(target, "utf8") === css) return;
+        for (const name of CSS_FILES) {
+          const css = await cssFrom(name, builder);
 
-        writeFileSync(target, css);
-        server.config.logger.info(`[mtb] regenerated src/tailwind.css`);
+          if (writeIfChanged(join(root, "src", name), css)) {
+            server.config.logger.info(`[mtb] regenerated src/${name}`);
+          }
+        }
       };
 
       // Before the first request, so a fresh clone needs no prior build.
@@ -62,7 +64,7 @@ const config: StorybookConfig = {
   ],
   viteFinal(config) {
     config.plugins ??= [];
-    config.plugins.push(tsconfigPaths(), generateTailwindCss());
+    config.plugins.push(tsconfigPaths(), generateCss());
     return config;
   },
 };

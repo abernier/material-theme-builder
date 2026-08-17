@@ -7,7 +7,10 @@
    the three names both claim -- and the plugin below for the custom colors,
    the one part the stylesheet cannot know. */
 @import "../tailwind.css";
-@import "../shadcn.css"; /* our material-theme-builder shadcn file */
+/* And ours, pointing shadcn's variables at the M3 properties -- after theirs
+   above, which it overrides. Both files are generated; see
+   `scripts/generate-css.mjs`. */
+@import "../shadcn.css";
 
 /* After the imports, which CSS requires to come first. */
 @plugin "../tailwind-plugin.ts" {

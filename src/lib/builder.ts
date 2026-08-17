@@ -21,7 +21,7 @@ import { buildCss } from "./builder.css";
 import { buildFigmaTokens, buildFigmaVariables } from "./builder.figma";
 import { buildFlutter } from "./builder.flutter";
 import { buildJson } from "./builder.json";
-import { buildShadcn } from "./builder.shadcn";
+import { buildShadcn, buildShadcnAliases } from "./builder.shadcn";
 import { buildTailwind, type TailwindOptions } from "./builder.tailwind";
 import { DEFAULT_PREFIX, tokenNames } from "./tokens";
 
@@ -622,6 +622,7 @@ export function builder(
     toFigmaTokens: () => buildFigmaTokens(ctx),
     toTailwind: (options?: TailwindOptions) => buildTailwind(ctx, options),
     toShadcn: () => buildShadcn(ctx),
+    toShadcnAliases: () => buildShadcnAliases(ctx),
     toFlutter: () => buildFlutter(ctx),
     mergedColorsLight,
     mergedColorsDark,

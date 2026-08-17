@@ -29,9 +29,10 @@ export default defineConfig([
     entryPoints: ["src/index.ts"],
     dts: true,
     clean: true,
-    // `dist/tailwind.css` is generated from `toTailwind()`, which this entry
-    // is what builds -- so it regenerates here, off the bundle it needs.
-    onSuccess: "node scripts/generate-tailwind-css.mjs",
+    // `dist/tailwind.css` and `dist/shadcn.css` are generated from the
+    // exporters this entry is what builds -- so they regenerate here, off the
+    // bundle they need.
+    onSuccess: "node scripts/generate-css.mjs",
   },
   {
     ...shared,

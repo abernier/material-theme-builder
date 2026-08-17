@@ -1,7 +1,7 @@
 import { kebabCase } from "lodash-es";
 
 import type { BuilderContext } from "./builder";
-import { SHADCN_MAPPING } from "./builder.shadcn";
+import { buildShadcnAliases } from "./builder.shadcn";
 import { CORE_PALETTES, SHADE_TO_TONE } from "./tokens";
 
 /** Options for the Tailwind CSS exporter. */
@@ -60,13 +60,10 @@ export function buildTailwind(ctx: BuilderContext, options?: TailwindOptions) {
 
   let output = `@theme inline {\n  ${lines.join("\n  ")}\n}\n`;
 
-  if (options?.shadcn) {
-    const shadcnLines = SHADCN_MAPPING.map(
-      ([shadcnVar, m3Token]) =>
-        `${shadcnVar}: var(--${prefix}-sys-color-${m3Token});`,
-    );
-    output += `\n:root,\n.dark {\n  ${shadcnLines.join("\n  ")}\n}\n`;
-  }
+  // The same block `material-theme-builder/shadcn.css` is generated from --
+  // one mapping, so a `shadcn: true` inline copy and the shipped file cannot
+  // say different things.
+  if (options?.shadcn) output += `\n${buildShadcnAliases(ctx)}`;
 
   return output;
 }

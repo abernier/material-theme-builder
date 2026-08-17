@@ -160,3 +160,49 @@ describe("builder › toShadcn()", () => {
     expect(builder(SOURCE).toShadcn()).toMatchSnapshot();
   });
 });
+
+describe("builder › toShadcnAliases()", () => {
+  /** Every variable the block declares, `--` stripped. */
+  const declared = (css: string) =>
+    [...css.matchAll(/^ +--([\w-]+):/gm)].map(([, name]) => name);
+
+  it("should declare every shadcn variable in a :root, .dark block", () => {
+    const css = builder(SOURCE).toShadcnAliases();
+
+    expect(css).toContain(":root,\n.dark {");
+    expect(declared(css).sort()).toEqual([...SHADCN_VARS].sort());
+  });
+
+  it("should point at the M3 properties rather than at concrete colors", () => {
+    // What separates it from `toShadcn()`: the values follow whichever `<Mtb>`
+    // is above them at runtime instead of being frozen at build time.
+    const css = builder(SOURCE).toShadcnAliases();
+
+    expect(css).toContain("--background: var(--md-sys-color-surface);");
+    expect(css).not.toMatch(/oklch|#[0-9a-f]{6}/i);
+  });
+
+  it("should respect the prefix option", () => {
+    expect(builder(SOURCE, { prefix: "my" }).toShadcnAliases()).toContain(
+      "--background: var(--my-sys-color-surface);",
+    );
+  });
+
+  it("should not depend on the theme", () => {
+    // It names variables, never colors -- which is what lets one static file
+    // serve every theme, and what makes `shadcn.css` shippable at all.
+    expect(
+      builder("#FF5722", { scheme: "vibrant", contrast: 1 }).toShadcnAliases(),
+    ).toBe(builder(SOURCE).toShadcnAliases());
+  });
+
+  it("should be exactly what toTailwind({ shadcn: true }) appends", () => {
+    // One mapping, so an inlined copy and the shipped `shadcn.css` cannot say
+    // different things.
+    const theme = builder(SOURCE);
+
+    expect(theme.toTailwind({ shadcn: true })).toBe(
+      `${theme.toTailwind()}\n${theme.toShadcnAliases()}`,
+    );
+  });
+});

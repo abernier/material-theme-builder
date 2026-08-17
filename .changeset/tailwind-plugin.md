@@ -30,6 +30,19 @@ alongside it, which is what let `--color-surface-tint` and
 output now, so `src/tailwind.css` is no longer committed nor published —
 `material-theme-builder/tailwind.css` resolves as before.
 
+The same treatment turns the shadcn remapping — until now 31 lines to copy out
+of the README — into a stylesheet you can import:
+
+```css
+@import "./shadcn.css"; /* shadcn's own `:root` and `.dark` */
+@import "material-theme-builder/shadcn.css";
+```
+
+It points shadcn's variables at the M3 custom properties `<Mtb>` emits, so
+shadcn components follow the theme above them in the tree. Generated from a new
+`toShadcnAliases()`, off the same mapping `toShadcn()` and
+`toTailwind({ shadcn: true })` read, so no two of them can drift.
+
 **The generated file no longer carries the `myCustomColor1` / `myCustomColor2`
 example block.** Those names only ever resolved against custom colors you had
 declared under exactly those names; if you did, list them in `@plugin` instead.
