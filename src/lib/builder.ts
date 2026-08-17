@@ -188,6 +188,15 @@ export const schemeToVariant = {
  * tone-based surfaces post is what documents `surface-variant` giving way to
  * `surface-container-highest`).
  *
+ * Note that the list below is wider than the spec's own inventory — "26
+ * standard color roles organized into six groups" — because it also carries
+ * the add-on roles (fixed accents, surface dim/bright, inverse) and the ones
+ * the spec has since dropped but the exporters still emit: `background`,
+ * `onBackground`, `surfaceVariant`, `surfaceTint`.
+ *
+ * Deep links below are section anchors; the spec site is a client-rendered SPA,
+ * so `#:~:text=` fragments are stripped on load and only these work.
+ *
  * @see https://m3.material.io/styles/color/roles
  * @see https://m3.material.io/blog/tone-based-surface-color-m3
  * @see https://m3.material.io/blog/science-of-color-design

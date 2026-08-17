@@ -171,7 +171,7 @@ export function Scheme({
    * need to use these". The official app's poster does not draw them, so pass
    * `false` to match it exactly.
    *
-   * @see https://m3.material.io/styles/color/roles
+   * @see https://m3.material.io/styles/color/roles#a5f6ea3d-d457-4c5d-94f4-55f3cdf6470b
    */
   fixedAccents?: boolean;
   /**
@@ -184,6 +184,7 @@ export function Scheme({
    * `material-color-utilities` aliases it straight onto `primary` from spec
    * version 2025 on, and Flutter defaults `surfaceTintColor` to `null`.
    *
+   * @see https://m3.material.io/styles/color/system/overview#ca18ba03-a1ec-4bbb-a531-ae5396d3ee4a
    * @see https://github.com/material-foundation/material-color-utilities/blob/main/typescript/dynamiccolor/color_spec_2025.ts
    * @see https://github.com/flutter/flutter/issues/115912
    */
@@ -222,8 +223,8 @@ export function Scheme({
    * values, where `surface-variant` is still its own neutral-variant tone and
    * does *not* equal `surface-container-highest` (`#E0E2EC` vs `#E2E2E9` for
    * source `#769CDF`). Swapping one for the other changes the color today.
+   * @see https://m3.material.io/styles/color/roles#89f972b1-e372-494c-aabc-69aea34ed591
    * @see https://m3.material.io/blog/tone-based-surface-color-m3
-   * @see https://m3.material.io/styles/color/roles
    * @see https://github.com/material-foundation/material-color-utilities/blob/main/typescript/dynamiccolor/color_spec_2025.ts
    */
   surfaceVariant?: boolean;

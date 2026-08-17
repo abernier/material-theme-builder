@@ -494,6 +494,17 @@ m3 references:
 | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [<img width="2836" height="2266" alt="CleanShot 2026-01-14 at 08 58 40@2x" src="https://github.com/user-attachments/assets/e4b47c00-716f-4b08-b393-de306d5ce302" />](https://material-foundation.github.io/material-theme-builder/) | [<img width="2836" height="2266" alt="CleanShot 2026-01-14 at 09 01 23@2x" src="https://github.com/user-attachments/assets/826e502d-e173-43c4-807a-53d0ba075a88" />](https://m3.material.io/styles/color/roles) |
 
+The spec itself, deep-linked to the sections that matter. `m3.material.io` is a
+client-rendered SPA, so `#:~:text=` fragments get stripped on load — only these
+section anchors work:
+
+| page                                                                                                                  | what it settles                                                                                                             |
+| --------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| [Color roles](https://m3.material.io/styles/color/roles)                                                              | the inventory: _"26 standard color roles organized into six groups"_ — which is what `tokenDescriptions` is checked against |
+| [Color roles § Surface](https://m3.material.io/styles/color/roles#89f972b1-e372-494c-aabc-69aea34ed591)               | _"three surface roles: Surface / On surface / On surface variant"_ — no `surface variant`, hence the asymmetry              |
+| [Color roles § Add-on color roles](https://m3.material.io/styles/color/roles#a5f6ea3d-d457-4c5d-94f4-55f3cdf6470b)    | fixed accents and surface dim/bright are add-ons: _"most products won't need to use these"_                                 |
+| [Color system § What's new](https://m3.material.io/styles/color/system/overview#ca18ba03-a1ec-4bbb-a531-ae5396d3ee4a) | the changelog — Feb 2023 is when tone-based surfaces replaced the +1…+5 elevation model                                     |
+
 The Material Design blog is where the reasoning behind the color system lives —
 and where changes to it get announced before the spec pages catch up:
 
