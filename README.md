@@ -127,31 +127,19 @@ return (
 
 ## Tailwind
 
-A [Tailwind v4](https://tailwindcss.com) plugin ships with the package — one
-line, no theme block to maintain:
+Compatible through a
+[Tailwind 4 plugin](https://tailwindcss.com/docs/functions-and-directives#plugin-directive):
 
 ```css
 @import "tailwindcss";
 @plugin "material-theme-builder/tailwind";
 ```
 
-Every M3 role is now a Tailwind color:
+→ `bg-surface-container-high`, `text-on-primary-container`,
+`border-outline-variant`… every m3 role, plus shades: `bg-primary-500`,
+`text-neutral-variant-800`. Opacity modifiers work: `bg-primary/50`.
 
-```html
-<p class="bg-surface-container-high text-on-surface border-outline-variant">
-  Hello, <span class="bg-primary-container text-on-primary-container">m3</span>
-</p>
-```
-
-Shades come along too — `bg-primary-500`, `text-neutral-variant-800`,
-`bg-error-50` — each one backed by the matching tonal palette
-(`--md-ref-palette-primary-50` and friends), and opacity modifiers work as
-usual: `bg-primary/50`.
-
-### Custom colors
-
-Name the custom colors ("Extended colors") you declared on `builder()` or
-`<Mtb>`, spelled the same way:
+Custom colors must be named — they only exist at runtime:
 
 ```css
 @plugin "material-theme-builder/tailwind" {
@@ -159,78 +147,106 @@ Name the custom colors ("Extended colors") you declared on `builder()` or
 }
 ```
 
-Each one registers its four M3 roles and its shades:
+→ `bg-myCustomColor1`, `text-on-myCustomColor1`,
+`bg-myCustomColor1-container`, `bg-myCustomColor1-300`
 
-```html
-<span class="bg-myCustomColor1 text-on-myCustomColor1">…</span>
-<span class="bg-myCustomColor1-container text-on-myCustomColor1-container"
-  >…</span
->
-<span class="bg-myCustomColor1-300">…</span>
-```
+Options:
 
-> [!NOTE]
->
-> The kebab-cased spelling works too — `bg-my-custom-color-1` — matching the
-> CSS varnames.
-
-### Options
-
-| option          | default |                                                                                                   |
-| --------------- | ------- | ------------------------------------------------------------------------------------------------- |
-| `prefix`        | `"md"`  | CSS custom-property prefix — must match the one given to `builder()` / `<Mtb>`                    |
-| `custom-colors` | –       | Custom color names, comma-separated                                                               |
-| `shades`        | `true`  | Register the `50`…`950` shades. Turn it off to leave Tailwind's own `neutral-*` palette untouched |
+| option          | default |                                    |
+| --------------- | ------- | ---------------------------------- |
+| `prefix`        | `"md"`  | same as `builder()` / `<Mtb>`      |
+| `custom-colors` | –       | comma-separated                    |
+| `shades`        | `true`  | `50`…`950`, off the tonal palettes |
 
 > [!NOTE]
 >
-> Option names are read case- and dash-insensitively — `custom-colors` and
-> `customColors` are the same option. The kebab spelling is the one to prefer:
-> Prettier lowercases CSS declaration names.
+> Custom colors also answer to their kebab spelling, e.g.
+> `bg-my-custom-color-1`
+
+> [!NOTE]
+>
+> Option names are read case- and dash-insensitively, e.g. `custom-colors` =
+> `customColors`. Prefer the kebab one: Prettier lowercases CSS declaration
+> names.
 
 <details>
-  <summary>Without the plugin</summary>
+  <summary>what it registers</summary>
 
-The same theme is also shipped as a plain stylesheet:
+Two rules, nothing else:
+
+- `--md-sys-color-<role>` → `--color-<role>`
+- shade → tone:
+
+  | shade | 50  | 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900 | 950 |
+  | ----- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+  | tone  | 95  | 90  | 80  | 70  | 60  | 50  | 40  | 30  | 20  | 10  | 5   |
+
+  on `primary`, `secondary`, `tertiary`, `error`, `neutral`,
+  `neutral-variant`, and every custom color.
+
+```css
+@theme inline {
+  --color-background: var(--md-sys-color-background);
+  --color-surface: var(--md-sys-color-surface);
+  --color-surface-container: var(--md-sys-color-surface-container);
+  --color-on-surface: var(--md-sys-color-on-surface);
+  --color-outline-variant: var(--md-sys-color-outline-variant);
+  --color-primary: var(--md-sys-color-primary);
+  --color-on-primary: var(--md-sys-color-on-primary);
+  --color-primary-container: var(--md-sys-color-primary-container);
+  /* …one per role: secondary, tertiary, error, the -fixed and inverse-*
+     variants, scrim, shadow… */
+
+  /* Shades */
+
+  --color-primary-50: var(--md-ref-palette-primary-95);
+  --color-primary-100: var(--md-ref-palette-primary-90);
+  /* …200 → 800… */
+  --color-primary-950: var(--md-ref-palette-primary-5);
+
+  /* …idem secondary, tertiary, error, neutral, neutral-variant… */
+}
+```
+
+In full in
+[`src/tailwind.css`](https://github.com/abernier/material-theme-builder/blob/main/src/tailwind.css).
+
+</details>
+
+Or simply, the same theme as a stylesheet:
 
 ```css
 @import "material-theme-builder/tailwind.css";
 ```
 
-It is `@theme inline { --color-*: var(--md-sys-color-*) }` written out by hand
-(see
-[`src/tailwind.css`](https://github.com/abernier/material-theme-builder/blob/main/src/tailwind.css)),
-so custom colors are on you:
+> [!NOTE]
+>
+> Mostly there from before the plugin. One thing it still does that the plugin
+> cannot: imported AFTER a `@theme inline` of yours (shadcn's, say), it wins —
+> Tailwind gives a CSS `@theme` precedence over a plugin's theme.
 
-```css
-@theme inline {
-  --color-myCustomColor1: var(--md-sys-color-my-custom-color-1);
-  --color-on-myCustomColor1: var(--md-sys-color-on-my-custom-color-1);
-  --color-myCustomColor1-container: var(
-    --md-sys-color-my-custom-color-1-container
-  );
-  --color-on-myCustomColor1-container: var(
-    --md-sys-color-on-my-custom-color-1-container
-  );
-  /* Shades */
-  --color-myCustomColor1-50: var(--md-ref-palette-my-custom-color-1-95);
-  --color-myCustomColor1-100: var(--md-ref-palette-my-custom-color-1-90);
-  --color-myCustomColor1-200: var(--md-ref-palette-my-custom-color-1-80);
-  --color-myCustomColor1-300: var(--md-ref-palette-my-custom-color-1-70);
-  --color-myCustomColor1-400: var(--md-ref-palette-my-custom-color-1-60);
-  --color-myCustomColor1-500: var(--md-ref-palette-my-custom-color-1-50);
-  --color-myCustomColor1-600: var(--md-ref-palette-my-custom-color-1-40);
-  --color-myCustomColor1-700: var(--md-ref-palette-my-custom-color-1-30);
-  --color-myCustomColor1-800: var(--md-ref-palette-my-custom-color-1-20);
-  --color-myCustomColor1-900: var(--md-ref-palette-my-custom-color-1-10);
-  --color-myCustomColor1-950: var(--md-ref-palette-my-custom-color-1-5);
-}
-```
-
-`builder(…).toTailwind()` emits that same block, custom colors included, if you
-would rather generate it.
-
-</details>
+> [!IMPORTANT]
+>
+> Do not forget to manually add your custom colors, as in:
+>
+> ```css
+> @theme inline {
+>   --color-myCustomColor1: var(--md-sys-color-my-custom-color-1);
+>   --color-on-myCustomColor1: var(--md-sys-color-on-my-custom-color-1);
+>   --color-myCustomColor1-container: var(
+>     --md-sys-color-my-custom-color-1-container
+>   );
+>   --color-on-myCustomColor1-container: var(
+>     --md-sys-color-on-my-custom-color-1-container
+>   );
+>   /* Shades */
+>   --color-myCustomColor1-50: var(--md-ref-palette-my-custom-color-1-95);
+>   /* …100 → 900… */
+>   --color-myCustomColor1-950: var(--md-ref-palette-my-custom-color-1-5);
+> }
+> ```
+>
+> `builder(…).toTailwind()` emits the whole block, custom colors included.
 
 ## shadcn
 
@@ -239,12 +255,13 @@ Pre-requisites:
 - You should use
   [`tailwind.cssVariables`](https://ui.shadcn.com/docs/theming#css-variables)
 
-One import — no variable block to copy:
+One import remaps
+[shadcn's CSS variables](https://ui.shadcn.com/docs/theming#list-of-variables)
+onto the m3 roles, for both modes at once:
 
 ```css
 /* globals.css */
 @import "tailwindcss";
-@import "tw-animate-css";
 
 :root {
   /* ... */
@@ -256,16 +273,42 @@ One import — no variable block to copy:
 @import "material-theme-builder/shadcn.css";
 ```
 
-It remaps [shadcn's CSS
-variables](https://ui.shadcn.com/docs/theming#list-of-variables) onto the M3
-roles, for both modes at once — `--background` → `--md-sys-color-surface`,
-`--muted-foreground` → `--md-sys-color-on-surface-variant`, and so on (see
-[`src/shadcn.css`](https://github.com/abernier/material-theme-builder/blob/main/src/shadcn.css)).
-
 > [!IMPORTANT]
 >
-> Import it AFTER shadcn's own `:root { ... } .dark { ... }`, to take
-> precedence.
+> Make sure it comes AFTER `:root { ... } .dark { ... }` to take precedence.
+
+<details>
+  <summary>what it remaps</summary>
+
+```css
+:root,
+.dark {
+  --background: var(--md-sys-color-surface);
+  --foreground: var(--md-sys-color-on-surface);
+  --card: var(--md-sys-color-surface-container-low);
+  --popover: var(--md-sys-color-surface-container-high);
+  --muted: var(--md-sys-color-surface-container-highest);
+  --muted-foreground: var(--md-sys-color-on-surface-variant);
+  --primary: var(--md-sys-color-primary);
+  --secondary: var(--md-sys-color-secondary-container);
+  --accent: var(--md-sys-color-secondary-container);
+  --destructive: var(--md-sys-color-error);
+  --border: var(--md-sys-color-outline-variant);
+  --input: var(--md-sys-color-outline);
+  --ring: var(--md-sys-color-primary);
+  /* …the -foreground of each, --chart-1…5 off the -fixed roles,
+     --sidebar-* mirroring the above… */
+}
+```
+
+Surfaces come from the surface containers, `--secondary` / `--accent` from
+`secondary-container` (shadcn uses them as tinted fills — the container role,
+not m3's `secondary`), borders from `outline-variant`, ring from `primary`.
+
+In full in
+[`src/shadcn.css`](https://github.com/abernier/material-theme-builder/blob/main/src/shadcn.css).
+
+</details>
 
 <details>
   <summary>mapping details</summary>
@@ -277,14 +320,16 @@ roles, for both modes at once — `--background` → `--md-sys-color-surface`,
 
 > [!NOTE]
 >
-> Using the Tailwind plugin alongside shadcn? For the few color names they
-> share — `primary`, `secondary`, `background` — shadcn's `@theme inline` block
-> wins, whatever the order: Tailwind gives a CSS `@theme` precedence over a
-> plugin's theme. Those utilities keep shadcn's semantics, which the import
-> above has already pointed at M3.
+> With the Tailwind plugin too: on the names they share (`primary`,
+> `secondary`, `background`), shadcn's `@theme inline` wins whatever the order
+> — Tailwind gives a CSS `@theme` precedence over a plugin's. Those utilities
+> keep shadcn's semantics, already pointed at m3 by the import above. To flip
+> it, `@import "material-theme-builder/tailwind.css"` after shadcn's block.
 
-`builder(…).toShadcn()` is also there, if you would rather ship concrete oklch
-values (a registry theme, say) than variables that follow `<Mtb>` at runtime.
+> [!NOTE]
+>
+> `builder(…).toShadcn()` emits concrete oklch values instead — for a registry
+> theme, say.
 
 # Dev
 
