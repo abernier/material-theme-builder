@@ -232,7 +232,10 @@ export function FlowfieldScene({ ...props }: ComponentProps<typeof Flowfield>) {
 
           {/* Custom color */}
 
-          <hr className="my-1 border-t border-outline-variant w-6 mx-auto" />
+          <hr
+            className="my-1 border-t w-6 mx-auto"
+            style={{ borderColor: "var(--md-sys-color-outline-variant)" }}
+          />
 
           {(mtbConfig.customColors ?? []).map(({ name, hex }, i) => (
             <Tooltip key={name}>
