@@ -1,6 +1,7 @@
-// The `init` and `apply` subcommands -- the two ways to get a shadcn project
-// themed from a source color, named after shadcn's own vocabulary for which is
-// which rather than a verb of our own:
+// The `shadcn-init` and `shadcn-apply` subcommands -- the two ways to get a
+// shadcn project themed from a source color.
+//
+// The verbs are shadcn's own, and so is the distinction they draw:
 //
 //   init|create   initialize your project and install dependencies   (new project)
 //   apply         apply a preset to an existing project              (existing project)
@@ -8,8 +9,16 @@
 // https://ui.shadcn.com/create offers exactly that pair -- its "New Project"
 // button copies `shadcn init --preset b0 --template vite`, its "Existing
 // Project" button `shadcn apply --preset b0` -- so anyone arriving from there
-// already knows which of ours to reach for. A third naming ("try", "setup")
-// would only be one more to learn.
+// already knows which of ours to reach for, where a verb of our own invention
+// ("try", "setup") would have been one more thing to learn.
+//
+// The prefix is because this is not a shadcn tool. The package emits Figma
+// tokens, CSS, Tailwind and Flutter as well; shadcn is one integration among
+// several. A bare `init` at the top level would therefore read as "initialize
+// material-theme-builder", which is not what it does -- and it would spend the
+// shared verb space on one integration, leaving nowhere sensible for a
+// `tailwind-init` later. Prefixed, the name carries both the verb and what it
+// targets, and it reads alongside `--shadcn-cli`.
 //
 // Both chains end in `shadcn add` on a registry item generated in-process for
 // the source color: that is the one gesture which rewrites the values inside a
@@ -17,11 +26,11 @@
 // `@import` to win a cascade it is usually placed too early to win. See
 // `buildShadcnRegistryItem()`.
 //
-// Our `apply` deliberately does *not* shell out to `shadcn apply`, tempting as
-// the symmetry is: that command applies shadcn *presets* -- a different artifact
-// with its own schema and its own `--only theme,font` semantics -- and what we
-// have is a `registry:theme` item, which only `shadcn add` installs. The verb is
-// borrowed; the mechanism stays `add`.
+// Our `shadcn-apply` deliberately does *not* shell out to `shadcn apply`,
+// tempting as the symmetry is: that command applies shadcn *presets* -- a
+// different artifact with its own schema and its own `--only theme,font`
+// semantics -- and what we have is a `registry:theme` item, which only `shadcn
+// add` installs. The verb is borrowed; the mechanism stays `add`.
 
 import { spawnSync } from "node:child_process";
 import * as fs from "node:fs";
@@ -33,8 +42,8 @@ import { themeFrom, type Theme } from "./cli.options";
 import { builder } from "./lib/builder";
 
 // Spawned rather than assumed installed, so a bare `npx material-theme-builder
-// init` works with nothing on disk. `--yes` because the whole point is a command
-// that does not stop to ask.
+// shadcn-init` works with nothing on disk. `--yes` because the whole point is a
+// command that does not stop to ask.
 const NPX = ["npx", "--yes"];
 const DEFAULT_SHADCN = "shadcn@latest";
 const SELF = "material-theme-builder";
@@ -47,14 +56,15 @@ const ADD_TARGET = "shadcn add";
 // Where the generated registry item lands, relative to the project being
 // themed. `shadcn add` cannot read stdin -- it decides between a local file and
 // a registry name on `endsWith(".json") && !isURL(path)` -- so a real file with
-// a real `.json` name is not a matter of taste. `apply` runs inside someone's
-// own project, hence a name unlikely to be theirs, and a check before writing.
+// a real `.json` name is not a matter of taste. `shadcn-apply` runs inside
+// someone's own project, hence a name unlikely to be theirs, and a check before
+// writing.
 const ITEM = "mtb.json";
 
-// The directory `init` scaffolds into, when the user names none. Named after
-// what it is rather than after the verb that made it -- a directory called
-// `material-theme-init` would be the command's name showing through into
-// someone's file tree.
+// The directory `shadcn-init` scaffolds into, when the user names none. Named
+// after what it is rather than after the command that made it -- a directory
+// called `material-theme-shadcn-init` would be this CLI's own vocabulary showing
+// through into someone's file tree.
 const APP_NAME = "material-theme-app";
 
 /** A `shadcn` option we default, in both of the spellings it answers to. */
@@ -84,9 +94,9 @@ const YES: Defaulted = { long: "--yes", short: "-y" };
 // true, and passed anyway: the printed chain has to stay non-interactive on its
 // own terms rather than on an upstream default that could move.
 //
-// Which also bounds how far back `--shadcn-cli <spec>` can usefully pin: this list is
-// shadcn 4.x vocabulary. Preset *codes* and `shadcn preset decode` are a 4.x
-// thing, so an older CLI would reject `--preset b0` outright. Pinning is an
+// Which also bounds how far back `--shadcn-cli <spec>` can usefully pin: this
+// list is shadcn 4.x vocabulary. Preset *codes* and `shadcn preset decode` are a
+// 4.x thing, so an older CLI would reject `--preset b0` outright. Pinning is an
 // escape hatch for the neighbouring versions, not a time machine -- travelling
 // further means passing a preset of that era after the `--` as well.
 const INIT_DEFAULTS: Defaulted[] = [
@@ -218,9 +228,10 @@ function lastName(args: string[]) {
  * The first of `declared` found among the args forwarded after the `--`, as it
  * was written.
  *
- * A refusal, not a rescue. `init '#x' -- --print` used to be read as though the
- * flag had been written before the separator, which made "everything after `--`
- * is theirs" true except once — and an except-once rule is one nobody can hold.
+ * A refusal, not a rescue. `shadcn-init '#x' -- --print` used to be read as
+ * though the flag had been written before the separator, which made "everything
+ * after `--` is theirs" true except once — and an except-once rule is one nobody
+ * can hold.
  * Reading those args in order to *decline* them leaves the separator's meaning
  * exactly as it was; it is reinterpreting one of them that quietly redefined it.
  * The refusal also gets to say what to do, where the alternative is an
@@ -249,6 +260,12 @@ export function ownOptionIn(declared: readonly Option[], forwarded: string[]) {
   );
 }
 
+// "ours, not shadcn's" rather than naming this subcommand: since the rename, ours
+// is called `shadcn-init` and the thing on the far side of the separator is
+// `shadcn init`, and a sentence carrying both would ask the reader to tell two
+// nearly identical names apart in order to learn which owns the flag. Saying
+// whose it is answers that directly, and `${target}` still says where the rest
+// went.
 function refuseOwnOptions(
   command: Command,
   forwarded: string[],
@@ -258,7 +275,7 @@ function refuseOwnOptions(
 
   if (misplaced !== undefined)
     fail(
-      `${misplaced} is ours and must come before the \`--\`. Everything after the separator goes to \`${target}\`.`,
+      `${misplaced} is ours, not shadcn's, so it belongs before the \`--\`. Everything after the separator is handed to \`${target}\` untouched.`,
     );
 }
 
@@ -321,7 +338,7 @@ export function chainOptionsFrom(command: Command): ChainOptions {
 }
 
 /**
- * The `init` chain: scaffold a stock shadcn app, theme it, and hand over to its
+ * The `shadcn-init` chain: scaffold a stock shadcn app, theme it, and hand over to its
  * dev server.
  *
  * The forwarded args go to `shadcn init` -- the step whose options anyone would
@@ -384,7 +401,7 @@ export function initPlan(
 }
 
 /**
- * The `apply` chain: theme the project the command is run from, and stop there.
+ * The `shadcn-apply` chain: theme the project the command is run from, and stop there.
  *
  * No scaffold and no dev server -- this is someone's own project, already
  * running or not, and the only thing it wants is its CSS rewritten. It replaces
@@ -492,7 +509,7 @@ function run({ label, argv }: { label: string; argv: string[] }, cwd: string) {
 }
 
 function writeItem({ source, theme }: Plan, file: string) {
-  // `apply` runs in a directory full of someone else's files, and this one is
+  // `shadcn-apply` runs in a directory full of someone else's files, and this one is
   // both written and deleted. Refusing beats a silent round trip through their
   // file.
   if (fs.existsSync(file))
@@ -553,7 +570,7 @@ function execute(plan: Plan, command: Command) {
 }
 
 /**
- * Run — or print — the `init` chain.
+ * Run — or print — the `shadcn-init` chain.
  *
  * @param source source color in hex format
  * @param forwarded args given after the `--`, for `shadcn init`
@@ -565,7 +582,7 @@ export function runInit(source: string, forwarded: string[], command: Command) {
 }
 
 /**
- * Run — or print — the `apply` chain.
+ * Run — or print — the `shadcn-apply` chain.
  *
  * @param source source color in hex format
  * @param forwarded args given after the `--`, for `shadcn add`

@@ -9,8 +9,8 @@
 // $ node dist/cli.js '#6750A4' --format css
 // $ node dist/cli.js '#6750A4' --format shadcn
 // $ node dist/cli.js '#6750A4' --format registry-item
-// $ node dist/cli.js init '#6750A4'
-// $ node dist/cli.js apply '#6750A4' --print
+// $ node dist/cli.js shadcn-init '#6750A4'
+// $ node dist/cli.js shadcn-apply '#6750A4' --print
 // ```
 
 import * as fs from "node:fs";
@@ -169,7 +169,7 @@ addThemeOptions(
 addChainOptions(
   addThemeOptions(
     program
-      .command("init")
+      .command("shadcn-init")
       .description(
         "Scaffold a new shadcn app themed from a source color, and start it",
       )
@@ -186,7 +186,7 @@ addChainOptions(
 addChainOptions(
   addThemeOptions(
     program
-      .command("apply")
+      .command("shadcn-apply")
       .description("Theme the shadcn project in the current directory")
       .argument("<source>", "Source color in hex format (e.g. #6750A4)")
       .argument(

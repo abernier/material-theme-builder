@@ -6,13 +6,13 @@ Two subcommands, so that theming a shadcn project is one command rather than
 three:
 
 ```sh
-$ npx material-theme-builder init "#6750A4"   # a new project
-$ npx material-theme-builder apply "#6750A4"  # a project you already have
+$ npx material-theme-builder shadcn-init "#6750A4"   # a new project
+$ npx material-theme-builder shadcn-apply "#6750A4"  # a project you already have
 ```
 
-`init` scaffolds a stock shadcn app, themes it and hands over to its dev server —
+`shadcn-init` scaffolds a stock shadcn app, themes it and hands over to its dev server —
 from nothing to something running, with nothing installed first and nothing to
-read beforehand. `apply` does the theming half inside a project of your own, and
+read beforehand. `shadcn-apply` does the theming half inside a project of your own, and
 replaces what the README used to spell out by hand:
 
 ```sh
@@ -26,9 +26,16 @@ inside your existing `:root` and `.dark` blocks in place — minus the temporary
 file you had to remember to delete. `--format registry-item` is unchanged and
 stays the way to pipe it somewhere else.
 
-The names are shadcn's own: there, `init` is the new project and `apply` the
+The verbs are shadcn's own: there, `init` is the new project and `apply` the
 existing one, and https://ui.shadcn.com/create offers exactly that pair of
-buttons. Our `apply` does not call `shadcn apply`, though — that command installs
+buttons — so anyone arriving from that page already knows which of these to reach
+for. They are prefixed because shadcn is one integration here among Figma, CSS,
+Tailwind and Flutter: a bare `init` would read as "initialize
+material-theme-builder" rather than "initialize a shadcn project", and it would
+spend the shared verb space on one integration, leaving nowhere sensible for a
+`tailwind-init` later.
+
+Our `shadcn-apply` does not call `shadcn apply`, though — that command installs
 shadcn _presets_, a different artifact with its own schema, where what we
 generate is a `registry:theme` item that `shadcn add` installs. Borrowed verb,
 unchanged mechanism.
@@ -38,7 +45,7 @@ overrides, `--prefix`, `--no-fallback` — with the same names and defaults they
 have on the root command:
 
 ```sh
-$ npx material-theme-builder apply "#6750A4" --scheme vibrant --contrast 0.5
+$ npx material-theme-builder shadcn-apply "#6750A4" --scheme vibrant --contrast 0.5
 ```
 
 Without them these two commands could only ever install the default theme, which
@@ -48,12 +55,12 @@ asked for a scheme. (`--custom-colors` is not among them, and not by omission �
 shadcn's variable set is fixed, so no component reads a custom color and a
 registry item cannot carry one.)
 
-Anything after a `--` is forwarded verbatim — to `shadcn init` for `init`, to
-`shadcn add` for `apply` — and the defaults are merged in flag by flag, in either
-spelling, so yours replace ours instead of duplicating them:
+Anything after a `--` is forwarded verbatim — to `shadcn init` for `shadcn-init`,
+to `shadcn add` for `shadcn-apply` — and the defaults are merged in flag by flag,
+in either spelling, so yours replace ours instead of duplicating them:
 
 ```sh
-$ npx material-theme-builder init "#6750A4" -- --template next -n my-app
+$ npx material-theme-builder shadcn-init "#6750A4" -- --template next -n my-app
 ```
 
 Ours belong before the separator, and one written after it is refused by name
@@ -70,10 +77,10 @@ this repo dogfoods. None of it reaches the mapping, which only ever rewrites the
 `--shadcn-cli <spec>` says which shadcn to run, defaulting to `shadcn@latest`:
 
 ```sh
-$ npx material-theme-builder apply "#6750A4" --shadcn-cli shadcn@4.18.0
+$ npx material-theme-builder shadcn-apply "#6750A4" --shadcn-cli shadcn@4.18.0
 ```
 
-Any spec `npx` resolves — a version, a tag, a fork, a tarball — and `init` pins
+Any spec `npx` resolves — a version, a tag, a fork, a tarball — and `shadcn-init` pins
 both of its shadcn steps with it, a chain pinned for the scaffold and floating for
 the install being worse than one that floats throughout. It is an escape hatch for
 the neighbouring versions rather than a time machine, though, and honestly so:

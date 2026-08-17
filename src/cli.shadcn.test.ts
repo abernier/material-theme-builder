@@ -37,7 +37,7 @@ const spawnArgv = (plan: Plan) =>
     )
     .map((step) => step.argv);
 
-describe("init › forwarded args", () => {
+describe("shadcn-init › forwarded args", () => {
   it("should inject every default when nothing is forwarded", () => {
     expect(initArgs()).toEqual([
       "--preset",
@@ -57,7 +57,7 @@ describe.each([
   ["--name", "-n", "material-theme-app"],
   ["--template", "-t", "vite"],
   ["--preset", "-p", "b0"],
-] as const)("init › %s", (long, short, ourValue) => {
+] as const)("shadcn-init › %s", (long, short, ourValue) => {
   it.each([
     [`${long} mine`, [long, "mine"]],
     [`${short} mine`, [short, "mine"]],
@@ -74,7 +74,7 @@ describe.each([
   });
 });
 
-describe("init › --yes", () => {
+describe("shadcn-init › --yes", () => {
   it.each([["--yes"], ["-y"]])(
     "should not be injected twice, given %s",
     (spelling) => {
@@ -88,7 +88,7 @@ describe("init › --yes", () => {
   );
 });
 
-describe("init › unrelated flags", () => {
+describe("shadcn-init › unrelated flags", () => {
   it("should forward them untouched, suppressing no default", () => {
     const args = initArgs(["--rtl"]);
 
@@ -105,7 +105,7 @@ describe("init › unrelated flags", () => {
   });
 });
 
-describe("init › the scaffold directory", () => {
+describe("shadcn-init › the scaffold directory", () => {
   it.each([
     ["nothing forwarded", [], "material-theme-app"],
     ["-n mine", ["-n", "mine"], "mine"],
@@ -121,7 +121,7 @@ describe("init › the scaffold directory", () => {
   });
 });
 
-describe("apply", () => {
+describe("shadcn-apply", () => {
   it("should inject -y and forward the rest to `shadcn add`", () => {
     const [argv] = spawnArgv(applyPlan("#769CDF", ["--overwrite"]));
 
@@ -212,7 +212,7 @@ function themeCommand(argv: string[]) {
   addChainOptions(
     addThemeOptions(
       program
-        .command("apply")
+        .command("shadcn-apply")
         .argument("<source>")
         .argument("[shadcn-args...]"),
     ),
@@ -220,7 +220,7 @@ function themeCommand(argv: string[]) {
     captured = command;
   });
 
-  program.parse(["apply", "#769CDF", ...argv], { from: "user" });
+  program.parse(["shadcn-apply", "#769CDF", ...argv], { from: "user" });
 
   if (!captured) throw new Error("the action never ran");
 
@@ -310,8 +310,8 @@ describe("theme options", () => {
 // something other than what the runner would do. Both read one `Plan`, so it is
 // enough to assert every spawned argv appears in the printed line, verbatim.
 describe.each([
-  ["init", initPlan],
-  ["apply", applyPlan],
+  ["shadcn-init", initPlan],
+  ["shadcn-apply", applyPlan],
 ] as const)("renderChain() › %s", (_, plan) => {
   it("should contain the argv of every step it would spawn", () => {
     const built = plan("#769CDF", ["-n", "my app"]);
@@ -445,8 +445,8 @@ describe("cli › backward compatibility", () => {
   it.runIf(fs.existsSync(cli))("should list the subcommands in --help", () => {
     const help = run(["--help"]);
 
-    expect(help).toContain("init");
-    expect(help).toContain("apply");
+    expect(help).toContain("shadcn-init");
+    expect(help).toContain("shadcn-apply");
     expect(help).toContain("<source>");
   });
 
@@ -454,18 +454,23 @@ describe("cli › backward compatibility", () => {
   // typed and the shadcn command it would really have gone to, and only a full
   // parse knows both. Offline: it refuses before spawning anything.
   it.runIf(fs.existsSync(cli)).each([
-    ["init", ["init", "#769CDF", "--", "--print"], "--print", "shadcn init"],
     [
-      "apply",
-      ["apply", "#769CDF", "--", "--scheme", "vibrant"],
+      "shadcn-init",
+      ["shadcn-init", "#769CDF", "--", "--print"],
+      "--print",
+      "shadcn init",
+    ],
+    [
+      "shadcn-apply",
+      ["shadcn-apply", "#769CDF", "--", "--scheme", "vibrant"],
       "--scheme",
       "shadcn add",
     ],
     // `--print` was given on the wrong side of the separator, so the refusal is
     // about `--print` -- not a chain that prints, and not a crash.
     [
-      "apply, mixed with a real shadcn flag",
-      ["apply", "#769CDF", "--", "--overwrite", "--print"],
+      "shadcn-apply, mixed with a real shadcn flag",
+      ["shadcn-apply", "#769CDF", "--", "--overwrite", "--print"],
       "--print",
       "shadcn add",
     ],
@@ -474,8 +479,8 @@ describe("cli › backward compatibility", () => {
     // covered under the new name only, the subcommand having no `--shadcn` of its
     // own to claim.
     [
-      "apply, --shadcn-cli",
-      ["apply", "#769CDF", "--", "--shadcn-cli", "shadcn@4.18.0"],
+      "shadcn-apply, --shadcn-cli",
+      ["shadcn-apply", "#769CDF", "--", "--shadcn-cli", "shadcn@4.18.0"],
       "--shadcn-cli",
       "shadcn add",
     ],
@@ -483,8 +488,19 @@ describe("cli › backward compatibility", () => {
     "should refuse an option of ours after the `--` (%s)",
     (_, args, flag, target) => {
       expect(() => run([...args])).toThrow(
-        `${flag} is ours and must come before the \`--\`. Everything after the separator goes to \`${target}\`.`,
+        `${flag} is ours, not shadcn's, so it belongs before the \`--\`. Everything after the separator is handed to \`${target}\` untouched.`,
       );
+    },
+  );
+
+  // The unprefixed names, which is what habit from every other CLI will type.
+  // There is no subcommand to route them to, so they reach the root command as
+  // its `<source>`, where the color that follows is one operand too many. An
+  // error is the whole point: a theme built from the word "init" would be worse.
+  it.runIf(fs.existsSync(cli)).each([["init"], ["apply"]])(
+    "should not quietly read `%s` as a source color",
+    (name) => {
+      expect(() => run([name, "#769CDF"])).toThrow(/too many arguments/);
     },
   );
 
@@ -499,6 +515,6 @@ describe("cli › backward compatibility", () => {
       "cannot start with '-'",
     ],
   ] as const)("should reject %s as a --shadcn-cli spec", (_, args, message) => {
-    expect(() => run(["apply", "#769CDF", ...args])).toThrow(message);
+    expect(() => run(["shadcn-apply", "#769CDF", ...args])).toThrow(message);
   });
 });
