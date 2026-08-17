@@ -1,5 +1,235 @@
 # material-theme-builder
 
+## 3.3.0
+
+### Minor Changes
+
+- 5f143da: Two subcommands, so that theming a shadcn project is one command rather than
+  three:
+
+  ```sh
+  $ npx material-theme-builder shadcn-init "#6750A4"   # a new project
+  $ npx material-theme-builder shadcn-apply "#6750A4"  # a project you already have
+  ```
+
+  `shadcn-init` scaffolds a stock shadcn app, themes it and hands over to its dev server —
+  from nothing to something running, with nothing installed first and nothing to
+  read beforehand. `shadcn-apply` does the theming half inside a project of your own, and
+  replaces what the README used to spell out by hand:
+
+  ```sh
+  $ npx material-theme-builder "#6750A4" --format registry-item > mtb.json
+  $ npx shadcn@latest add ./mtb.json && rm mtb.json
+  ```
+
+  Same mechanism, same result — the registry item is generated for your source
+  color with the `var()` fallbacks baked in, and `shadcn add` rewrites the values
+  inside your existing `:root` and `.dark` blocks in place — minus the temporary
+  file you had to remember to delete. `--format registry-item` is unchanged and
+  stays the way to pipe it somewhere else.
+
+  The verbs are shadcn's own: there, `init` is the new project and `apply` the
+  existing one, and https://ui.shadcn.com/create offers exactly that pair of
+  buttons — so anyone arriving from that page already knows which of these to reach
+  for. They are prefixed because shadcn is one integration here among Figma, CSS,
+  Tailwind and Flutter: a bare `init` would read as "initialize
+  material-theme-builder" rather than "initialize a shadcn project", and it would
+  spend the shared verb space on one integration, leaving nowhere sensible for a
+  `tailwind-init` later.
+
+  Our `shadcn-apply` does not call `shadcn apply`, though — that command installs
+  shadcn _presets_, a different artifact with its own schema, where what we
+  generate is a `registry:theme` item that `shadcn add` installs. Borrowed verb,
+  unchanged mechanism.
+
+  Both take the theme options as well — `--scheme`, `--contrast`, the core-color
+  overrides, `--prefix`, `--no-fallback` — with the same names and defaults they
+  have on the root command:
+
+  ```sh
+  $ npx material-theme-builder shadcn-apply "#6750A4" --scheme vibrant --contrast 0.5
+  ```
+
+  Without them these two commands could only ever install the default theme, which
+  is the limitation that motivated generating a registry item in the first place:
+  the item this package _publishes_ is impersonal precisely because it cannot be
+  asked for a scheme. (`--custom-colors` is not among them, and not by omission —
+  shadcn's variable set is fixed, so no component reads a custom color and a
+  registry item cannot carry one.)
+
+  Anything after a `--` is forwarded verbatim — to `shadcn init` for `shadcn-init`,
+  to `shadcn add` for `shadcn-apply` — and the defaults are merged in flag by flag,
+  in either spelling, so yours replace ours instead of duplicating them:
+
+  ```sh
+  $ npx material-theme-builder shadcn-init "#6750A4" -- --template next -n my-app
+  ```
+
+  Ours belong before the separator, and one written after it is refused by name
+  rather than forwarded: `-- --scheme vibrant` gets told where `--scheme` goes,
+  instead of coming back three seconds later as an unknown-option error from a
+  shadcn command that has never heard of it.
+
+  The one default worth knowing about is `--preset b0`: without a preset, `shadcn
+init` stops to ask which component library you want, which would hang a
+  one-liner. `b0` is Base UI, style nova, neutral, lucide and Inter — the bundle
+  this repo dogfoods. None of it reaches the mapping, which only ever rewrites the
+  31 standard color variables every preset writes.
+
+  `--shadcn-cli <spec>` says which shadcn to run, defaulting to `shadcn@latest`:
+
+  ```sh
+  $ npx material-theme-builder shadcn-apply "#6750A4" --shadcn-cli shadcn@4.18.0
+  ```
+
+  Any spec `npx` resolves — a version, a tag, a fork, a tarball — and `shadcn-init` pins
+  both of its shadcn steps with it, a chain pinned for the scaffold and floating for
+  the install being worse than one that floats throughout. It is an escape hatch for
+  the neighbouring versions rather than a time machine, though, and honestly so:
+  `--preset b0` is itself 4.x vocabulary, so pinning far enough back means passing
+  that era's preset after the `--` as well.
+
+  The `-cli` is not decoration: `--shadcn` is taken, by the root command's boolean
+  that appends the alias block to `--format tailwind`. Nothing would actually
+  mis-parse — each command matches only the options it declares — but one word
+  meaning a boolean here and a package spec there is a trap for whoever reads
+  `--help` twice, and of the two it is the unreleased one that can give way.
+
+  `--print` writes the equivalent shell chain to stdout and runs nothing — for the
+  docs, for debugging, and for anyone who would rather read what a command is about
+  to do, or paste it themselves, than let it spawn `npx` on their machine.
+
+- 5f143da: Ship the shadcn mapping as a registry item, so it installs the way every other
+  shadcn theme does — generated for your source color:
+
+  ```sh
+  $ npx material-theme-builder "#6750A4" --format registry-item > mtb.json
+  $ npx shadcn@latest add ./mtb.json && rm mtb.json
+  ```
+
+  The CLI rewrites the values inside your existing `:root` and `.dark` blocks, in
+  place. That removes the one thing `material-theme-builder/shadcn.css` asked you
+  to get right: the stylesheet has to be imported _after_ shadcn's own blocks to
+  win the cascade, and the natural place for an `@import` is at the top of the file
+  with the others — which is exactly where it silently loses.
+
+  Values keep pointing at the M3 custom properties, so this is not `toShadcn()`
+  under another name: the colors still follow whichever `<Mtb>` is above them at
+  runtime. But the CLI knows your source color, so it also writes that theme's own
+  colors in as the `var()` fallbacks — which means the same install renders
+  correctly server-side with no client JS at all, and only gets _more_ correct
+  under an `<Mtb>`. `--no-fallback` opts out.
+
+  A colorless item is published as well, for `shadcn add` straight off a URL:
+
+  ```sh
+  $ npx shadcn@latest add https://unpkg.com/material-theme-builder/registry-item.json
+  ```
+
+  That one is the mapping and nothing else — the same 31 `var()` references
+  whatever the theme, since the colors arrive from `<Mtb>` at runtime. Which is
+  also its requirement: with no `<Mtb>` and no fallbacks, nothing resolves.
+
+  The stylesheet is unchanged and stays supported, for setups that would rather
+  keep the mapping in one line they can delete. All three are generated off one
+  mapping, so they cannot drift.
+
+  New API: `builder(...).toShadcnRegistryItem({ fallback })`, the
+  `ShadcnRegistryItem` and `ShadcnRegistryItemOptions` types, a
+  `material-theme-builder/registry-item.json` export, and `--format registry-item`
+  / `--no-fallback` on the CLI.
+
+- 5f143da: Add a Tailwind v4 plugin at `material-theme-builder/tailwind`, so custom colors
+  no longer have to be written out by hand:
+
+  ```css
+  @import "material-theme-builder/tailwind.css";
+  @plugin "material-theme-builder/tailwind" {
+    custom-colors: myCustomColor1, myCustomColor2;
+  }
+  ```
+
+  Each name listed brings its four scheme roles (`myCustomColor1`,
+  `on-myCustomColor1`, `myCustomColor1-container`, `on-myCustomColor1-container`)
+  and its eleven shades. A `prefix` option mirrors `builder({ prefix })`. The
+  plugin can carry the standard tokens too, on its own, for a setup that would
+  rather not import CSS at all.
+
+  The two halves split along what a shipped file can know: the stylesheet carries
+  the standard tokens, the plugin carries the custom colors, which depend on your
+  config. It also keeps the stylesheet in charge of the three names shadcn's
+  `@theme inline` also claims (`background`, `primary`, `secondary`) — a plugin's
+  theme values are defaults and would lose them.
+
+  `tailwind.css` is now generated from `toTailwind()` rather than maintained
+  alongside it, which is what let `--color-surface-tint` and
+  `--color-surface-variant` go missing from one and not the other. It is build
+  output now, so `src/tailwind.css` is no longer committed nor published —
+  `material-theme-builder/tailwind.css` resolves as before.
+
+  The same treatment turns the shadcn remapping — until now 31 lines to copy out
+  of the README — into a stylesheet you can import:
+
+  ```css
+  @import "./shadcn.css"; /* shadcn's own `:root` and `.dark` */
+  @import "material-theme-builder/shadcn.css";
+  ```
+
+  It points shadcn's variables at the M3 custom properties `<Mtb>` emits, so
+  shadcn components follow the theme above them in the tree. Generated from a new
+  `toShadcnAliases()`, off the same mapping `toShadcn()` and
+  `toTailwind({ shadcn: true })` read, so no two of them can drift.
+
+  **The generated file no longer carries the `myCustomColor1` / `myCustomColor2`
+  example block.** Those names only ever resolved against custom colors you had
+  declared under exactly those names; if you did, list them in `@plugin` instead.
+
+### Patch Changes
+
+- 5f143da: Fix: a source color that is not a color no longer produces a theme.
+
+  Material Color Utilities validates hex by length alone — it strips a leading `#`,
+  accepts 3, 6 or 8 characters, then runs `parseInt` on each pair, where a pair that
+  is not hex yields `NaN` and lands as zero. So `banana` was accepted, and themed
+  as `#ba0000`:
+
+  ```sh
+  $ material-theme-builder banana --format shadcn     # primary oklch(0.495 0.095 30.297)
+  $ material-theme-builder ba0000 --format shadcn     # primary oklch(0.495 0.095 30.297)
+  ```
+
+  Identical, to the value. `bananas` was rejected only for being seven characters
+  long, and by a `throw` from inside `node_modules` that reached the terminal as a
+  stack trace.
+
+  `builder()` now checks every hex it takes — `source`, the six core-color
+  overrides, and each `customColors[].hex` — against the characters as well as the
+  length, at its entry, before anything is converted. The message names the input:
+  `source` and `customColors[2].hex` are very different things to be told about.
+  `<Mtb source="banana">` is covered by the same fix, being the same call.
+
+  The CLI states the rule a second time, as commander's parser for `<source>` and
+  the core-color flags, and as a refinement on the `--custom-colors` schema. Not a
+  redundant check but a second presentation: the library has to refuse garbage on
+  its own account, for programmatic callers and for `<Mtb>`, while someone at a
+  terminal should be told about a typo in one line rather than in a stack trace.
+
+  ```
+  $ material-theme-builder banana
+  error: command-argument value 'banana' is invalid for argument 'source'. Expected a hex color — 3, 6 or 8 hex digits, with or without '#' (e.g. #6750A4).
+  ```
+
+  This does reject input that previously "worked", which is why it is worth stating
+  plainly rather than leaving to be discovered: `banana`, `zzz`, and every other 3,
+  6 or 8 character string that is not hex used to render. They rendered a color
+  nobody chose — the argument for the change, not an omission from it. Everything
+  Material Color Utilities reads as the color it spells is still accepted, `#`
+  optional, 3, 6 and 8 digits, any case.
+
+- fcae90f: Add the missing `--color-surface-tint` and `--color-surface-variant` theme
+  variables to `tailwind.css` (and the README block), so `bg-surface-tint` /
+  `bg-surface-variant` work like the rest of the roles emitted by `toTailwind()`.
+
 ## 3.2.0
 
 ### Minor Changes
