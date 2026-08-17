@@ -175,25 +175,30 @@ export function Scheme({
   /**
    * Show `surface-tint`, the elevation tint.
    *
-   * *Not* deprecated anywhere, but obsolete in practice: the tone-based surface
-   * roles dropped the opacity overlay model, and with it the need for a tint.
-   * Flutter now defaults every widget's `surfaceTintColor` to `null`.
+   * *Not* deprecated anywhere, Flutter included, but hollowed out: the
+   * tone-based surface roles dropped the opacity overlay model and with it the
+   * need for a tint. `material-color-utilities` aliases it straight onto
+   * `primary` from spec version 2025 on, and Flutter defaults every widget's
+   * `surfaceTintColor` to `null`.
    *
+   * @see https://github.com/material-foundation/material-color-utilities/blob/main/typescript/dynamiccolor/color_spec_2025.ts
    * @see https://github.com/flutter/flutter/issues/115912
-   * @see https://docs.flutter.dev/release/breaking-changes/new-color-scheme-roles
    */
   surfaceTint?: boolean;
   /**
    * Show `background` and `on-background`.
    *
-   * @deprecated Use `surface` and `on-surface` instead. Flutter's M3 migration
-   * states that "Material Design 3 removes 3 colors" — these two plus
-   * `surface-variant` — and deprecated them in `ColorScheme` after v3.18.
+   * @deprecated Use `surface` and `on-surface` instead. Both are gone from the
+   * spec's current role list, and `material-color-utilities` aliases them onto
+   * `surface` / `on-surface` from spec version 2025 on.
    *
-   * Caveat: Jetpack Compose still exposes them undeprecated, and this library
-   * keeps emitting them, so treat this as "on the way out" rather than gone.
+   * Weakest of the two deprecations here: no Material-authored text was found
+   * saying so outright, only Flutter's migration (by a Google engineer, but a
+   * framework channel), and Jetpack Compose still exposes them undeprecated.
+   * Treat as "on the way out" rather than gone.
+   * @see https://github.com/material-foundation/material-color-utilities/blob/main/typescript/dynamiccolor/color_spec_2025.ts
    * @see https://docs.flutter.dev/release/breaking-changes/new-color-scheme-roles
-   * @see https://api.flutter.dev/flutter/material/ColorScheme-class.html
+   * @see https://github.com/flutter/flutter/pull/138521
    */
   background?: boolean;
   /**
@@ -202,13 +207,16 @@ export function Scheme({
    * Note that its `on-surface-variant` counterpart is *not* deprecated, and is
    * part of the poster — hence the asymmetry.
    *
-   * @deprecated Use `surface-container-highest` instead. Third of the colors
-   * Flutter's M3 migration removes, deprecated in `ColorScheme` after v3.18.
+   * @deprecated Use `surface-container-highest` instead. The best-sourced of
+   * the two deprecations here: the Material Design blog announcing tone-based
+   * surfaces states that "Surface Variant becomes Surface Container Highest",
+   * and `material-color-utilities` aliases the two from spec version 2025 on.
    *
-   * Same caveat as {@link background}: still undeprecated in Jetpack Compose,
-   * and still emitted here.
+   * Same caveat as {@link background} all the same: still undeprecated in
+   * Jetpack Compose, and still emitted here.
+   * @see https://m3.material.io/blog/tone-based-surface-color-m3
+   * @see https://github.com/material-foundation/material-color-utilities/blob/main/typescript/dynamiccolor/color_spec_2025.ts
    * @see https://docs.flutter.dev/release/breaking-changes/new-color-scheme-roles
-   * @see https://api.flutter.dev/flutter/material/ColorScheme-class.html
    */
   surfaceVariant?: boolean;
 } & VariantProps<typeof schemeVariants> &
