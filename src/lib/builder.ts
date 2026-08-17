@@ -21,13 +21,21 @@ import { buildCss } from "./builder.css";
 import { buildFigmaTokens, buildFigmaVariables } from "./builder.figma";
 import { buildFlutter } from "./builder.flutter";
 import { buildJson } from "./builder.json";
-import { buildShadcn, buildShadcnAliases } from "./builder.shadcn";
+import {
+  buildShadcn,
+  buildShadcnAliases,
+  buildShadcnRegistryItem,
+} from "./builder.shadcn";
 import { buildTailwind, type TailwindOptions } from "./builder.tailwind";
 import { DEFAULT_PREFIX, tokenNames } from "./tokens";
 
 // ─── Re-exports (types defined alongside their exporter) ─────────────────
 
-export type { ShadcnTheme, ShadcnVarName } from "./builder.shadcn";
+export type {
+  ShadcnRegistryItem,
+  ShadcnTheme,
+  ShadcnVarName,
+} from "./builder.shadcn";
 
 // The M3 vocabulary lives in `./tokens` — a leaf module the Tailwind plugin can
 // import without pulling the color engine in — and is re-exported here so
@@ -623,6 +631,7 @@ export function builder(
     toTailwind: (options?: TailwindOptions) => buildTailwind(ctx, options),
     toShadcn: () => buildShadcn(ctx),
     toShadcnAliases: () => buildShadcnAliases(ctx),
+    toShadcnRegistryItem: () => buildShadcnRegistryItem(ctx),
     toFlutter: () => buildFlutter(ctx),
     mergedColorsLight,
     mergedColorsDark,

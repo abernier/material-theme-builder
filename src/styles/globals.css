@@ -1,5 +1,5 @@
-@import "tailwindcss";
-@import "tw-animate-css";
+/* shadcn's own stylesheet, pristine -- `@import "tailwindcss"` and the rest of
+   what `shadcn init` writes are in there, so nothing comes above it. */
 @import "./shadcn.css";
 
 /* The pairing the README recommends, dogfooded: the generated stylesheet for

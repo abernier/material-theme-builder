@@ -49,6 +49,7 @@ theme.toTailwind();
 theme.toFlutter();
 theme.toShadcn();
 theme.toShadcnAliases();
+theme.toShadcnRegistryItem();
 ```
 
 ## CLI
@@ -224,33 +225,64 @@ Pre-requisites:
 - You should use
   [`tailwind.cssVariables`](https://ui.shadcn.com/docs/theming#css-variables)
 
-Import the stylesheet, after shadcn's own blocks:
+Install it the way you install any shadcn theme:
+
+```sh
+$ npx shadcn@latest add https://unpkg.com/material-theme-builder/registry-item.json
+```
+
+That rewrites the values inside your existing `:root` and `.dark` blocks, in
+place, pointing
+[shadcn's CSS variables](https://ui.shadcn.com/docs/theming#list-of-variables)
+at the M3 custom properties `<Mtb>` emits — so every shadcn component follows
+whichever theme is above it in the tree. The values stay `var()` references:
+nothing is baked in at build time.
+
+> [!NOTE]
+>
+> shadcn's CLI also appends a self-referential `--card: var(--card);` per
+> variable to your `@theme inline` block. It is noise, not a bug on your side:
+> those land _above_ your `:root`, so the real values win. Delete them if they
+> bother you.
+
+For the opposite trade — concrete `oklch()` values, frozen at build time — see
+[`toShadcn()`](#programmatic-api).
+
+<details>
+<summary>Rather import a stylesheet than let the CLI edit your file</summary>
+
+A stylesheet is shipped too, for setups that would rather keep the mapping in
+one line they can delete:
 
 ```css
 @import "tailwindcss";
 @import "./shadcn.css"; /* shadcn's own `:root` and `.dark` */
-@import "material-theme-builder/shadcn.css";
+@import "material-theme-builder/shadcn.css"; /* ...then ours */
 ```
-
-It points
-[shadcn's CSS variables](https://ui.shadcn.com/docs/theming#list-of-variables)
-at the M3 custom properties `<Mtb>` emits, so every shadcn component follows
-whichever theme is above it in the tree — nothing is baked in at build time.
 
 > [!IMPORTANT]
 >
 > It has to come AFTER shadcn's own `:root { ... }` and `.dark { ... }`, which
-> it overrides.
+> it overrides — so **not** at the top with your other imports, which is where
+> an `@import` normally goes and where this one silently loses:
+>
+> ```css
+> /* ✗ `--card` falls back to shadcn's grey; nothing warns you */
+> @import "tailwindcss";
+> @import "material-theme-builder/shadcn.css";
+> @import "./shadcn.css";
+> ```
+>
+> The registry item above exists to make this impossible to get wrong.
 
-For the opposite trade — concrete `oklch()` values, frozen at build time, shaped
-like a shadcn registry item's `cssVars` — see
-[`toShadcn()`](#programmatic-api).
+</details>
 
 <details>
-<summary>The variables the stylesheet remaps</summary>
+<summary>The variables it remaps</summary>
 
-Generated from [`toShadcnAliases()`](#programmatic-api), so the two cannot
-drift:
+Both halves are generated from [`toShadcnAliases()`](#programmatic-api) and
+[`toShadcnRegistryItem()`](#programmatic-api), off one mapping, so neither can
+drift from the other:
 
 ```css
 :root,
@@ -344,11 +376,26 @@ pnpm run build     # dist/, plus the generated stylesheets -- both gitignored
 pnpm run lgtm      # everything CI checks
 ```
 
-`src/tailwind.css` and `src/shadcn.css` are generated — from `toTailwind()` and
-`toShadcnAliases()` — and gitignored. `pnpm run build` writes them
-(`scripts/generate-css.mjs`); in Storybook a Vite plugin (`.storybook/main.ts`)
-writes them at server start and again on every edit under `src/lib/`, so the
-stories never show a stale vocabulary.
+`tailwind.css`, `shadcn.css` and `registry-item.json` are generated — from
+`toTailwind()`, `toShadcnAliases()` and `toShadcnRegistryItem()` — and
+gitignored. `pnpm run build` writes them (`scripts/generate.mjs`); the two
+stylesheets also get a `src/` copy, which is what Storybook `@import`s, and in
+Storybook a Vite plugin (`.storybook/main.ts`) rewrites those at server start
+and again on every edit under `src/lib/`, so the stories never show a stale
+vocabulary.
+
+`src/styles/shadcn.css` is the other half of that arrangement, and is _not_
+generated from anything here: it is pristine `shadcn init --preset b0` output,
+committed verbatim — regenerate it with the recipe in its own header. Same for
+the components, via `pnpm dlx shadcn@latest add <item> --overwrite`. All of it
+is exempt from Prettier and from the repo's own lint conventions, so that a
+regeneration diffs to nothing; see `.prettierignore` and `SHADCN_FILES` in
+`eslint.config.mjs` for which paths `components.json` makes shadcn's territory.
+
+The `Shadcn/dashboard-01` story is what checks the shadcn mapping end to end: it
+renders one of [shadcn's blocks](https://ui.shadcn.com/blocks), unmodified,
+under `<Mtb>`. Every other story paints from the M3 vocabulary directly, so none
+of them would notice `shadcn.css` pointing a variable at the wrong role.
 
 When submitting a pull request, please include a changeset to document your
 changes:

@@ -66,6 +66,21 @@ export type ShadcnTheme = {
   dark: Record<ShadcnVarName, string>;
 };
 
+/**
+ * A shadcn registry item carrying the alias mapping, as
+ * `toShadcnRegistryItem()` returns it.
+ *
+ * @see https://ui.shadcn.com/schema/registry-item.json
+ */
+export type ShadcnRegistryItem = {
+  $schema: string;
+  name: string;
+  type: "registry:theme";
+  title: string;
+  description: string;
+  cssVars: ShadcnTheme;
+};
+
 // ─── sRGB → OKLCh ────────────────────────────────────────────────────────
 //
 // A fixed sRGB → linear → OKLab → OKLCh pipeline, in-repo rather than via a
@@ -127,6 +142,19 @@ function toShadcnVars(mergedColors: Record<string, number>) {
   return Object.fromEntries(entries) as Record<ShadcnVarName, string>;
 }
 
+// shadcn's variables pointing at the `--{prefix}-sys-color-*` custom
+// properties, keyed by bare variable name. The one place the alias values are
+// spelled; both renderings below read it, so the CSS block and the registry
+// item cannot disagree about what points where.
+function toShadcnAliasVars(prefix: string) {
+  const entries = SHADCN_MAPPING.map(([cssVar, m3Token]) => [
+    cssVar.slice(2),
+    `var(--${prefix}-sys-color-${m3Token})`,
+  ]);
+
+  return Object.fromEntries(entries) as Record<ShadcnVarName, string>;
+}
+
 /**
  * Generate the shadcn alias block — shadcn's variables pointing at the
  * `--{prefix}-sys-color-*` custom properties `toCss()` / `<Mtb>` emit.
@@ -139,16 +167,54 @@ function toShadcnVars(mergedColors: Record<string, number>) {
  *
  * `:root, .dark` rather than one or the other: both modes read the same M3
  * properties, which is where the light/dark split already happened. It has to
- * come after shadcn's own `:root` and `.dark` blocks to win.
+ * come after shadcn's own `:root` and `.dark` blocks to win — which is the one
+ * thing a reader has to know, and the reason
+ * `buildShadcnRegistryItem()` exists.
  */
 export function buildShadcnAliases(ctx: BuilderContext) {
-  const { prefix } = ctx;
-
-  const lines = SHADCN_MAPPING.map(
-    ([cssVar, m3Token]) => `${cssVar}: var(--${prefix}-sys-color-${m3Token});`,
+  const lines = Object.entries(toShadcnAliasVars(ctx.prefix)).map(
+    ([name, value]) => `--${name}: ${value};`,
   );
 
   return `:root,\n.dark {\n  ${lines.join("\n  ")}\n}\n`;
+}
+
+/**
+ * Generate the same alias mapping as `toShadcnAliases()`, shaped as a shadcn
+ * registry item — installable with `shadcn add`.
+ *
+ * Why both: the stylesheet has to be imported *after* shadcn's own `:root` and
+ * `.dark` to win the cascade, and the natural place for an `@import` is at the
+ * top of the file with the others — which is exactly where it silently loses.
+ * A registry item has no ordering to get wrong: the CLI rewrites the values
+ * inside shadcn's existing blocks, in place, which is also the gesture every
+ * other shadcn theme uses.
+ *
+ * The values stay `var()` references, so this is not `toShadcn()` in a
+ * wrapper: the colors still follow whichever `<Mtb>` is above them at runtime,
+ * where `toShadcn()` freezes them at build time.
+ *
+ * `light` and `dark` carry the same values, since both read the same M3
+ * properties — see `buildShadcnAliases()`. The CLI writes each into its own
+ * block, so they cannot be collapsed into one.
+ */
+export function buildShadcnRegistryItem(
+  ctx: BuilderContext,
+): ShadcnRegistryItem {
+  const vars = toShadcnAliasVars(ctx.prefix);
+
+  return {
+    $schema: "https://ui.shadcn.com/schema/registry-item.json",
+    name: "material-theme-builder",
+    type: "registry:theme",
+    title: "Material Theme Builder",
+    description:
+      "Points shadcn's CSS variables at the M3 custom properties `<Mtb>` emits, so every shadcn component follows whichever theme is above it in the tree.",
+    // Fresh objects rather than the same one twice: this is handed to callers,
+    // and sharing the reference would make a mutation of one mode show up in
+    // the other.
+    cssVars: { light: { ...vars }, dark: { ...vars } },
+  };
 }
 
 /**

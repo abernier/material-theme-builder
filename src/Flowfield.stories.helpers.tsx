@@ -195,17 +195,19 @@ export function FlowfieldScene({ ...props }: ComponentProps<typeof Flowfield>) {
 
             return (
               <Tooltip key={key}>
-                <TooltipTrigger asChild>
-                  <ButtonPill
-                    color={color}
-                    onChange={(hex) => {
-                      setMtbConfig({
-                        ...mtbConfig,
-                        [key]: hex,
-                      });
-                    }}
-                  />
-                </TooltipTrigger>
+                <TooltipTrigger
+                  render={
+                    <ButtonPill
+                      color={color}
+                      onChange={(hex) => {
+                        setMtbConfig({
+                          ...mtbConfig,
+                          [key]: hex,
+                        });
+                      }}
+                    />
+                  }
+                />
                 <TooltipContent side="right">
                   <span className="flex items-center gap-1">
                     {!isInferred && (
@@ -239,20 +241,22 @@ export function FlowfieldScene({ ...props }: ComponentProps<typeof Flowfield>) {
 
           {(mtbConfig.customColors ?? []).map(({ name, hex }, i) => (
             <Tooltip key={name}>
-              <TooltipTrigger asChild>
-                <ButtonPill
-                  color={hex}
-                  onChange={(newHex) => {
-                    const updated = (mtbConfig.customColors ?? []).map(
-                      (c, j) => (j === i ? { ...c, hex: newHex } : c),
-                    );
-                    setMtbConfig({
-                      ...mtbConfig,
-                      customColors: updated,
-                    });
-                  }}
-                />
-              </TooltipTrigger>
+              <TooltipTrigger
+                render={
+                  <ButtonPill
+                    color={hex}
+                    onChange={(newHex) => {
+                      const updated = (mtbConfig.customColors ?? []).map(
+                        (c, j) => (j === i ? { ...c, hex: newHex } : c),
+                      );
+                      setMtbConfig({
+                        ...mtbConfig,
+                        customColors: updated,
+                      });
+                    }}
+                  />
+                }
+              />
               <TooltipContent side="right">
                 <span className="flex items-center gap-1">
                   <Button
@@ -277,39 +281,41 @@ export function FlowfieldScene({ ...props }: ComponentProps<typeof Flowfield>) {
           {/* Add new custom color */}
 
           <Tooltip>
-            <TooltipTrigger asChild>
-              <ButtonPill
-                onClick={() => {
-                  pendingAddIndexRef.current = null;
-                }}
-                onChange={(hex) => {
-                  const existing = mtbConfig.customColors ?? [];
-                  const idx = pendingAddIndexRef.current;
+            <TooltipTrigger
+              render={
+                <ButtonPill
+                  onClick={() => {
+                    pendingAddIndexRef.current = null;
+                  }}
+                  onChange={(hex) => {
+                    const existing = mtbConfig.customColors ?? [];
+                    const idx = pendingAddIndexRef.current;
 
-                  if (idx !== null && idx < existing.length) {
-                    // update the color being picked
-                    const updated = existing.map((c, j) =>
-                      j === idx ? { ...c, hex } : c,
-                    );
-                    setMtbConfig({ ...mtbConfig, customColors: updated });
-                  } else {
-                    // first change of this pick session — add a new color
-                    pendingAddIndexRef.current = existing.length;
-                    setMtbConfig({
-                      ...mtbConfig,
-                      customColors: [
-                        ...existing,
-                        {
-                          name: `customColor${existing.length + 1}`,
-                          hex,
-                          blend: true,
-                        },
-                      ],
-                    });
-                  }
-                }}
-              />
-            </TooltipTrigger>
+                    if (idx !== null && idx < existing.length) {
+                      // update the color being picked
+                      const updated = existing.map((c, j) =>
+                        j === idx ? { ...c, hex } : c,
+                      );
+                      setMtbConfig({ ...mtbConfig, customColors: updated });
+                    } else {
+                      // first change of this pick session — add a new color
+                      pendingAddIndexRef.current = existing.length;
+                      setMtbConfig({
+                        ...mtbConfig,
+                        customColors: [
+                          ...existing,
+                          {
+                            name: `customColor${existing.length + 1}`,
+                            hex,
+                            blend: true,
+                          },
+                        ],
+                      });
+                    }
+                  }}
+                />
+              }
+            />
             <TooltipContent side="right">Add custom color</TooltipContent>
           </Tooltip>
         </div>

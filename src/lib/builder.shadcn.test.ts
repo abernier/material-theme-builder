@@ -206,3 +206,84 @@ describe("builder › toShadcnAliases()", () => {
     );
   });
 });
+
+describe("builder › toShadcnRegistryItem()", () => {
+  it("should be a valid registry:theme item", () => {
+    const item = builder(SOURCE).toShadcnRegistryItem();
+
+    expect(item.$schema).toBe(
+      "https://ui.shadcn.com/schema/registry-item.json",
+    );
+    expect(item.type).toBe("registry:theme");
+    // `name` and `type` are the schema's only required fields.
+    expect(item.name).toBe("material-theme-builder");
+  });
+
+  it("should carry every shadcn variable in both modes", () => {
+    const { cssVars } = builder(SOURCE).toShadcnRegistryItem();
+
+    expect(Object.keys(cssVars).sort()).toEqual(["dark", "light"]);
+    expect(Object.keys(cssVars.light).sort()).toEqual([...SHADCN_VARS].sort());
+    expect(Object.keys(cssVars.dark).sort()).toEqual([...SHADCN_VARS].sort());
+  });
+
+  it("should key on bare variable names, as the CLI expects", () => {
+    // `update-css-vars-v4` re-adds the `--` itself; a `--`-prefixed key here
+    // would come out as `----card`.
+    const { cssVars } = builder(SOURCE).toShadcnRegistryItem();
+
+    for (const name of Object.keys(cssVars.light)) {
+      expect(name).not.toMatch(/^--/);
+    }
+  });
+
+  it("should say the same thing as toShadcnAliases()", () => {
+    // The point of sharing `toShadcnAliasVars()`: whichever half a consumer
+    // installs, the same variable points at the same M3 token.
+    const theme = builder(SOURCE);
+    const css = theme.toShadcnAliases();
+
+    for (const [name, value] of Object.entries(
+      theme.toShadcnRegistryItem().cssVars.light,
+    )) {
+      expect(css).toContain(`--${name}: ${value};`);
+    }
+  });
+
+  it("should give light and dark the same values", () => {
+    // Both modes read the same M3 properties -- the light/dark split already
+    // happened there. The CLI writes each into its own block, so they cannot be
+    // collapsed into one.
+    const { cssVars } = builder(SOURCE).toShadcnRegistryItem();
+
+    expect(cssVars.dark).toEqual(cssVars.light);
+    // ...but not the same object: a caller mutating one must not touch the other.
+    expect(cssVars.dark).not.toBe(cssVars.light);
+  });
+
+  it("should point at the M3 properties rather than at concrete colors", () => {
+    const item = builder(SOURCE).toShadcnRegistryItem();
+
+    expect(item.cssVars.light["card"]).toBe(
+      "var(--md-sys-color-surface-container-low)",
+    );
+    expect(JSON.stringify(item.cssVars)).not.toMatch(/oklch|#[0-9a-f]{6}/i);
+  });
+
+  it("should respect the prefix option", () => {
+    expect(
+      builder(SOURCE, { prefix: "my" }).toShadcnRegistryItem().cssVars.light[
+        "background"
+      ],
+    ).toBe("var(--my-sys-color-surface)");
+  });
+
+  it("should not depend on the theme", () => {
+    expect(
+      builder("#FF5722", {
+        scheme: "vibrant",
+        contrast: 1,
+      }).toShadcnRegistryItem().cssVars,
+    ).toEqual(builder(SOURCE).toShadcnRegistryItem().cssVars);
+  });
+});

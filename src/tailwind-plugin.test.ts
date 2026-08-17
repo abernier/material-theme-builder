@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import { compile } from "tailwindcss";
 import { beforeAll, describe, expect, it } from "vitest";
 
-import { formatCss } from "../scripts/generate-css.mjs";
+import { formatOutput } from "../scripts/generate.mjs";
 import { builder } from "./lib/builder";
 import mtbTailwindPlugin, {
   mtbColors,
@@ -18,7 +18,29 @@ const require_ = createRequire(import.meta.url);
 
 /** `tailwind.css` as the generator writes it. */
 const generateStylesheet = (source = "#6750A4") =>
-  formatCss("tailwind.css", builder(source).toTailwind());
+  formatOutput("tailwind.css", builder(source).toTailwind());
+
+/**
+ * shadcn's `@theme inline` block — the names it claims — read out of
+ * `styles/shadcn.css`.
+ *
+ * That file is pristine `shadcn init` output, so it is the authority on the
+ * question. Only the one block, though: around it the file `@import`s
+ * tailwindcss, an animation library and a webfont, none of which the harness
+ * below has any business resolving. Extracted rather than kept as a fixture of
+ * its own, so upstream lives in the repo once — a second copy is how "which
+ * names does shadcn claim?" came to be answered by a file a major behind.
+ */
+const shadcnTheme = () => {
+  const css = fs.readFileSync(path.join(here, "styles/shadcn.css"), "utf8");
+  // Everything inside the block is indented, so the first `}` at column 0
+  // closes it.
+  const block = /^@theme inline \{$[\s\S]*?^\}$/m.exec(css)?.[0];
+
+  if (!block) throw new Error("no `@theme inline` block in styles/shadcn.css");
+
+  return block;
+};
 
 // Generated here rather than read from disk: the file is a build artifact, and
 // the suite has to pass without a build having run.
@@ -217,16 +239,12 @@ describe("tailwind plugin › compiled output", () => {
   );
 
   // ...and the remedy the README documents. The list is short because names
-  // have to collide to be at risk, and against a nominal shadcn scaffold --
-  // not `styles/shadcn.css`, which is our own remapped copy -- exactly three
-  // do. See `fixtures/shadcn/README.md` for how the fixture is regenerated.
+  // have to collide to be at risk, and against a nominal shadcn scaffold
+  // exactly three do.
   it("should be winnable back by an @theme of the consumer's own", async () => {
-    const shadcnTheme = fs.readFileSync(
-      path.join(here, "fixtures/shadcn/theme.css"),
-      "utf8",
-    );
+    const theme = shadcnTheme();
     const claimed = new Set(
-      [...shadcnTheme.matchAll(/--color-([\w-]+):/g)].map(([, name]) => name),
+      [...theme.matchAll(/--color-([\w-]+):/g)].map(([, name]) => name),
     );
     const collisions = Object.keys(mtbColors()).filter((name) =>
       claimed.has(name),
@@ -238,10 +256,10 @@ describe("tailwind plugin › compiled output", () => {
       .map((name) => `  --color-${name}: var(--md-sys-color-${name});`)
       .join("\n")}\n}\n`;
 
-    // The fixture verbatim, so the recipe is checked against what shadcn
-    // actually emits rather than a hand-written stand-in for it.
+    // Upstream verbatim, so the recipe is checked against what shadcn actually
+    // emits rather than a hand-written stand-in for it.
     const css = await build(
-      `${TAILWIND}${shadcnTheme}\n@plugin "./tailwind-plugin";\n${handBack}`,
+      `${TAILWIND}${theme}\n@plugin "./tailwind-plugin";\n${handBack}`,
       collisions.map((name) => `bg-${name}`),
     );
 
@@ -289,10 +307,7 @@ describe("tailwind plugin › compiled output", () => {
   // order, the plugin carries only what the stylesheet cannot know. Neither
   // half needs a hand-written block, and shadcn changes nothing.
   it("should need no @theme of its own when the stylesheet carries the standard tokens", async () => {
-    const shadcnTheme = fs.readFileSync(
-      path.join(here, "fixtures/shadcn/theme.css"),
-      "utf8",
-    );
+    const theme = shadcnTheme();
     const candidates = [
       ...stylesheetNames().map((name) => `bg-${name}`),
       "bg-myCustomColor1",
@@ -300,7 +315,7 @@ describe("tailwind plugin › compiled output", () => {
     ];
 
     const css = await build(
-      `${TAILWIND}${shadcnTheme}\n@import "${stylesheetPath}";\n@plugin "./tailwind-plugin" {\n  custom-colors: myCustomColor1, myCustomColor2;\n}\n`,
+      `${TAILWIND}${theme}\n@import "${stylesheetPath}";\n@plugin "./tailwind-plugin" {\n  custom-colors: myCustomColor1, myCustomColor2;\n}\n`,
       candidates,
     );
 
@@ -348,16 +363,12 @@ describe("shadcn.css", () => {
     // is the end of the chain rather than the mapping: shadcn's `@theme
     // inline` aliases `--color-card` to `--card`, and the block we ship points
     // `--card` at an M3 property. `bg-card` has to come out following `<Mtb>`.
-    const shadcnCss = await formatCss(
+    const shadcnCss = await formatOutput(
       "shadcn.css",
       builder("#6750A4").toShadcnAliases(),
     );
-    const shadcnTheme = fs.readFileSync(
-      path.join(here, "fixtures/shadcn/theme.css"),
-      "utf8",
-    );
 
-    const css = await build(`${TAILWIND}${shadcnTheme}\n${shadcnCss}`, [
+    const css = await build(`${TAILWIND}${shadcnTheme()}\n${shadcnCss}`, [
       "bg-card",
       "text-muted-foreground",
     ]);

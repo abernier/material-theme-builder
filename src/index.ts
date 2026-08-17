@@ -12,6 +12,7 @@ export { builder } from "./lib/builder";
 export type {
   McuConfig,
   MtbConfig,
+  ShadcnRegistryItem,
   ShadcnTheme,
   ShadcnVarName,
 } from "./lib/builder";

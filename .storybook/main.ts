@@ -5,10 +5,10 @@ import type { Plugin } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 
 import {
-  CSS_FILES,
-  cssFrom,
+  outputFrom,
+  STYLESHEETS,
   writeIfChanged,
-} from "../scripts/generate-css.mjs";
+} from "../scripts/generate.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -35,8 +35,8 @@ function generateCss(): Plugin {
       const write = async () => {
         const { builder } = await server.ssrLoadModule("/src/lib/builder.ts");
 
-        for (const name of CSS_FILES) {
-          const css = await cssFrom(name, builder);
+        for (const name of STYLESHEETS) {
+          const css = await outputFrom(name, builder);
 
           if (writeIfChanged(join(root, "src", name), css)) {
             server.config.logger.info(`[mtb] regenerated src/${name}`);
