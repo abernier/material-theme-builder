@@ -160,3 +160,236 @@ describe("builder › toShadcn()", () => {
     expect(builder(SOURCE).toShadcn()).toMatchSnapshot();
   });
 });
+
+describe("builder › toShadcnAliases()", () => {
+  /** Every variable the block declares, `--` stripped. */
+  const declared = (css: string) =>
+    [...css.matchAll(/^ +--([\w-]+):/gm)].map(([, name]) => name);
+
+  it("should declare every shadcn variable in a :root, .dark block", () => {
+    const css = builder(SOURCE).toShadcnAliases();
+
+    expect(css).toContain(":root,\n.dark {");
+    expect(declared(css).sort()).toEqual([...SHADCN_VARS].sort());
+  });
+
+  it("should point at the M3 properties rather than at concrete colors", () => {
+    // What separates it from `toShadcn()`: the values follow whichever `<Mtb>`
+    // is above them at runtime instead of being frozen at build time.
+    const css = builder(SOURCE).toShadcnAliases();
+
+    expect(css).toContain("--background: var(--md-sys-color-surface);");
+    expect(css).not.toMatch(/oklch|#[0-9a-f]{6}/i);
+  });
+
+  it("should respect the prefix option", () => {
+    expect(builder(SOURCE, { prefix: "my" }).toShadcnAliases()).toContain(
+      "--background: var(--my-sys-color-surface);",
+    );
+  });
+
+  it("should not depend on the theme", () => {
+    // It names variables, never colors -- which is what lets one static file
+    // serve every theme, and what makes `shadcn.css` shippable at all.
+    expect(
+      builder("#FF5722", { scheme: "vibrant", contrast: 1 }).toShadcnAliases(),
+    ).toBe(builder(SOURCE).toShadcnAliases());
+  });
+
+  it("should be exactly what toTailwind({ shadcn: true }) appends", () => {
+    // One mapping, so an inlined copy and the shipped `shadcn.css` cannot say
+    // different things.
+    const theme = builder(SOURCE);
+
+    expect(theme.toTailwind({ shadcn: true })).toBe(
+      `${theme.toTailwind()}\n${theme.toShadcnAliases()}`,
+    );
+  });
+});
+
+describe("builder › toShadcnRegistryItem()", () => {
+  it("should be a valid registry:theme item", () => {
+    const item = builder(SOURCE).toShadcnRegistryItem();
+
+    expect(item.$schema).toBe(
+      "https://ui.shadcn.com/schema/registry-item.json",
+    );
+    expect(item.type).toBe("registry:theme");
+    // `name` and `type` are the schema's only required fields.
+    expect(item.name).toBe("material-theme-builder");
+  });
+
+  it("should carry every shadcn variable in both modes", () => {
+    const { cssVars } = builder(SOURCE).toShadcnRegistryItem();
+
+    expect(Object.keys(cssVars).sort()).toEqual(["dark", "light"]);
+    expect(Object.keys(cssVars.light).sort()).toEqual([...SHADCN_VARS].sort());
+    expect(Object.keys(cssVars.dark).sort()).toEqual([...SHADCN_VARS].sort());
+  });
+
+  it("should key on bare variable names, as the CLI expects", () => {
+    // `update-css-vars-v4` re-adds the `--` itself; a `--`-prefixed key here
+    // would come out as `----card`.
+    const { cssVars } = builder(SOURCE).toShadcnRegistryItem();
+
+    for (const name of Object.keys(cssVars.light)) {
+      expect(name).not.toMatch(/^--/);
+    }
+  });
+
+  it("should say the same thing as toShadcnAliases()", () => {
+    // The point of sharing `toShadcnAliasVars()`: whichever half a consumer
+    // installs, the same variable points at the same M3 token.
+    const theme = builder(SOURCE);
+    const css = theme.toShadcnAliases();
+
+    for (const [name, value] of Object.entries(
+      theme.toShadcnRegistryItem().cssVars.light,
+    )) {
+      expect(css).toContain(`--${name}: ${value};`);
+    }
+  });
+
+  it("should give light and dark the same values", () => {
+    // Both modes read the same M3 properties -- the light/dark split already
+    // happened there. The CLI writes each into its own block, so they cannot be
+    // collapsed into one.
+    const { cssVars } = builder(SOURCE).toShadcnRegistryItem();
+
+    expect(cssVars.dark).toEqual(cssVars.light);
+    // ...but not the same object: a caller mutating one must not touch the other.
+    expect(cssVars.dark).not.toBe(cssVars.light);
+  });
+
+  it("should point at the M3 properties rather than at concrete colors", () => {
+    const item = builder(SOURCE).toShadcnRegistryItem();
+
+    expect(item.cssVars.light["card"]).toBe(
+      "var(--md-sys-color-surface-container-low)",
+    );
+    expect(JSON.stringify(item.cssVars)).not.toMatch(/oklch|#[0-9a-f]{6}/i);
+  });
+
+  it("should respect the prefix option", () => {
+    expect(
+      builder(SOURCE, { prefix: "my" }).toShadcnRegistryItem().cssVars.light[
+        "background"
+      ],
+    ).toBe("var(--my-sys-color-surface)");
+  });
+
+  it("should not depend on the theme", () => {
+    expect(
+      builder("#FF5722", {
+        scheme: "vibrant",
+        contrast: 1,
+      }).toShadcnRegistryItem().cssVars,
+    ).toEqual(builder(SOURCE).toShadcnRegistryItem().cssVars);
+  });
+});
+
+describe("builder › toShadcnRegistryItem({ fallback: true })", () => {
+  // The `, oklch(...)` tail, as the fallback variant appends it.
+  const FALLBACK_TAIL = /, oklch\([^)]*\)\)$/;
+
+  it("should be off by default", () => {
+    // What keeps the published `registry-item.json` colorless: it is generated
+    // from an arbitrary source, so a baked fallback there would ship a theme
+    // nobody asked for.
+    expect(builder(SOURCE).toShadcnRegistryItem().cssVars).toEqual(
+      builder(SOURCE).toShadcnRegistryItem({ fallback: false }).cssVars,
+    );
+  });
+
+  it("should give every variable an oklch fallback, in both modes", () => {
+    const { cssVars } = builder(SOURCE).toShadcnRegistryItem({
+      fallback: true,
+    });
+
+    for (const mode of ["light", "dark"] as const) {
+      expect(Object.keys(cssVars[mode]).sort()).toEqual(
+        [...SHADCN_VARS].sort(),
+      );
+
+      for (const value of Object.values(cssVars[mode])) {
+        expect(value).toMatch(FALLBACK_TAIL);
+      }
+    }
+  });
+
+  it("should fall back to exactly what toShadcn() says", () => {
+    // The two exporters cannot disagree about the color a variable takes when
+    // no `<Mtb>` is mounted.
+    const theme = builder(SOURCE, { scheme: "expressive", contrast: 0.5 });
+    const concrete = theme.toShadcn();
+    const { cssVars } = theme.toShadcnRegistryItem({ fallback: true });
+
+    // `Object.entries` widens the key to `string`, which cannot index either
+    // record -- and both are keyed the same way, which is the point here.
+    const names = Object.keys(
+      concrete.light,
+    ) as (keyof typeof concrete.light)[];
+
+    for (const mode of ["light", "dark"] as const) {
+      for (const name of names) {
+        expect(FALLBACK_TAIL.exec(cssVars[mode][name])?.[0]).toBe(
+          `, ${concrete[mode][name]})`,
+        );
+      }
+    }
+  });
+
+  it("should point at the same M3 properties as without a fallback", () => {
+    // Strip the tails and the plain item comes back: `fallback` adds a second
+    // `var()` argument and changes nothing else.
+    const plain = builder(SOURCE).toShadcnRegistryItem().cssVars.light;
+    const stripped = Object.fromEntries(
+      Object.entries(
+        builder(SOURCE).toShadcnRegistryItem({ fallback: true }).cssVars.light,
+      ).map(([name, value]) => [name, value.replace(FALLBACK_TAIL, ")")]),
+    );
+
+    expect(stripped).toEqual(plain);
+  });
+
+  it("should give light and dark different values", () => {
+    // Unlike the plain item: each mode now falls back to its own colors.
+    const { cssVars } = builder(SOURCE).toShadcnRegistryItem({
+      fallback: true,
+    });
+
+    expect(cssVars.dark).not.toEqual(cssVars.light);
+  });
+
+  it("should depend on the theme", () => {
+    // The whole reason this variant is the CLI's default rather than the
+    // package's: it can only be generated once a source color is known.
+    expect(
+      builder("#FF5722", {
+        scheme: "vibrant",
+        contrast: 1,
+      }).toShadcnRegistryItem({ fallback: true }).cssVars,
+    ).not.toEqual(
+      builder(SOURCE).toShadcnRegistryItem({ fallback: true }).cssVars,
+    );
+  });
+
+  it("should respect the prefix option", () => {
+    expect(
+      builder(SOURCE, { prefix: "my" }).toShadcnRegistryItem({ fallback: true })
+        .cssVars.light["background"],
+    ).toMatch(/^var\(--my-sys-color-surface, oklch\(/);
+  });
+
+  it("should say so in its description", () => {
+    // A reader of the installed item can tell which variant they have.
+    const withFallback = builder(SOURCE).toShadcnRegistryItem({
+      fallback: true,
+    });
+
+    expect(withFallback.description).not.toBe(
+      builder(SOURCE).toShadcnRegistryItem().description,
+    );
+    expect(withFallback.description).toContain("Falls back");
+  });
+});

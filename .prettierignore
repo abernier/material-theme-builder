@@ -1,1 +1,14 @@
 pnpm-lock.yaml
+
+# Frozen upstream output -- reformatting it would make it stop matching what
+# the regeneration command in its header (or README) produces.
+src/styles/shadcn.css
+
+# shadcn's own output, at the three paths `components.json` sends it to. Left
+# as the CLI writes it -- Prettier's own style differs (semicolons, import
+# order), so formatting it would put a diff between the tree and what
+# `shadcn add --overwrite` produces, on files nobody here edits by hand. See
+# also the matching `SHADCN_FILES` exemption in `eslint.config.mjs`.
+src/components/*.tsx
+src/components/ui/
+src/hooks/

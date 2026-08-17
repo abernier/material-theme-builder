@@ -6,6 +6,21 @@ import tseslint from "typescript-eslint";
 
 const SOURCE_FILES = ["src/**/*.{ts,tsx}", ".storybook/**/*.{ts,tsx}"];
 
+// shadcn's own output. `components.json` sends it to exactly these three
+// places -- the `components`, `ui` and `hooks` aliases -- and `shadcn add`
+// rewrites them wholesale, so the repo's *conventions* (JSDoc on every export,
+// complexity ceilings) can only ever be satisfied by editing files the next
+// `add` overwrites. Vendored, not authored: exempt. `src/components/m3/` is
+// ours and stays in, as does everything at the `src/` root.
+//
+// Correctness rules -- typescript-eslint strict, react-hooks -- deliberately
+// still apply: nothing there asks for an edit that a regeneration undoes.
+const SHADCN_FILES = [
+  "src/components/*.tsx", // blocks, e.g. `dashboard-01`'s
+  "src/components/ui/**/*.tsx",
+  "src/hooks/*.ts",
+];
+
 export default defineConfig([
   {
     ignores: ["dist/**", "storybook-static/**", "node_modules/**"],
@@ -29,11 +44,7 @@ export default defineConfig([
   },
   {
     files: SOURCE_FILES,
-    ignores: [
-      "src/**/*.stories.{ts,tsx}",
-      ".storybook/**",
-      "src/components/ui/**/*.tsx",
-    ],
+    ignores: ["src/**/*.stories.{ts,tsx}", ".storybook/**", ...SHADCN_FILES],
     plugins: {
       jsdoc,
     },
@@ -54,6 +65,7 @@ export default defineConfig([
   },
   {
     files: SOURCE_FILES,
+    ignores: SHADCN_FILES,
     plugins: {
       sonarjs,
     },

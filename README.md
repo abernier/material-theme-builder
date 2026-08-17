@@ -48,6 +48,8 @@ theme.toCss();
 theme.toTailwind();
 theme.toFlutter();
 theme.toShadcn();
+theme.toShadcnAliases();
+theme.toShadcnRegistryItem({ fallback: true });
 ```
 
 ## CLI
@@ -127,249 +129,94 @@ return (
 
 ## Tailwind
 
-Compatible through [theme variables](https://tailwindcss.com/docs/theme):
+Compatible through [theme variables](https://tailwindcss.com/docs/theme), in two
+halves — a stylesheet for the standard tokens, and a plugin for the custom
+colors, the one part a shipped file cannot know:
+
+```css
+@import "tailwindcss";
+
+@import "material-theme-builder/tailwind.css";
+@plugin "material-theme-builder/tailwind" {
+  custom-colors: myCustomColor1, myCustomColor2;
+}
+```
+
+No hand-written block either side. Each name listed brings its four scheme roles
+and eleven shades — `bg-myCustomColor1`, `text-on-myCustomColor1`,
+`bg-myCustomColor1-container`, `bg-myCustomColor1-300`. Drop the `@plugin` line
+if you have no custom colors.
+
+The plugin takes a `prefix` too, mirroring `builder({ prefix })`:
+
+```css
+@plugin "material-theme-builder/tailwind" {
+  prefix: my;
+  custom-colors: myCustomColor1;
+}
+```
+
+The plugin can carry the standard tokens on its own — `@plugin` without the
+`@import` — for a setup that would rather not import CSS at all. Read the
+warning below first if you also use shadcn.
+
+> [!TIP]
+>
+> Both halves declare their colors as
+> [inlined theme values](https://tailwindcss.com/docs/theme#referencing-other-variables):
+> `bg-primary` compiles to `background-color: var(--md-sys-color-primary)`,
+> with no `--color-primary` in between. That matters for nesting — a
+> `--color-primary` declared on `:root` would resolve against `:root`, out of
+> reach of a nested `<Mtb>` re-declaring the M3 properties.
+
+> [!WARNING]
+>
+> Theme values a plugin contributes are _defaults_: an `@theme` block of your
+> own wins over them whatever the order, where the stylesheet — being CSS —
+> wins by import order.
+>
+> That is why the standard tokens are left to the stylesheet. shadcn's
+> `@theme inline` claims three names M3 also uses — `background`, `primary`,
+> `secondary` — and with the two halves above the stylesheet takes them back,
+> so shadcn changes nothing. Only if you drop the `@import` and let the plugin
+> carry the standard tokens do you have to hand those three back yourself:
+>
+> ```css
+> @theme inline {
+>   --color-background: var(--md-sys-color-background);
+>   --color-primary: var(--md-sys-color-primary);
+>   --color-secondary: var(--md-sys-color-secondary);
+> }
+> ```
+>
+> Left alone, `bg-secondary` resolves through shadcn's `--secondary`, which the
+> [shadcn](#shadcn) section below remaps to `secondary-container` — a tone 90
+> where you asked for a tone 40, under text still colored `on-secondary`.
+
+<details>
+<summary>The theme variables the stylesheet declares</summary>
+
+Generated from [`toTailwind()`](#programmatic-api), so the two cannot drift:
 
 ```css
 @theme inline {
   --color-background: var(--md-sys-color-background);
-  --color-on-background: var(--md-sys-color-on-background);
-  --color-surface: var(--md-sys-color-surface);
-  --color-surface-dim: var(--md-sys-color-surface-dim);
-  --color-surface-bright: var(--md-sys-color-surface-bright);
-  --color-surface-container-lowest: var(
-    --md-sys-color-surface-container-lowest
-  );
-  --color-surface-container-low: var(--md-sys-color-surface-container-low);
-  --color-surface-container: var(--md-sys-color-surface-container);
-  --color-surface-container-high: var(--md-sys-color-surface-container-high);
-  --color-surface-container-highest: var(
-    --md-sys-color-surface-container-highest
-  );
-  --color-on-surface: var(--md-sys-color-on-surface);
-  --color-surface-variant: var(--md-sys-color-surface-variant);
-  --color-on-surface-variant: var(--md-sys-color-on-surface-variant);
-  --color-outline: var(--md-sys-color-outline);
-  --color-outline-variant: var(--md-sys-color-outline-variant);
-  --color-inverse-surface: var(--md-sys-color-inverse-surface);
-  --color-inverse-on-surface: var(--md-sys-color-inverse-on-surface);
-  --color-primary: var(--md-sys-color-primary);
-  --color-on-primary: var(--md-sys-color-on-primary);
-  --color-primary-container: var(--md-sys-color-primary-container);
-  --color-on-primary-container: var(--md-sys-color-on-primary-container);
-  --color-primary-fixed: var(--md-sys-color-primary-fixed);
-  --color-primary-fixed-dim: var(--md-sys-color-primary-fixed-dim);
-  --color-on-primary-fixed: var(--md-sys-color-on-primary-fixed);
-  --color-on-primary-fixed-variant: var(
-    --md-sys-color-on-primary-fixed-variant
-  );
-  --color-inverse-primary: var(--md-sys-color-inverse-primary);
-  --color-secondary: var(--md-sys-color-secondary);
-  --color-on-secondary: var(--md-sys-color-on-secondary);
-  --color-secondary-container: var(--md-sys-color-secondary-container);
-  --color-on-secondary-container: var(--md-sys-color-on-secondary-container);
-  --color-secondary-fixed: var(--md-sys-color-secondary-fixed);
-  --color-secondary-fixed-dim: var(--md-sys-color-secondary-fixed-dim);
-  --color-on-secondary-fixed: var(--md-sys-color-on-secondary-fixed);
-  --color-on-secondary-fixed-variant: var(
-    --md-sys-color-on-secondary-fixed-variant
-  );
-  --color-tertiary: var(--md-sys-color-tertiary);
-  --color-on-tertiary: var(--md-sys-color-on-tertiary);
-  --color-tertiary-container: var(--md-sys-color-tertiary-container);
-  --color-on-tertiary-container: var(--md-sys-color-on-tertiary-container);
-  --color-tertiary-fixed: var(--md-sys-color-tertiary-fixed);
-  --color-tertiary-fixed-dim: var(--md-sys-color-tertiary-fixed-dim);
-  --color-on-tertiary-fixed: var(--md-sys-color-on-tertiary-fixed);
-  --color-on-tertiary-fixed-variant: var(
-    --md-sys-color-on-tertiary-fixed-variant
-  );
   --color-error: var(--md-sys-color-error);
-  --color-on-error: var(--md-sys-color-on-error);
   --color-error-container: var(--md-sys-color-error-container);
-  --color-on-error-container: var(--md-sys-color-on-error-container);
-  --color-surface-tint: var(--md-sys-color-surface-tint);
-  --color-scrim: var(--md-sys-color-scrim);
-  --color-shadow: var(--md-sys-color-shadow);
-
-  /* Shades */
-
-  --color-primary-50: var(--md-ref-palette-primary-95);
-  --color-primary-100: var(--md-ref-palette-primary-90);
-  --color-primary-200: var(--md-ref-palette-primary-80);
-  --color-primary-300: var(--md-ref-palette-primary-70);
-  --color-primary-400: var(--md-ref-palette-primary-60);
-  --color-primary-500: var(--md-ref-palette-primary-50);
-  --color-primary-600: var(--md-ref-palette-primary-40);
-  --color-primary-700: var(--md-ref-palette-primary-30);
-  --color-primary-800: var(--md-ref-palette-primary-20);
-  --color-primary-900: var(--md-ref-palette-primary-10);
-  --color-primary-950: var(--md-ref-palette-primary-5);
-
-  --color-secondary-50: var(--md-ref-palette-secondary-95);
-  --color-secondary-100: var(--md-ref-palette-secondary-90);
-  --color-secondary-200: var(--md-ref-palette-secondary-80);
-  --color-secondary-300: var(--md-ref-palette-secondary-70);
-  --color-secondary-400: var(--md-ref-palette-secondary-60);
-  --color-secondary-500: var(--md-ref-palette-secondary-50);
-  --color-secondary-600: var(--md-ref-palette-secondary-40);
-  --color-secondary-700: var(--md-ref-palette-secondary-30);
-  --color-secondary-800: var(--md-ref-palette-secondary-20);
-  --color-secondary-900: var(--md-ref-palette-secondary-10);
-  --color-secondary-950: var(--md-ref-palette-secondary-5);
-
-  --color-tertiary-50: var(--md-ref-palette-tertiary-95);
-  --color-tertiary-100: var(--md-ref-palette-tertiary-90);
-  --color-tertiary-200: var(--md-ref-palette-tertiary-80);
-  --color-tertiary-300: var(--md-ref-palette-tertiary-70);
-  --color-tertiary-400: var(--md-ref-palette-tertiary-60);
-  --color-tertiary-500: var(--md-ref-palette-tertiary-50);
-  --color-tertiary-600: var(--md-ref-palette-tertiary-40);
-  --color-tertiary-700: var(--md-ref-palette-tertiary-30);
-  --color-tertiary-800: var(--md-ref-palette-tertiary-20);
-  --color-tertiary-900: var(--md-ref-palette-tertiary-10);
-  --color-tertiary-950: var(--md-ref-palette-tertiary-5);
-
-  --color-error-50: var(--md-ref-palette-error-95);
-  --color-error-100: var(--md-ref-palette-error-90);
-  --color-error-200: var(--md-ref-palette-error-80);
-  --color-error-300: var(--md-ref-palette-error-70);
-  --color-error-400: var(--md-ref-palette-error-60);
-  --color-error-500: var(--md-ref-palette-error-50);
-  --color-error-600: var(--md-ref-palette-error-40);
-  --color-error-700: var(--md-ref-palette-error-30);
-  --color-error-800: var(--md-ref-palette-error-20);
-  --color-error-900: var(--md-ref-palette-error-10);
-  --color-error-950: var(--md-ref-palette-error-5);
-
-  --color-neutral-50: var(--md-ref-palette-neutral-95);
-  --color-neutral-100: var(--md-ref-palette-neutral-90);
-  --color-neutral-200: var(--md-ref-palette-neutral-80);
-  --color-neutral-300: var(--md-ref-palette-neutral-70);
-  --color-neutral-400: var(--md-ref-palette-neutral-60);
-  --color-neutral-500: var(--md-ref-palette-neutral-50);
-  --color-neutral-600: var(--md-ref-palette-neutral-40);
-  --color-neutral-700: var(--md-ref-palette-neutral-30);
-  --color-neutral-800: var(--md-ref-palette-neutral-20);
-  --color-neutral-900: var(--md-ref-palette-neutral-10);
-  --color-neutral-950: var(--md-ref-palette-neutral-5);
-
-  --color-neutral-variant-50: var(--md-ref-palette-neutral-variant-95);
-  --color-neutral-variant-100: var(--md-ref-palette-neutral-variant-90);
-  --color-neutral-variant-200: var(--md-ref-palette-neutral-variant-80);
-  --color-neutral-variant-300: var(--md-ref-palette-neutral-variant-70);
-  --color-neutral-variant-400: var(--md-ref-palette-neutral-variant-60);
-  --color-neutral-variant-500: var(--md-ref-palette-neutral-variant-50);
-  --color-neutral-variant-600: var(--md-ref-palette-neutral-variant-40);
-  --color-neutral-variant-700: var(--md-ref-palette-neutral-variant-30);
-  --color-neutral-variant-800: var(--md-ref-palette-neutral-variant-20);
-  --color-neutral-variant-900: var(--md-ref-palette-neutral-variant-10);
-  --color-neutral-variant-950: var(--md-ref-palette-neutral-variant-5);
-
-  /*
-   * Custom colors
-   */
-
-  --color-myCustomColor1: var(--md-sys-color-my-custom-color-1);
-  --color-on-myCustomColor1: var(--md-sys-color-on-my-custom-color-1);
-  --color-myCustomColor1-container: var(
-    --md-sys-color-my-custom-color-1-container
-  );
-  --color-on-myCustomColor1-container: var(
-    --md-sys-color-on-my-custom-color-1-container
-  );
-  /* Shades */
-  --color-myCustomColor1-50: var(--md-ref-palette-my-custom-color-1-95);
-  --color-myCustomColor1-100: var(--md-ref-palette-my-custom-color-1-90);
-  --color-myCustomColor1-200: var(--md-ref-palette-my-custom-color-1-80);
-  --color-myCustomColor1-300: var(--md-ref-palette-my-custom-color-1-70);
-  --color-myCustomColor1-400: var(--md-ref-palette-my-custom-color-1-60);
-  --color-myCustomColor1-500: var(--md-ref-palette-my-custom-color-1-50);
-  --color-myCustomColor1-600: var(--md-ref-palette-my-custom-color-1-40);
-  --color-myCustomColor1-700: var(--md-ref-palette-my-custom-color-1-30);
-  --color-myCustomColor1-800: var(--md-ref-palette-my-custom-color-1-20);
-  --color-myCustomColor1-900: var(--md-ref-palette-my-custom-color-1-10);
-  --color-myCustomColor1-950: var(--md-ref-palette-my-custom-color-1-5);
-
-  --color-myCustomColor2: var(--md-sys-color-my-custom-color-2);
-  --color-on-myCustomColor2: var(--md-sys-color-on-my-custom-color-2);
-  --color-myCustomColor2-container: var(
-    --md-sys-color-my-custom-color-2-container
-  );
-  --color-on-myCustomColor2-container: var(
-    --md-sys-color-on-my-custom-color-2-container
-  );
-  /* Shades */
-  --color-myCustomColor2-50: var(--md-ref-palette-my-custom-color-2-95);
-  --color-myCustomColor2-100: var(--md-ref-palette-my-custom-color-2-90);
-  --color-myCustomColor2-200: var(--md-ref-palette-my-custom-color-2-80);
-  --color-myCustomColor2-300: var(--md-ref-palette-my-custom-color-2-70);
-  --color-myCustomColor2-400: var(--md-ref-palette-my-custom-color-2-60);
-  --color-myCustomColor2-500: var(--md-ref-palette-my-custom-color-2-50);
-  --color-myCustomColor2-600: var(--md-ref-palette-my-custom-color-2-40);
-  --color-myCustomColor2-700: var(--md-ref-palette-my-custom-color-2-30);
-  --color-myCustomColor2-800: var(--md-ref-palette-my-custom-color-2-20);
-  --color-myCustomColor2-900: var(--md-ref-palette-my-custom-color-2-10);
-  --color-myCustomColor2-950: var(--md-ref-palette-my-custom-color-2-5);
+  --color-inverse-on-surface: var(--md-sys-color-inverse-on-surface);
+  --color-inverse-primary: var(--md-sys-color-inverse-primary);
+  --color-inverse-surface: var(--md-sys-color-inverse-surface);
+  --color-on-background: var(--md-sys-color-on-background);
+  --color-on-error: var(--md-sys-color-on-error);
+  /* ... */
 }
 ```
 
-Or simply:
+115 names in all — every M3 scheme token, plus eleven Tailwind shades for each
+of `primary`, `secondary`, `tertiary`, `error`, `neutral` and
+`neutral-variant`.
 
-```css
-@import "material-theme-builder/tailwind.css";
-```
-
-> [!IMPORTANT]
->
-> Do not forget to manually add your custom colors, as in:
->
-> ```css
-> /*
->  * Custom colors
->  */
->
-> --color-myCustomColor1: var(--md-sys-color-my-custom-color-1);
-> --color-on-myCustomColor1: var(--md-sys-color-on-my-custom-color-1);
-> --color-myCustomColor1-container: var(
->   --md-sys-color-my-custom-color-1-container
-> );
-> --color-on-myCustomColor1-container: var(
->   --md-sys-color-on-my-custom-color-1-container
-> );
-> /* Shades */
-> --color-myCustomColor1-50: var(--md-ref-palette-my-custom-color-1-95);
-> --color-myCustomColor1-100: var(--md-ref-palette-my-custom-color-1-90);
-> --color-myCustomColor1-200: var(--md-ref-palette-my-custom-color-1-80);
-> --color-myCustomColor1-300: var(--md-ref-palette-my-custom-color-1-70);
-> --color-myCustomColor1-400: var(--md-ref-palette-my-custom-color-1-60);
-> --color-myCustomColor1-500: var(--md-ref-palette-my-custom-color-1-50);
-> --color-myCustomColor1-600: var(--md-ref-palette-my-custom-color-1-40);
-> --color-myCustomColor1-700: var(--md-ref-palette-my-custom-color-1-30);
-> --color-myCustomColor1-800: var(--md-ref-palette-my-custom-color-1-20);
-> --color-myCustomColor1-900: var(--md-ref-palette-my-custom-color-1-10);
-> --color-myCustomColor1-950: var(--md-ref-palette-my-custom-color-1-5);
->
-> --color-myCustomColor2: var(--md-sys-color-my-custom-color-2);
-> --color-on-myCustomColor2: var(--md-sys-color-on-my-custom-color-2);
-> --color-myCustomColor2-container: var(
->   --md-sys-color-my-custom-color-2-container
-> );
-> --color-on-myCustomColor2-container: var(
->   --md-sys-color-on-my-custom-color-2-container
-> );
-> /* Shades */
-> --color-myCustomColor2-50: var(--md-ref-palette-my-custom-color-2-95);
-> --color-myCustomColor2-100: var(--md-ref-palette-my-custom-color-2-90);
-> --color-myCustomColor2-200: var(--md-ref-palette-my-custom-color-2-80);
-> --color-myCustomColor2-300: var(--md-ref-palette-my-custom-color-2-70);
-> --color-myCustomColor2-400: var(--md-ref-palette-my-custom-color-2-60);
-> --color-myCustomColor2-500: var(--md-ref-palette-my-custom-color-2-50);
-> --color-myCustomColor2-600: var(--md-ref-palette-my-custom-color-2-40);
-> --color-myCustomColor2-700: var(--md-ref-palette-my-custom-color-2-30);
-> --color-myCustomColor2-800: var(--md-ref-palette-my-custom-color-2-20);
-> --color-myCustomColor2-900: var(--md-ref-palette-my-custom-color-2-10);
-> --color-myCustomColor2-950: var(--md-ref-palette-my-custom-color-2-5);
-> ```
+</details>
 
 ## shadcn
 
@@ -378,17 +225,155 @@ Pre-requisites:
 - You should use
   [`tailwind.cssVariables`](https://ui.shadcn.com/docs/theming#css-variables)
 
-Simply override/remap
-[shadcn's CSS variables](https://ui.shadcn.com/docs/theming#list-of-variables):
+One command, from inside your project:
+
+```sh
+$ npx material-theme-builder shadcn-apply "#6750A4"
+```
+
+Or from nothing at all — `shadcn-init` scaffolds a stock shadcn app
+(`shadcn init --preset b0 --template vite`), themes it and starts it:
+
+```sh
+$ npx material-theme-builder shadcn-init "#6750A4"
+```
+
+The verbs are shadcn's own — there, `init` is the new project and `apply` the
+existing one — and they are prefixed because shadcn is one integration here
+among Figma, CSS, Tailwind and Flutter: a bare `init` would read as "initialize
+material-theme-builder", and would leave no room for a `tailwind-init` later.
+
+Anything after a `--` is forwarded verbatim to the shadcn command underneath —
+`shadcn init` for `shadcn-init`, `shadcn add` for `shadcn-apply` — so
+`shadcn-init "#6750A4" -- --template next -n my-app` scaffolds Next instead.
+Options of ours go before the separator; one written after it is refused, rather
+than forwarded into an error from shadcn about a flag it has never heard of.
+`--print` writes the equivalent shell chain and runs nothing.
+
+`--shadcn-cli <spec>` pins which shadcn runs — `--shadcn-cli shadcn@4.18.0`, a
+tag, a fork, anything `npx` resolves — defaulting to `shadcn@latest`. (Not
+`--shadcn`: the root command has used that name since 3.2.0 for something else
+entirely, a boolean that appends the alias block to `--format tailwind`.) It
+reaches for neighbouring versions rather than back in time, though: the defaults
+these commands pass are shadcn 4.x vocabulary (`--preset b0` is a 4.x preset
+code), so pinning far enough back also means passing that era's preset after the
+`--`.
+
+Both do the same two things by hand, if you would rather: generate a registry
+item for your source color, and install it the way you install any shadcn theme.
+
+```sh
+$ npx material-theme-builder "#6750A4" --format registry-item > mtb.json
+$ npx shadcn@latest add ./mtb.json && rm mtb.json
+```
+
+Either way, that rewrites the values inside your existing `:root` and `.dark`
+blocks, in place, pointing
+[shadcn's CSS variables](https://ui.shadcn.com/docs/theming#list-of-variables)
+at the M3 custom properties `<Mtb>` emits — so every shadcn component follows
+whichever theme is above it in the tree — and leaves that theme's own colors in
+as the `var()` fallbacks:
 
 ```css
 :root {
-  /* ... */
-}
-.dark {
-  /* ... */
+  --card: var(--md-sys-color-surface-container-low, oklch(0.968 0.012 317.742));
 }
 
+.dark {
+  --card: var(--md-sys-color-surface-container-low, oklch(0.227 0.01 303.714));
+}
+```
+
+So it works both ways round: live under an `<Mtb>`, and static — server-rendered,
+zero client JS — anywhere there is none.
+
+Every option lands in those fallbacks, `--scheme` and `--contrast` included, and
+`shadcn-init` and `shadcn-apply` take them all — so the item they generate is the one the
+by-hand route would have produced:
+
+```sh
+$ npx material-theme-builder shadcn-apply "#6750A4" --scheme vibrant --contrast 0.5
+```
+
+`--no-fallback` leaves the fallbacks out, on all three. `--custom-colors` is the
+one option the two subcommands do not take, and that is not an oversight:
+shadcn's variable set is fixed, so no component reads a custom color and a
+registry item cannot carry one.
+
+> [!WARNING]
+>
+> `shadcn add` overwrites shadcn's own `oklch()` values rather than keeping them
+> anywhere, so they are not a safety net. Where nothing declares the M3
+> properties _and_ there are no fallbacks, every variable resolves to nothing and
+> components render transparent — `git diff` your CSS, or re-run `shadcn init`,
+> to get shadcn's defaults back.
+
+> [!NOTE]
+>
+> shadcn's CLI also appends a self-referential `--card: var(--card);` per
+> variable to your `@theme inline` block. It is noise, not a bug on your side:
+> those land _above_ your `:root`, so the real values win. Delete them if they
+> bother you.
+
+For the opposite trade — concrete `oklch()` values and no `var()` at all, frozen
+at build time — see [`toShadcn()`](#programmatic-api).
+
+<details>
+<summary>Install the mapping alone, without generating anything</summary>
+
+The package publishes one too, so `shadcn add` has something to fetch without a
+build step of yours:
+
+```sh
+$ npx shadcn@latest add https://unpkg.com/material-theme-builder/registry-item.json
+```
+
+It is the mapping and nothing else — 31 `var()` references, no colors. Which is
+why it can be published at all: it is the same file whatever your source color,
+scheme or contrast, because those arrive at runtime from `<Mtb>`. And that is
+also its one requirement — mount an `<Mtb>`, or emit
+[`toCss()`](#programmatic-api) server-side, or nothing resolves. Generate your
+own, as above, to have colors to fall back on.
+
+</details>
+
+<details>
+<summary>Rather import a stylesheet than let the CLI edit your file</summary>
+
+A stylesheet is shipped too, for setups that would rather keep the mapping in
+one line they can delete:
+
+```css
+@import "tailwindcss";
+@import "./shadcn.css"; /* shadcn's own `:root` and `.dark` */
+@import "material-theme-builder/shadcn.css"; /* ...then ours */
+```
+
+> [!IMPORTANT]
+>
+> It has to come AFTER shadcn's own `:root { ... }` and `.dark { ... }`, which
+> it overrides — so **not** at the top with your other imports, which is where
+> an `@import` normally goes and where this one silently loses:
+>
+> ```css
+> /* ✗ `--card` falls back to shadcn's grey; nothing warns you */
+> @import "tailwindcss";
+> @import "material-theme-builder/shadcn.css";
+> @import "./shadcn.css";
+> ```
+>
+> The registry item above exists to make this impossible to get wrong.
+
+</details>
+
+<details>
+<summary>The variables it remaps</summary>
+
+Both halves are generated from [`toShadcnAliases()`](#programmatic-api) and
+[`toShadcnRegistryItem()`](#programmatic-api), off one mapping, so neither can
+drift from the other:
+
+```css
 :root,
 .dark {
   --background: var(--md-sys-color-surface);
@@ -425,6 +410,8 @@ Simply override/remap
 }
 ```
 
+</details>
+
 <details>
   <summary>mapping details</summary>
   see:
@@ -432,11 +419,6 @@ Simply override/remap
     - https://chatgpt.com/share/6899f20a-422c-8011-a072-62fb649589a0
     - https://gemini.google.com/share/51e072b6f1d2
 </details>
-
-> [!IMPORTANT]
->
-> Make sure `:root, .dark { ... }` comes AFTER `.root { ... } .dark { ... }` to
-> take precedence.
 
 # Dev
 
@@ -476,6 +458,39 @@ $ pnpm run lgtm
 ```
 
 ## CONTRIBUTING
+
+```bash
+pnpm run storybook # the day-to-day loop -- no build needed, the stylesheets regenerate as you edit
+pnpm run build     # dist/, plus the generated stylesheets -- both gitignored
+pnpm run lgtm      # everything CI checks
+```
+
+`tailwind.css`, `shadcn.css` and `registry-item.json` are generated — from
+`toTailwind()`, `toShadcnAliases()` and `toShadcnRegistryItem()` — and
+gitignored. `pnpm run build` writes them (`scripts/generate.mjs`); the two
+stylesheets also get a `src/` copy, which is what Storybook `@import`s, and in
+Storybook a Vite plugin (`.storybook/main.ts`) rewrites those at server start
+and again on every edit under `src/lib/`, so the stories never show a stale
+vocabulary.
+
+`generate.mjs` builds the registry item without `{ fallback: true }`, which is
+what keeps every one of those outputs a function of the _mapping_ rather than of
+a color: `SOURCE` there is arbitrary, and has to stay able to be. The fallback
+variant belongs to whoever knows a real source color — the CLI's
+`--format registry-item`.
+
+`src/styles/shadcn.css` is the other half of that arrangement, and is _not_
+generated from anything here: it is pristine `shadcn init --preset b0` output,
+committed verbatim — regenerate it with the recipe in its own header. Same for
+the components, via `pnpm dlx shadcn@latest add <item> --overwrite`. All of it
+is exempt from Prettier and from the repo's own lint conventions, so that a
+regeneration diffs to nothing; see `.prettierignore` and `SHADCN_FILES` in
+`eslint.config.mjs` for which paths `components.json` makes shadcn's territory.
+
+The `Shadcn/dashboard-01` story is what checks the shadcn mapping end to end: it
+renders one of [shadcn's blocks](https://ui.shadcn.com/blocks), unmodified,
+under `<Mtb>`. Every other story paints from the M3 vocabulary directly, so none
+of them would notice `shadcn.css` pointing a variable at the wrong role.
 
 When submitting a pull request, please include a changeset to document your
 changes:

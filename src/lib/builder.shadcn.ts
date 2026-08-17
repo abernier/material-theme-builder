@@ -66,6 +66,33 @@ export type ShadcnTheme = {
   dark: Record<ShadcnVarName, string>;
 };
 
+/**
+ * A shadcn registry item carrying the alias mapping, as
+ * `toShadcnRegistryItem()` returns it.
+ *
+ * @see https://ui.shadcn.com/schema/registry-item.json
+ */
+export type ShadcnRegistryItem = {
+  $schema: string;
+  name: string;
+  type: "registry:theme";
+  title: string;
+  description: string;
+  cssVars: ShadcnTheme;
+};
+
+/** Options for `toShadcnRegistryItem()`. */
+export type ShadcnRegistryItemOptions = {
+  /**
+   * Embed this theme's concrete colors as the `var()` fallbacks, so the item
+   * also works where nothing declares the M3 custom properties. Off by default
+   * — see `buildShadcnRegistryItem()` for why.
+   *
+   * @default false
+   */
+  fallback?: boolean;
+};
+
 // ─── sRGB → OKLCh ────────────────────────────────────────────────────────
 //
 // A fixed sRGB → linear → OKLab → OKLCh pipeline, in-repo rather than via a
@@ -125,6 +152,111 @@ function toShadcnVars(mergedColors: Record<string, number>) {
   });
 
   return Object.fromEntries(entries) as Record<ShadcnVarName, string>;
+}
+
+// shadcn's variables pointing at the `--{prefix}-sys-color-*` custom
+// properties, keyed by bare variable name. The one place the alias values are
+// spelled; both renderings below read it, so the CSS block and the registry
+// item cannot disagree about what points where.
+//
+// `fallbacks`, when given, goes inside the `var()` as the second argument —
+// what the property resolves to where nothing declares the M3 custom
+// properties. Keyed the same way, so one mode's concrete colors drop straight
+// in.
+function toShadcnAliasVars(
+  prefix: string,
+  fallbacks?: Record<ShadcnVarName, string>,
+) {
+  const entries = SHADCN_MAPPING.map(([cssVar, m3Token]) => {
+    const bare = cssVar.slice(2) as ShadcnVarName;
+    const property = `--${prefix}-sys-color-${m3Token}`;
+
+    return [
+      bare,
+      fallbacks ? `var(${property}, ${fallbacks[bare]})` : `var(${property})`,
+    ];
+  });
+
+  return Object.fromEntries(entries) as Record<ShadcnVarName, string>;
+}
+
+/**
+ * Generate the shadcn alias block — shadcn's variables pointing at the
+ * `--{prefix}-sys-color-*` custom properties `toCss()` / `<Mtb>` emit.
+ *
+ * The counterpart of `buildShadcn()`: same mapping, but `var()` references
+ * rather than concrete values, so the colors follow whichever `<Mtb>` is above
+ * them in the tree instead of being frozen at build time. This is what
+ * `material-theme-builder/shadcn.css` is generated from, and what
+ * `toTailwind({ shadcn: true })` appends.
+ *
+ * `:root, .dark` rather than one or the other: both modes read the same M3
+ * properties, which is where the light/dark split already happened. It has to
+ * come after shadcn's own `:root` and `.dark` blocks to win — which is the one
+ * thing a reader has to know, and the reason
+ * `buildShadcnRegistryItem()` exists.
+ */
+export function buildShadcnAliases(ctx: BuilderContext) {
+  const lines = Object.entries(toShadcnAliasVars(ctx.prefix)).map(
+    ([name, value]) => `--${name}: ${value};`,
+  );
+
+  return `:root,\n.dark {\n  ${lines.join("\n  ")}\n}\n`;
+}
+
+/**
+ * Generate the same alias mapping as `toShadcnAliases()`, shaped as a shadcn
+ * registry item — installable with `shadcn add`.
+ *
+ * Why both: the stylesheet has to be imported *after* shadcn's own `:root` and
+ * `.dark` to win the cascade, and the natural place for an `@import` is at the
+ * top of the file with the others — which is exactly where it silently loses.
+ * A registry item has no ordering to get wrong: the CLI rewrites the values
+ * inside shadcn's existing blocks, in place, which is also the gesture every
+ * other shadcn theme uses.
+ *
+ * The values stay `var()` references, so this is not `toShadcn()` in a
+ * wrapper: the colors still follow whichever `<Mtb>` is above them at runtime,
+ * where `toShadcn()` freezes them at build time.
+ *
+ * With `fallback`, this theme's concrete colors go inside those `var()`s as the
+ * second argument — so the item keeps following `<Mtb>` where one is mounted,
+ * and resolves to these colors where nothing declares the M3 properties, rather
+ * than to nothing at all. That is worth having, and it is also why it is off by
+ * default: the item the package publishes is generated from an arbitrary source
+ * color, so baked fallbacks there would ship one theme nobody asked for. Turn
+ * it on when the source color came from the caller — which is what the CLI's
+ * `--format registry-item` does.
+ *
+ * Without `fallback`, `light` and `dark` carry the same values, since both read
+ * the same M3 properties — see `buildShadcnAliases()`. The CLI writes each into
+ * its own block, so they cannot be collapsed into one; with `fallback` they
+ * genuinely differ, each mode falling back to its own colors.
+ */
+export function buildShadcnRegistryItem(
+  ctx: BuilderContext,
+  { fallback = false }: ShadcnRegistryItemOptions = {},
+): ShadcnRegistryItem {
+  const concrete = fallback ? buildShadcn(ctx) : undefined;
+
+  // Called once per mode rather than spread from one object: each mode needs
+  // its own fallbacks, and a fresh object per call also keeps a caller's
+  // mutation of one mode out of the other.
+  const vars = (mode: keyof ShadcnTheme) =>
+    toShadcnAliasVars(ctx.prefix, concrete?.[mode]);
+
+  return {
+    $schema: "https://ui.shadcn.com/schema/registry-item.json",
+    name: "material-theme-builder",
+    type: "registry:theme",
+    title: "Material Theme Builder",
+    description: `Points shadcn's CSS variables at the M3 custom properties \`<Mtb>\` emits, so every shadcn component follows whichever theme is above it in the tree.${
+      fallback
+        ? " Falls back to this theme's own colors where no `<Mtb>` is mounted."
+        : ""
+    }`,
+    cssVars: { light: vars("light"), dark: vars("dark") },
+  };
 }
 
 /**

@@ -1,32 +1,8 @@
 import { kebabCase } from "lodash-es";
 
 import type { BuilderContext } from "./builder";
-import { SHADCN_MAPPING } from "./builder.shadcn";
-
-// Tailwind shade → M3 tone mapping
-const SHADE_TO_TONE = [
-  [50, 95],
-  [100, 90],
-  [200, 80],
-  [300, 70],
-  [400, 60],
-  [500, 50],
-  [600, 40],
-  [700, 30],
-  [800, 20],
-  [900, 10],
-  [950, 5],
-] as const;
-
-// Core palette names that receive shade mappings
-const CORE_PALETTES = [
-  "primary",
-  "secondary",
-  "tertiary",
-  "error",
-  "neutral",
-  "neutral-variant",
-] as const;
+import { buildShadcnAliases } from "./builder.shadcn";
+import { CORE_PALETTES, SHADE_TO_TONE } from "./tokens";
 
 /** Options for the Tailwind CSS exporter. */
 export type TailwindOptions = {
@@ -84,13 +60,10 @@ export function buildTailwind(ctx: BuilderContext, options?: TailwindOptions) {
 
   let output = `@theme inline {\n  ${lines.join("\n  ")}\n}\n`;
 
-  if (options?.shadcn) {
-    const shadcnLines = SHADCN_MAPPING.map(
-      ([shadcnVar, m3Token]) =>
-        `${shadcnVar}: var(--${prefix}-sys-color-${m3Token});`,
-    );
-    output += `\n:root,\n.dark {\n  ${shadcnLines.join("\n  ")}\n}\n`;
-  }
+  // The same block `material-theme-builder/shadcn.css` is generated from --
+  // one mapping, so a `shadcn: true` inline copy and the shipped file cannot
+  // say different things.
+  if (options?.shadcn) output += `\n${buildShadcnAliases(ctx)}`;
 
   return output;
 }
