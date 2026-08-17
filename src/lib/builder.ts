@@ -107,6 +107,8 @@ export type MtbConfig = {
   /**
    * Array of custom colors to include in the generated palette.
    * Each custom color can be blended with the source color for harmonization.
+   *
+   * @see https://m3.material.io/blog/dynamic-color-harmony
    */
   customColors?: HexCustomColor[];
   /**
@@ -136,7 +138,14 @@ export const DEFAULT_BLEND = true;
 /** Default CSS custom-property prefix. */
 export const DEFAULT_PREFIX = "md";
 
-/** The 28 standard tone values used in Material You tonal palettes. */
+/**
+ * The 28 standard tone values used in Material You tonal palettes.
+ *
+ * Tones are perceptual lightness in HCT, which is why the same tone reads as
+ * the same contrast across hues.
+ *
+ * @see https://m3.material.io/blog/science-of-color-design
+ */
 export const STANDARD_TONES = [
   0, 4, 5, 6, 10, 12, 15, 17, 20, 22, 24, 25, 30, 35, 40, 50, 60, 70, 80, 87,
   90, 92, 94, 95, 96, 98, 99, 100,
@@ -173,7 +182,15 @@ export const schemeToVariant = {
  *
  * Centralizes both the canonical list of scheme tokens and their M3 color role semantics.
  *
- * @see https://m3.material.io/styles/color/the-color-system/color-roles
+ * The Material Design blog is the best source on *why* these roles are shaped
+ * the way they are — the spec pages state the what, the blog posts the
+ * reasoning, and they are where role changes get announced first (the
+ * tone-based surfaces post is what documents `surface-variant` giving way to
+ * `surface-container-highest`).
+ *
+ * @see https://m3.material.io/styles/color/roles
+ * @see https://m3.material.io/blog/tone-based-surface-color-m3
+ * @see https://m3.material.io/blog/science-of-color-design
  */
 export const tokenDescriptions = {
   background: "Default background color for screens and large surfaces.",
@@ -388,7 +405,7 @@ function mergeBaseAndCustomColors(
   // 3. <colorname>-container
   // 4. on-<colorname>-container
   //
-  // Based on Material Design 3 spec: https://m3.material.io/styles/color/the-color-system/color-roles
+  // Based on Material Design 3 spec: https://m3.material.io/styles/color/roles
   //
   const customVars: Record<string, number> = {};
 
