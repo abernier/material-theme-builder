@@ -154,14 +154,26 @@ const renderSchemes =
     </Mtb>
   );
 
+//
+//  ██████  ███████ ███████ ██  ██████ ██  █████  ██
+// ██    ██ ██      ██      ██ ██      ██ ██   ██ ██
+// ██    ██ █████   █████   ██ ██      ██ ███████ ██
+// ██    ██ ██      ██      ██ ██      ██ ██   ██ ██
+//  ██████  ██      ██      ██  ██████ ██ ██   ██ ███████
+//
+
 /**
- * Exactly what the official Material Theme Builder app displays: the default
- * minus the fixed accent colors, which its poster does not draw.
+ * Exactly what the official Material Theme Builder app displays — no more, no
+ * less.
+ *
+ * The default adds the fixed accent colors, which the app's poster does not
+ * draw even though its own export contains them. This story pins the reference
+ * so any drift from it stays visible.
  *
  * @see https://material-foundation.github.io/material-theme-builder/
  */
-export const PosterSt: Story = {
-  name: "[fixedAccents=false] (official poster)",
+export const OfficialPosterSt: Story = {
+  name: "Official poster",
   args: St1.args,
   render: renderSchemes({ fixedAccents: false }),
 };
