@@ -150,7 +150,7 @@ export function Scheme({
   theme,
   title = "",
   customColors,
-  fixedAccents = false,
+  fixedAccents = true,
   surfaceTint = false,
   background = false,
   surfaceVariant = false,
@@ -166,7 +166,8 @@ export function Scheme({
    * Show the 12 `*-fixed`, `*-fixed-dim` and `on-*-fixed*` roles, which keep
    * the same color between light and dark themes.
    *
-   * Current M3 roles — the official app's poster just does not draw them.
+   * Current M3 roles, hence the only extra one on by default. The official
+   * app's poster does not draw them, so pass `false` to match it exactly.
    *
    * @see https://m3.material.io/styles/color/roles
    */

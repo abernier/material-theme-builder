@@ -129,8 +129,8 @@ export const St1: Story = {
 
 /**
  * The light and dark schemes side by side, with the given extra roles switched
- * on. With none of them, `Scheme` renders exactly the official Material Theme
- * Builder poster.
+ * on. By default `Scheme` draws the poster plus the fixed accent colors; every
+ * other extra is opt-in.
  */
 const renderSchemes =
   (extraRoles: Partial<ComponentProps<typeof Scheme>>): Story["render"] =>
@@ -154,23 +154,23 @@ const renderSchemes =
     </Mtb>
   );
 
-/** The current, non-deprecated extras — one at a time, then both. */
-export const FixedAccentsSt: Story = {
-  name: "[fixedAccents]",
+/**
+ * Exactly what the official Material Theme Builder app displays: the default
+ * minus the fixed accent colors, which its poster does not draw.
+ *
+ * @see https://material-foundation.github.io/material-theme-builder/
+ */
+export const PosterSt: Story = {
+  name: "[fixedAccents=false] (official poster)",
   args: St1.args,
-  render: renderSchemes({ fixedAccents: true }),
+  render: renderSchemes({ fixedAccents: false }),
 };
 
+/** The remaining current extra — `surface-tint` is opt-in. */
 export const SurfaceTintSt: Story = {
   name: "[surfaceTint]",
   args: St1.args,
   render: renderSchemes({ surfaceTint: true }),
-};
-
-export const FixedAccentsSurfaceTintSt: Story = {
-  name: "[fixedAccents][surfaceTint]",
-  args: St1.args,
-  render: renderSchemes({ fixedAccents: true, surfaceTint: true }),
 };
 
 /**
@@ -186,10 +186,9 @@ export const LegacyRolesSt: Story = {
 };
 
 /**
- * Every `sys.color` role the library emits — all four extras at once.
- *
- * With none of them, the default mirrors the official Material Theme Builder
- * app, whose on-screen poster is an abridged view of its own export.
+ * Every `sys.color` role the library emits — all four extras at once, matching
+ * the official Material Theme Builder *export* rather than its abridged
+ * on-screen poster.
  *
  * @see https://material-foundation.github.io/material-theme-builder/
  */
