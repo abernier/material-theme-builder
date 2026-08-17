@@ -2,7 +2,8 @@
 // to do with it -- declared once, and read back for two purposes.
 //
 // They were inline on the root command until three commands needed them: the
-// root command, `init` and `apply` all end up calling `builder()`. Written out
+// root command, `shadcn-init` and `shadcn-apply` all end up calling `builder()`.
+// Written out
 // three times, one copy would be a release behind the others, and eleven
 // descriptions is exactly the kind of thing nobody re-reads. `--print` gives the
 // subcommands a second reason to know the list rather than just declare it: the
@@ -14,15 +15,59 @@
 // `--format json|css|figma|tailwind` really do emit them. An option that provably
 // does nothing would be worse than a missing one.
 
-import { Command, Option, type OptionValues } from "commander";
+import {
+  Command,
+  InvalidArgumentError,
+  Option,
+  type OptionValues,
+} from "commander";
 
 import {
   DEFAULT_CONTRAST,
   DEFAULT_PREFIX,
   DEFAULT_SCHEME,
+  isHexColor,
   schemeNames,
   type MtbConfig,
 } from "./lib/builder";
+
+/**
+ * Commander parser for a hex color — the `<source>` argument, and every
+ * core-color override.
+ *
+ * `builder()` checks these as well, and that is not a redundant check but a
+ * second *presentation*. The library has to refuse garbage on its own account:
+ * `<Mtb source="banana">` and a programmatic caller both need it, and Material
+ * Color Utilities silently themes `banana` as `#ba0000` if nobody looks. But a
+ * thrown `Error` reaches someone at a terminal as a stack trace out of
+ * `node_modules`, which is no way to be told about a typo — so the same rule is
+ * stated once more here, where commander turns it into one line with the
+ * offending value quoted.
+ */
+export function parseHexColor(value: string) {
+  if (!isHexColor(value))
+    throw new InvalidArgumentError(
+      "Expected a hex color — 3, 6 or 8 hex digits, with or without '#' (e.g. #6750A4).",
+    );
+
+  return value;
+}
+
+/**
+ * Declare the `<source>` argument, the one input all three commands share.
+ *
+ * Here rather than written out per command, for the same reason the options are:
+ * the description and the parser have to be the same on all three, and a
+ * `<source>` that skipped the parser on one of them would answer a typo there
+ * with the stack trace this exists to avoid.
+ */
+export function addSourceArgument(command: Command) {
+  return command.argument(
+    "<source>",
+    "Source color in hex format (e.g. #6750A4)",
+    parseHexColor,
+  );
+}
 
 /** The `builder()` argument, minus the parts the CLI assembles separately. */
 export type ThemeOptions = Omit<MtbConfig, "source" | "customColors">;
@@ -61,12 +106,16 @@ export function addThemeOptions(command: Command) {
       parseFloat,
       DEFAULT_CONTRAST,
     )
-    .option("--primary <hex>", "Primary color override")
-    .option("--secondary <hex>", "Secondary color override")
-    .option("--tertiary <hex>", "Tertiary color override")
-    .option("--error <hex>", "Error color override")
-    .option("--neutral <hex>", "Neutral color override")
-    .option("--neutral-variant <hex>", "Neutral variant color override")
+    .option("--primary <hex>", "Primary color override", parseHexColor)
+    .option("--secondary <hex>", "Secondary color override", parseHexColor)
+    .option("--tertiary <hex>", "Tertiary color override", parseHexColor)
+    .option("--error <hex>", "Error color override", parseHexColor)
+    .option("--neutral <hex>", "Neutral color override", parseHexColor)
+    .option(
+      "--neutral-variant <hex>",
+      "Neutral variant color override",
+      parseHexColor,
+    )
     .option(
       "--no-fallback",
       "Omit this theme's colors as the var() fallbacks in the registry item, so it renders nothing without an <Mtb> above it",

@@ -18,14 +18,32 @@ import * as path from "node:path";
 
 import { Command } from "commander";
 import { z } from "zod";
-import { addThemeOptions, builderOptions } from "./cli.options";
+import {
+  addSourceArgument,
+  addThemeOptions,
+  builderOptions,
+} from "./cli.options";
 import { addChainOptions, runApply, runInit } from "./cli.shadcn";
-import { builder, DEFAULT_BLEND, type HexCustomColor } from "./lib/builder";
+import {
+  builder,
+  DEFAULT_BLEND,
+  isHexColor,
+  type HexCustomColor,
+} from "./lib/builder";
 
+// `hex` is refined rather than left a bare string, so that a bad color inside the
+// JSON is reported as a bad color and not as valid JSON that happens to theme
+// itself wrong -- the same rule `parseHexColor()` states for the flags, said in
+// the vocabulary this input arrives in.
 const customColorSchema = z.array(
   z.object({
     name: z.string(),
-    hex: z.string(),
+    hex: z
+      .string()
+      .refine(
+        isHexColor,
+        "must be a hex color — 3, 6 or 8 hex digits, with or without '#' (e.g. #FF5733)",
+      ),
     blend: z.boolean().default(DEFAULT_BLEND),
   }),
 ) satisfies z.ZodType<HexCustomColor[]>;
@@ -75,10 +93,11 @@ function writeOutput(
 const program = new Command();
 
 addThemeOptions(
-  program
-    .name("material-theme-builder")
-    .description("Generate a color theme from a source color")
-    .argument("<source>", "Source color in hex format (e.g. #6750A4)")
+  addSourceArgument(
+    program
+      .name("material-theme-builder")
+      .description("Generate a color theme from a source color"),
+  )
     // Required now that the theme options are declared on all three commands:
     // without it, commander matches an option against the program first, so
     // `init '#x' --scheme vibrant` would set the *program's* `--scheme` and hand
@@ -131,9 +150,26 @@ addThemeOptions(
 
     let customColors: HexCustomColor[] = [];
     if (opts.customColors) {
-      const result = customColorSchema.safeParse(JSON.parse(opts.customColors));
-      if (!result.success) {
+      // `JSON.parse` throws its own `SyntaxError`, which used to reach the
+      // terminal as a stack trace -- the same wrong answer to a typo that
+      // `parseHexColor()` exists to avoid, one layer out.
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(opts.customColors);
+      } catch {
         console.error("Error: --custom-colors must be valid JSON");
+        process.exit(1);
+      }
+
+      const result = customColorSchema.safeParse(parsed);
+      if (!result.success) {
+        // Zod's first issue, with the path it came from: `0.hex` says which
+        // color of the array, where "must be valid JSON" said nothing.
+        const issue = result.error.issues[0];
+        const where = issue?.path.length ? ` at ${issue.path.join(".")}` : "";
+        console.error(
+          `Error: --custom-colors${where}: ${issue?.message ?? "is invalid"}`,
+        );
         process.exit(1);
       }
       customColors = result.data;
@@ -168,16 +204,16 @@ addThemeOptions(
 
 addChainOptions(
   addThemeOptions(
-    program
-      .command("shadcn-init")
-      .description(
-        "Scaffold a new shadcn app themed from a source color, and start it",
-      )
-      .argument("<source>", "Source color in hex format (e.g. #6750A4)")
-      .argument(
-        "[shadcn-args...]",
-        "Options after a `--`, forwarded verbatim to `shadcn init`",
-      ),
+    addSourceArgument(
+      program
+        .command("shadcn-init")
+        .description(
+          "Scaffold a new shadcn app themed from a source color, and start it",
+        ),
+    ).argument(
+      "[shadcn-args...]",
+      "Options after a `--`, forwarded verbatim to `shadcn init`",
+    ),
   ),
 ).action((source: string, shadcnArgs: string[], _opts, command: Command) =>
   runInit(source, shadcnArgs, command),
@@ -185,14 +221,14 @@ addChainOptions(
 
 addChainOptions(
   addThemeOptions(
-    program
-      .command("shadcn-apply")
-      .description("Theme the shadcn project in the current directory")
-      .argument("<source>", "Source color in hex format (e.g. #6750A4)")
-      .argument(
-        "[shadcn-args...]",
-        "Options after a `--`, forwarded verbatim to `shadcn add`",
-      ),
+    addSourceArgument(
+      program
+        .command("shadcn-apply")
+        .description("Theme the shadcn project in the current directory"),
+    ).argument(
+      "[shadcn-args...]",
+      "Options after a `--`, forwarded verbatim to `shadcn add`",
+    ),
   ),
 ).action((source: string, shadcnArgs: string[], _opts, command: Command) =>
   runApply(source, shadcnArgs, command),

@@ -442,6 +442,36 @@ describe("cli › backward compatibility", () => {
     },
   );
 
+  // The library throws on a bad hex; what is checked here is the CLI's answer to
+  // one -- a single line from commander with the value quoted, not the stack
+  // trace a thrown `Error` from `builder()` would have produced.
+  it.runIf(fs.existsSync(cli)).each([
+    ["a bad source", ["banana", "--format", "shadcn"], "argument 'source'"],
+    [
+      "a bad core color",
+      ["#6750A4", "--primary", "banana"],
+      "option '--primary <hex>'",
+    ],
+    [
+      "a bad custom color",
+      ["#6750A4", "--custom-colors", '[{"name":"brand","hex":"banana"}]'],
+      "--custom-colors at 0.hex",
+    ],
+  ] as const)("should refuse %s in one line", (_, args, where) => {
+    let message = "";
+    try {
+      run([...args]);
+    } catch (error) {
+      message = String((error as { stderr?: string }).stderr ?? error);
+    }
+
+    expect(message).toContain(where);
+    // The shared clause: commander's parser says "Expected a hex color", zod's
+    // refinement "must be a hex color", each reading as its own sentence.
+    expect(message).toContain("3, 6 or 8 hex digits");
+    expect(message).not.toContain("node_modules");
+  });
+
   it.runIf(fs.existsSync(cli))("should list the subcommands in --help", () => {
     const help = run(["--help"]);
 

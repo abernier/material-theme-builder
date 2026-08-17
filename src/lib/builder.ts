@@ -158,6 +158,57 @@ export const DEFAULT_CUSTOM_COLORS: HexCustomColor[] = [];
 /** Default blend mode — harmonize custom colors with source. */
 export const DEFAULT_BLEND = true;
 
+// ─── Hex validation ──────────────────────────────────────────────────────
+//
+// Material Color Utilities validates hex by *length alone*: it strips a leading
+// `#`, accepts 3, 6 or 8 characters, and then runs `parseInt` on each pair --
+// where a pair that is not hex yields `NaN` and lands as 0. So `argbFromHex`
+// converts `banana` without complaint, into the same theme as `#ba0000`, and
+// `bananas` is rejected only for being seven characters long.
+//
+// Every hex this module takes -- the source, the six core-color overrides, each
+// custom color -- reaches `argbFromHex`, so every one of them has that hole.
+
+const HEX_COLOR = /^#?(?:[0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i;
+
+/**
+ * Whether `value` is a hex color that converts to the color it spells.
+ *
+ * Exactly what Material Color Utilities accepts, minus what it only appears to:
+ * the same three lengths, with the characters required to be hex digits. The CLI
+ * reads it too, to refuse a bad value with one line instead of a stack trace.
+ */
+export function isHexColor(value: string) {
+  return HEX_COLOR.test(value);
+}
+
+function assertHexColor(label: string, value: string) {
+  if (!isHexColor(value))
+    throw new Error(
+      `Invalid ${label}: '${value}'. Expected a hex color — 3, 6 or 8 hex digits, with or without '#' (e.g. #6750A4).`,
+    );
+}
+
+// Checked together at the entry, rather than at each of the five `argbFromHex`
+// calls below: those run interleaved with real work, so a bad `customColors[2]`
+// would be reported -- if at all -- after two palettes had been built, and the
+// label naming which input was wrong would have to be reconstructed from
+// whatever object happened to be in hand.
+function assertHexInputs(
+  source: string,
+  cores: Record<string, string | undefined>,
+  customColors: HexCustomColor[],
+) {
+  assertHexColor("source", source);
+
+  for (const [name, hex] of Object.entries(cores))
+    if (hex !== undefined) assertHexColor(name, hex);
+
+  customColors.forEach((color, i) =>
+    assertHexColor(`customColors[${i}].hex`, color.hex),
+  );
+}
+
 /**
  * The 28 standard tone values used in Material You tonal palettes.
  *
@@ -453,6 +504,12 @@ export function builder(
     prefix = DEFAULT_PREFIX,
   }: Omit<MtbConfig, "source"> = {},
 ) {
+  assertHexInputs(
+    hexSource,
+    { primary, secondary, tertiary, error, neutral, neutralVariant },
+    hexCustomColors,
+  );
+
   const sourceArgb = argbFromHex(hexSource);
   const sourceHct = Hct.fromInt(sourceArgb);
 
