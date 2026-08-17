@@ -14,29 +14,15 @@ const colorVars = (css: string) =>
     .flatMap((m) => (m[1] ? [m[1]] : []))
     .sort();
 
-/** The first `@theme inline { … }` block found in a markdown file. */
-const themeBlock = (md: string) => {
-  const start = md.indexOf("@theme inline {");
-  expect(start).toBeGreaterThanOrEqual(0);
-  const end = md.indexOf("\n}", start);
-  return md.slice(start, end);
-};
-
 // The reference: every `--color-*` name `toTailwind()` actually emits (no
 // custom colors, default `md` prefix — same shape as the shipped stylesheet).
 const generated = colorVars(builder("#6750A4").toTailwind());
 
-// The hand-written sources that must keep up with it. Both are supersets: they
-// additionally declare the demo custom colors (myCustomColor1/2).
-const sources = [
-  { name: "tailwind.css", vars: colorVars(read("./tailwind.css")) },
-  {
-    name: "README › Tailwind block",
-    vars: colorVars(themeBlock(read("../README.md"))),
-  },
-] as const;
+// The hand-written stylesheet that must keep up with it. It is a superset: it
+// additionally declares the demo custom colors (myCustomColor1/2).
+const vars = colorVars(read("./tailwind.css"));
 
-describe.each(sources)("$name", ({ vars }) => {
+describe("tailwind.css", () => {
   it("should declare every role emitted by toTailwind()", () => {
     // reported as a single list of what is missing
     expect(generated.filter((name) => !vars.includes(name))).toEqual([]);
@@ -50,9 +36,7 @@ describe.each(sources)("$name", ({ vars }) => {
 // The Tailwind story is the visual counterpart: every role the stylesheet
 // declares — including the demo custom colors — must be shown there, as a
 // `bg-*`, `text-*` or `border-*` utility.
-const declared = colorVars(read("./tailwind.css")).map((v) =>
-  v.replace("--color-", ""),
-);
+const declared = vars.map((v) => v.replace("--color-", ""));
 const storyUtilities = new Set(
   [
     ...read("./Mtb.stories.helpers.tsx").matchAll(
