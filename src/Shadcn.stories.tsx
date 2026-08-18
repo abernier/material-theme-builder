@@ -21,10 +21,11 @@ import data from "./app/dashboard/data.json";
  * Every other story paints from the M3 vocabulary directly, so all of them
  * would still pass with `shadcn.css` mapping the wrong variable to the wrong
  * token. This one paints from shadcn's: unmodified upstream components, over
- * `src/styles/shadcn.css` (shadcn's own `:root`/`.dark`, pristine) and then
- * `src/shadcn.css` (ours, remapping them onto `--md-sys-color-*`). If a name
- * is missed, misspelled or aliased to the wrong role, it shows up here as a
- * wrong color rather than as nothing at all.
+ * the `:root`/`.dark` blocks the shadcn CLI maintains at the top of
+ * `src/styles/globals.css`, and then `src/shadcn.css` (ours, remapping them
+ * onto `--md-sys-color-*`) imported below them. If a name is missed,
+ * misspelled or aliased to the wrong role, it shows up here as a wrong color
+ * rather than as nothing at all.
  *
  * Which is also why the components are the real ones from the registry and not
  * a hand-written approximation — an approximation only ever exercises the

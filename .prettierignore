@@ -2,7 +2,7 @@ pnpm-lock.yaml
 
 # Frozen upstream output -- reformatting it would make it stop matching what
 # the regeneration command in its header (or README) produces.
-src/styles/shadcn.css
+src/styles/globals.css
 
 # shadcn's own output, at the three paths `components.json` sends it to. Left
 # as the CLI writes it -- Prettier's own style differs (semicolons, import

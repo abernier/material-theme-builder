@@ -97,19 +97,43 @@ import { Mtb } from "material-theme-builder/react";
 >
 > Typically wrapping `{children}` in a
 > [layout](https://nextjs.org/docs/app/getting-started/layouts-and-pages#creating-a-layout).
+>
+> `<Mtb>` renders its `<style>`, so it works both server- and client-side.
+> Client-side is what you want when the theme has to be interactive through
+> `setMtbConfig`.
+
+> [!NOTE]
+>
+> For a theme that is not interactive / never changes at runtime, skip the
+> component entirely: the root entry holds `builder` alone, so a Server
+> Component can call it and emit `toCss()` into the document itself — no client
+> JS, and no `useMtb`.
+>
+> ```tsx
+> import { builder } from "material-theme-builder";
+>
+> const css = builder("#0e1216", { scheme: "vibrant" }).toCss();
+>
+> export default function RootLayout({
+>   children,
+> }: {
+>   children: React.ReactNode;
+> }) {
+>   return (
+>     <html lang="en">
+>       <head>
+>         <style dangerouslySetInnerHTML={{ __html: css }} />
+>       </head>
+>       <body>{children}</body>
+>     </html>
+>   );
+> }
+> ```
 
 > [!NOTE]
 >
 > CSS varnames are always kebab-cased, e.g. `myCustomColor1` →
 > `--md-sys-color-my-custom-color-1` / `--md-ref-palette-my-custom-color-1-<tone>`
-
-> [!NOTE]
->
-> `<Mtb>` injects the CSS from the client, and is the only thing here carrying
-> `"use client"`. The root entry holds `builder` alone — so from a
-> [React Server Component](https://react.dev/reference/rsc/server-components)
-> you can call it and emit `toCss()` into the document yourself, without
-> shipping components the page never renders.
 
 ## `useMtb`
 
@@ -129,9 +153,8 @@ return (
 
 ## Tailwind
 
-Compatible through [theme variables](https://tailwindcss.com/docs/theme), in two
-halves — a stylesheet for the standard tokens, and a plugin for the custom
-colors, the one part a shipped file cannot know:
+Compatible through [theme variables](https://tailwindcss.com/docs/theme) — a
+stylesheet for the standard tokens, and a plugin for the custom colors:
 
 ```css
 @import "tailwindcss";
@@ -142,12 +165,14 @@ colors, the one part a shipped file cannot know:
 }
 ```
 
-No hand-written block either side. Each name listed brings its four scheme roles
-and eleven shades — `bg-myCustomColor1`, `text-on-myCustomColor1`,
-`bg-myCustomColor1-container`, `bg-myCustomColor1-300`. Drop the `@plugin` line
-if you have no custom colors.
+Drop the `@plugin` line if you have no custom colors.
 
-The plugin takes a `prefix` too, mirroring `builder({ prefix })`:
+<details>
+  Each name listed brings its four scheme roles and eleven shades — `bg-myCustomColor1`,
+`text-on-myCustomColor1`, `bg-myCustomColor1-container`,
+`bg-myCustomColor1-300`.
+
+`prefix` mirrors `builder({ prefix })`:
 
 ```css
 @plugin "material-theme-builder/tailwind" {
@@ -156,42 +181,15 @@ The plugin takes a `prefix` too, mirroring `builder({ prefix })`:
 }
 ```
 
-The plugin can carry the standard tokens on its own — `@plugin` without the
-`@import` — for a setup that would rather not import CSS at all. Read the
-warning below first if you also use shadcn.
+</details>
 
 > [!TIP]
 >
-> Both halves declare their colors as
+> Colors are declared as
 > [inlined theme values](https://tailwindcss.com/docs/theme#referencing-other-variables):
-> `bg-primary` compiles to `background-color: var(--md-sys-color-primary)`,
-> with no `--color-primary` in between. That matters for nesting — a
-> `--color-primary` declared on `:root` would resolve against `:root`, out of
-> reach of a nested `<Mtb>` re-declaring the M3 properties.
-
-> [!WARNING]
->
-> Theme values a plugin contributes are _defaults_: an `@theme` block of your
-> own wins over them whatever the order, where the stylesheet — being CSS —
-> wins by import order.
->
-> That is why the standard tokens are left to the stylesheet. shadcn's
-> `@theme inline` claims three names M3 also uses — `background`, `primary`,
-> `secondary` — and with the two halves above the stylesheet takes them back,
-> so shadcn changes nothing. Only if you drop the `@import` and let the plugin
-> carry the standard tokens do you have to hand those three back yourself:
->
-> ```css
-> @theme inline {
->   --color-background: var(--md-sys-color-background);
->   --color-primary: var(--md-sys-color-primary);
->   --color-secondary: var(--md-sys-color-secondary);
-> }
-> ```
->
-> Left alone, `bg-secondary` resolves through shadcn's `--secondary`, which the
-> [shadcn](#shadcn) section below remaps to `secondary-container` — a tone 90
-> where you asked for a tone 40, under text still colored `on-secondary`.
+> `bg-primary` compiles to `background-color: var(--md-sys-color-primary)`, with
+> no `--color-primary` in between. That one would sit on `:root`, out of reach
+> of a nested `<Mtb>`.
 
 <details>
 <summary>The theme variables the stylesheet declares</summary>
@@ -225,142 +223,67 @@ Pre-requisites:
 - You should use
   [`tailwind.cssVariables`](https://ui.shadcn.com/docs/theming#css-variables)
 
-One command, from inside your project:
-
-```sh
-$ npx material-theme-builder shadcn-apply "#6750A4"
-```
-
-From nothing at all, scaffold with shadcn's own CLI first — this is what the repo
-itself dogfoods:
-
-```sh
-$ npx shadcn@latest init --preset b0 --template vite
-$ cd material-theme-app && npx material-theme-builder shadcn-apply "#6750A4"
-```
-
-Anything after a `--` is forwarded verbatim to `shadcn add` underneath, without
-exception — `shadcn-apply "#6750A4" -- --overwrite --dry-run`. Options of ours go
-before the separator.
-
-`--shadcn-cli <spec>` pins which shadcn runs — `--shadcn-cli shadcn@4.18.0`, a
-tag, a fork, anything `npx` resolves — defaulting to `shadcn@latest`. (Not
-`--shadcn`: the root command has used that name since 3.2.0 for something else
-entirely, a boolean that appends the alias block to `--format tailwind`.)
-
-It does the same two things by hand, if you would rather: generate a registry
-item for your source color, and install it the way you install any shadcn theme.
-
-```sh
-$ npx material-theme-builder "#6750A4" --format registry-item > mtb.json
-$ npx shadcn@latest add ./mtb.json && rm mtb.json
-```
-
-Either way, that rewrites the values inside your existing `:root` and `.dark`
-blocks, in place, pointing
-[shadcn's CSS variables](https://ui.shadcn.com/docs/theming#list-of-variables)
-at the M3 custom properties `<Mtb>` emits — so every shadcn component follows
-whichever theme is above it in the tree — and leaves that theme's own colors in
-as the `var()` fallbacks:
+One import at the end of your
+[`globals.css`](https://ui.shadcn.com/docs/installation/manual#configure-styles):
 
 ```css
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  ...
+}
+
 :root {
-  --card: var(--md-sys-color-surface-container-low, oklch(0.968 0.012 317.742));
+  --radius: 0.625rem;
+  --background: oklch(1 0 0);
+  ...
 }
 
 .dark {
-  --card: var(--md-sys-color-surface-container-low, oklch(0.227 0.01 303.714));
+  --background: oklch(0.145 0 0);
+  ...
 }
+
+@layer base {
+  ...
+}
+
+/**
+ * 👇🏻 ADD THIS 👇🏻
+ */
+
+@import "material-theme-builder/shadcn.css";
 ```
 
-So it works both ways round: live under an `<Mtb>`, and static — server-rendered,
-zero client JS — anywhere there is none.
-
-Every option lands in those fallbacks, `--scheme` and `--contrast` included, and
-`shadcn-apply` takes them all — so the item it generates is the one the by-hand
-route would have produced:
-
-```sh
-$ npx material-theme-builder shadcn-apply "#6750A4" --scheme vibrant --contrast 0.5
-```
-
-`--no-fallback` leaves the fallbacks out, on both. `--custom-colors` is the one
-option the subcommand does not take, and that is not an oversight:
-shadcn's variable set is fixed, so no component reads a custom color and a
-registry item cannot carry one.
-
-> [!WARNING]
+> [!IMPORTANT]
 >
-> `shadcn add` overwrites shadcn's own `oklch()` values rather than keeping them
-> anywhere, so they are not a safety net. Where nothing declares the M3
-> properties _and_ there are no fallbacks, every variable resolves to nothing and
-> components render transparent — `git diff` your CSS, or re-run `shadcn init`,
-> to get shadcn's defaults back.
-
-> [!NOTE]
+> It must come after `:root` and `.dark`, because it overrides them. Moved up
+> with the other imports, shadcn's own colors win instead — no error, no
+> warning.
 >
-> shadcn's CLI also appends a self-referential `--card: var(--card);` per
-> variable to your `@theme inline` block. It is noise, not a bug on your side:
-> those land _above_ your `:root`, so the real values win. Delete them if they
-> bother you.
+> An `@import` after CSS rules is unusual, yes. Tailwind resolves it where it is
+> written, so it works.
+
+That points
+[shadcn's variables](https://ui.shadcn.com/docs/theming#list-of-variables) at
+the M3 custom properties, so every shadcn component follows whichever `<Mtb>` is
+above it in the tree. It carries no colors of its own — mount an `<Mtb>`, or
+emit [`toCss()`](#programmatic-api) server-side, or nothing resolves.
 
 For the opposite trade — concrete `oklch()` values and no `var()` at all, frozen
 at build time — see [`toShadcn()`](#programmatic-api).
 
 <details>
-<summary>Install the mapping alone, without generating anything</summary>
-
-The package publishes one too, so `shadcn add` has something to fetch without a
-build step of yours:
-
-```sh
-$ npx shadcn@latest add https://unpkg.com/material-theme-builder/registry-item.json
-```
-
-It is the mapping and nothing else — 31 `var()` references, no colors. Which is
-why it can be published at all: it is the same file whatever your source color,
-scheme or contrast, because those arrive at runtime from `<Mtb>`. And that is
-also its one requirement — mount an `<Mtb>`, or emit
-[`toCss()`](#programmatic-api) server-side, or nothing resolves. Generate your
-own, as above, to have colors to fall back on.
-
-</details>
-
-<details>
-<summary>Rather import a stylesheet than let the CLI edit your file</summary>
-
-A stylesheet is shipped too, for setups that would rather keep the mapping in
-one line they can delete:
-
-```css
-@import "tailwindcss";
-@import "./shadcn.css"; /* shadcn's own `:root` and `.dark` */
-@import "material-theme-builder/shadcn.css"; /* ...then ours */
-```
-
-> [!IMPORTANT]
->
-> It has to come AFTER shadcn's own `:root { ... }` and `.dark { ... }`, which
-> it overrides — so **not** at the top with your other imports, which is where
-> an `@import` normally goes and where this one silently loses:
->
-> ```css
-> /* ✗ `--card` falls back to shadcn's grey; nothing warns you */
-> @import "tailwindcss";
-> @import "material-theme-builder/shadcn.css";
-> @import "./shadcn.css";
-> ```
->
-> The registry item above exists to make this impossible to get wrong.
-
-</details>
-
-<details>
 <summary>The variables it remaps</summary>
 
 Both halves are generated from [`toShadcnAliases()`](#programmatic-api) and
-[`toShadcnRegistryItem()`](#programmatic-api), off one mapping, so neither can
-drift from the other:
+[`toShadcnRegistryItem()`](#programmatic-api), off one mapping, so they cannot
+drift:
 
 ```css
 :root,
@@ -398,6 +321,98 @@ drift from the other:
   --sidebar-ring: var(--md-sys-color-primary);
 }
 ```
+
+</details>
+
+### `shadcn-apply`
+
+The alternative, for colors to fall back on and no import to place. One command,
+from inside your project:
+
+```sh
+$ npx material-theme-builder shadcn-apply "#6750A4"
+```
+
+From nothing at all, scaffold with shadcn's own CLI first — what this repo
+dogfoods:
+
+```sh
+$ npx shadcn@latest init --preset b0 --name material-theme-app
+$ cd material-theme-app && npx material-theme-builder shadcn-apply "#6750A4"
+```
+
+It generates a registry item for your source color and hands it to `shadcn add`,
+which rewrites the values inside your existing `:root` and `.dark` blocks, in
+place. Same mapping as the stylesheet, with that theme's own colors left in as
+the `var()` fallbacks:
+
+```css
+:root {
+  --card: var(--md-sys-color-surface-container-low, oklch(0.968 0.012 317.742));
+}
+
+.dark {
+  --card: var(--md-sys-color-surface-container-low, oklch(0.227 0.01 303.714));
+}
+```
+
+So it works with no `<Mtb>` at all — the fallbacks render the theme statically,
+server-rendered, zero client JS. Your old values are overwritten, not kept
+anywhere: `git diff` is the undo.
+
+Both steps by hand, if you would rather:
+
+```sh
+$ npx material-theme-builder "#6750A4" --format registry-item > mtb.json
+$ npx shadcn@latest add ./mtb.json && rm mtb.json
+```
+
+`shadcn-apply` takes every theme option `material-theme-builder` itself takes,
+and they all land in those fallbacks:
+
+```sh
+$ npx material-theme-builder shadcn-apply "#6750A4" --scheme vibrant --contrast 0.5
+```
+
+<details>
+<summary>The rest of the options</summary>
+
+`--no-fallback` leaves the fallbacks out, on both — so shadcn's own colors are
+dropped rather than kept in reserve. Nothing then declares those variables
+except an `<Mtb>` or a [`toCss()`](#programmatic-api): without one, they resolve
+to nothing and the components render transparent.
+
+`--custom-colors` is the one option missing: shadcn's variable set is fixed, so
+a registry item cannot carry one.
+
+Anything after a `--` is forwarded verbatim to `shadcn add`. Our options go
+before it:
+
+```sh
+$ npx material-theme-builder shadcn-apply "#6750A4" -- --overwrite --dry-run
+```
+
+> [!NOTE]
+>
+> shadcn's CLI also appends a self-referential `--card: var(--card);` per
+> variable to your `@theme inline` block. Noise, not a bug: they land _above_
+> your `:root`, so the real values win. Delete them if they bother you.
+
+</details>
+
+<details>
+<summary>Install the mapping alone, without generating anything</summary>
+
+The package publishes a registry item too, so `shadcn add` has something to
+fetch without a build step:
+
+```sh
+$ npx shadcn@latest add https://unpkg.com/material-theme-builder/registry-item.json
+```
+
+It is the stylesheet's content, installed the registry way: the mapping and
+nothing else, no colors to fall back on. Generate your own, as above, to have
+some.
 
 </details>
 
