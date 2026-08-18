@@ -1,5 +1,87 @@
 # material-theme-builder
 
+## 4.0.0
+
+### Major Changes
+
+- 19757d4: `shadcn-init` is removed, and `shadcn-apply` is a plain forwarder.
+
+  `shadcn-init` scaffolded a shadcn app, themed it and started its dev server.
+  Three jobs, and only the middle one was ours — scaffolding is what
+  `shadcn init` already does, better and with its own eighteen options, and
+  starting a dev server is not a theming tool's business. Everything it needed to
+  hold those together (a default `--preset b0 --template vite`, a merge that
+  injected them only where you had not, reading the project name back out of the
+  merged argv to know where to `cd`) went with it:
+
+  ```sh
+  # before
+  $ npx material-theme-builder shadcn-init "#6750A4"
+
+  # now
+  $ npx shadcn@latest init --preset b0 --template vite
+  $ cd material-theme-app && npx material-theme-builder shadcn-apply "#6750A4"
+  ```
+
+  `shadcn-apply` is unchanged in what it does — generate a registry item for your
+  source color, `shadcn add` it, delete it — and simpler in how it treats you.
+  Everything after a `--` now goes to `shadcn add` untouched, with no exception:
+  - `--print` is gone. It rendered the chain as a shell one-liner instead of
+    running it, and required describing that chain as data so the two could not
+    disagree. On a single `shadcn add`, there is nothing left to disagree about.
+  - An option of ours written after the `--` is no longer refused with an
+    explanation. It is forwarded, and shadcn answers for it. "Everything after the
+    separator is shadcn's" is now true without an asterisk.
+  - `--shadcn-cli` no longer validates its argument. Whatever `npx` resolves,
+    it runs.
+
+  The theme options (`--scheme`, `--contrast`, the color overrides, `--prefix`,
+  `--no-fallback`) are unchanged, and so is `--format registry-item` for piping it
+  somewhere else yourself.
+
+  Unrelated to shadcn, and in this release because it is breaking too:
+  `--format` now declares its own list, so `--format bananas` is refused by name
+  instead of silently producing JSON.
+
+### Minor Changes
+
+- d2dceca: `toShadcnAliases()` now emits `:root:root, .dark.dark` instead of `:root, .dark`.
+
+  The block outranks shadcn's own `:root` and `.dark` on specificity rather than
+  on source order, so `@import "material-theme-builder/shadcn.css"` goes with your
+  other imports — where CSS requires an `@import` to be. It previously had to come
+  after shadcn's blocks, below other rules, which a conforming CSS parser drops:
+  Vite's `postcss-import` does exactly that, and the mapping vanished with no
+  error.
+
+  If you already import it at the bottom of your `globals.css`, move it up with
+  the others. Leaving it where it is still works.
+
+- a7d7b1c: `ExportButton` no longer places itself, and wears the Figma mark.
+
+  It used to be `fixed` in the bottom-right corner on its own account, which is a
+  decision that belongs to whoever renders it — Storybook now stacks it with a
+  second FAB, and two self-placing FABs land on each other. Wrap it in your own
+  positioned element to keep it where it was:
+
+  ```jsx
+  <div className="fixed right-6 bottom-6">
+    <ExportButton config={config} />
+  </div>
+  ```
+
+  Its download arrow is now the Figma mark, which is what the file it hands over
+  actually is.
+
+### Patch Changes
+
+- 4a4c5d3: A blank core-color override now reads as no override, instead of throwing.
+
+  `primary` and the other five are optional, but `builder(source, { primary: "" })`
+  used to refuse `""` as an invalid hex — which is what a UI hands over for
+  "cleared". Clearing a color picker now falls back to the palette generated from
+  `source`. `source` itself is still required, so `""` there stays an error.
+
 ## 3.3.0
 
 ### Minor Changes
