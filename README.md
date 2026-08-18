@@ -233,11 +233,12 @@ In your
 @import "shadcn/tailwind.css";
 
 /* 👇🏻 ADD THIS 👇🏻 */
-@import "material-theme-builder/tailwind.css"; /* the M3 tw classNames */
+@import "material-theme-builder/tailwind.css"; /* the M3 tw classNames (optional) */
 @import "material-theme-builder/shadcn.css"; /* shadcn's variables remapping on M3 */
-@plugin "material-theme-builder/tailwind" { /* your custom colors */
+@plugin "material-theme-builder/tailwind" { /* your custom colors (optional) */
   custom-colors: myCustomColor1, myCustomColor2;
 }
+/* 👆🏻 ADD THIS 👆🏻 */
 
 @custom-variant dark (&:is(.dark *));
 
