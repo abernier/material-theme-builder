@@ -153,19 +153,18 @@ return (
 
 ## Tailwind
 
-Compatible through [theme variables](https://tailwindcss.com/docs/theme) — a
-stylesheet for the standard tokens, and a plugin for the custom colors:
+Compatible through [theme variables](https://tailwindcss.com/docs/theme) — one
+plugin, one line:
 
 ```css
 @import "tailwindcss";
 
-@import "material-theme-builder/tailwind.css";
 @plugin "material-theme-builder/tailwind" {
   custom-colors: myCustomColor1, myCustomColor2;
 }
 ```
 
-Drop the `@plugin` line if you have no custom colors.
+Drop the `custom-colors` block if you have none.
 
 <details>
 
@@ -193,27 +192,16 @@ Each name listed brings its four scheme roles and eleven shades —
 > of a nested `<Mtb>`.
 
 <details>
-<summary>The theme variables the stylesheet declares</summary>
+<summary>The names it declares</summary>
 
-Generated from [`toTailwind()`](#programmatic-api), so the two cannot drift:
+115 standard ones — every M3 scheme token (`bg-surface-container-low`,
+`text-on-primary`, `border-outline-variant`…), plus eleven Tailwind shades for
+each of `primary`, `secondary`, `tertiary`, `error`, `neutral` and
+`neutral-variant` (`bg-primary-300`). Then four roles and eleven shades per
+custom color you name.
 
-```css
-@theme inline {
-  --color-background: var(--md-sys-color-background);
-  --color-error: var(--md-sys-color-error);
-  --color-error-container: var(--md-sys-color-error-container);
-  --color-inverse-on-surface: var(--md-sys-color-inverse-on-surface);
-  --color-inverse-primary: var(--md-sys-color-inverse-primary);
-  --color-inverse-surface: var(--md-sys-color-inverse-surface);
-  --color-on-background: var(--md-sys-color-on-background);
-  --color-on-error: var(--md-sys-color-on-error);
-  /* ... */
-}
-```
-
-115 names in all — every M3 scheme token, plus eleven Tailwind shades for each
-of `primary`, `secondary`, `tertiary`, `error`, `neutral` and
-`neutral-variant`.
+They are theme _defaults_, so an `@theme` block of your own wins over them
+whatever the order. See [shadcn](#shadcn), where three names collide.
 
 </details>
 
@@ -233,9 +221,8 @@ In your
 @import "shadcn/tailwind.css";
 
 /* 👇🏻 ADD THIS 👇🏻 */
-@import "material-theme-builder/tailwind.css"; /* the M3 tw classNames (optional) */
 @import "material-theme-builder/shadcn.css"; /* shadcn's variables remapping on M3 */
-@plugin "material-theme-builder/tailwind" { /* your custom colors (optional) */
+@plugin "material-theme-builder/tailwind" { /* the M3 tw classNames (optional) */
   custom-colors: myCustomColor1, myCustomColor2;
 }
 /* 👆🏻 ADD THIS 👆🏻 */
@@ -265,10 +252,10 @@ the M3 custom properties, so every shadcn component follows whichever `<Mtb>` is
 above it in the tree. It carries no colors of its own — mount an `<Mtb>`, or
 emit [`toCss()`](#programmatic-api) server-side, or nothing resolves.
 
-The other two are optional. They are the [Tailwind](#tailwind) recipe unchanged,
-and what they add is names to write yourself — `bg-surface-container-low`,
-`text-on-primary`, your custom colors. Drop them and every shadcn component
-still follows the theme.
+The `@plugin` line is optional. It is the [Tailwind](#tailwind) recipe
+unchanged, and what it adds is names to write yourself —
+`bg-surface-container-low`, `text-on-primary`, your custom colors. Drop it and
+every shadcn component still follows the theme.
 
 For the opposite trade — concrete `oklch()` values and no `var()` at all, frozen
 at build time — see [`toShadcn()`](#programmatic-api).
@@ -282,8 +269,9 @@ at build time — see [`toShadcn()`](#programmatic-api).
 > certainly do not need to care.
 
 Material and shadcn picked the same name for three things — `background`,
-`primary`, `secondary`. shadcn's `@theme inline` is the later of the two, so on
-those three it wins, and the utility goes through the mapping above:
+`primary`, `secondary`. The plugin's colors are theme defaults, so on those
+three shadcn's `@theme inline` wins, and the utility goes through the mapping
+above:
 
 ```
 bg-secondary → --color-secondary → var(--secondary) → var(--md-sys-color-secondary-container)
@@ -506,18 +494,17 @@ $ pnpm run lgtm
 ## CONTRIBUTING
 
 ```bash
-pnpm run storybook # the day-to-day loop -- no build needed, the stylesheets regenerate as you edit
-pnpm run build     # dist/, plus the generated stylesheets -- both gitignored
+pnpm run storybook # the day-to-day loop -- no build needed, `shadcn.css` regenerates as you edit
+pnpm run build     # dist/, plus the generated files -- all gitignored
 pnpm run lgtm      # everything CI checks
 ```
 
-`tailwind.css`, `shadcn.css` and `registry-item.json` are generated — from
-`toTailwind()`, `toShadcnAliases()` and `toShadcnRegistryItem()` — and
-gitignored. `pnpm run build` writes them (`scripts/generate.mjs`); the two
-stylesheets also get a `src/` copy, which is what Storybook `@import`s, and in
-Storybook a Vite plugin (`.storybook/main.ts`) rewrites those at server start
-and again on every edit under `src/lib/`, so the stories never show a stale
-vocabulary.
+`shadcn.css` and `registry-item.json` are generated — from `toShadcnAliases()`
+and `toShadcnRegistryItem()` — and gitignored. `pnpm run build` writes them
+(`scripts/generate.mjs`); `shadcn.css` also gets a `src/` copy, which is what
+Storybook `@import`s, and in Storybook a Vite plugin (`.storybook/main.ts`)
+rewrites it at server start and again on every edit under `src/lib/`, so the
+stories never show a stale vocabulary.
 
 `generate.mjs` builds the registry item without `{ fallback: true }`, which is
 what keeps every one of those outputs a function of the _mapping_ rather than of

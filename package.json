@@ -21,7 +21,6 @@
       "import": "./dist/tailwind-plugin.js",
       "default": "./dist/tailwind-plugin.js"
     },
-    "./tailwind.css": "./dist/tailwind.css",
     "./shadcn.css": "./dist/shadcn.css",
     "./registry-item.json": "./dist/registry-item.json"
   },

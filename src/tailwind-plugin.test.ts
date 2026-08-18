@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { compile } from "tailwindcss";
-import { beforeAll, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import { formatOutput } from "../scripts/generate.mjs";
 import { builder } from "./lib/builder";
@@ -15,10 +15,6 @@ import mtbTailwindPlugin, {
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const require_ = createRequire(import.meta.url);
-
-/** `tailwind.css` as the generator writes it. */
-const generateStylesheet = (source = "#6750A4") =>
-  formatOutput("tailwind.css", builder(source).toTailwind());
 
 /**
  * shadcn's `@theme inline` block — the names it claims — read out of
@@ -46,7 +42,7 @@ const shadcnTheme = () => {
  * shadcn's own `:root` and `.dark` blocks, out of the same file.
  *
  * In a scaffolded project these sit inline in `globals.css` -- the arrangement
- * the README's shadcn section shows, and the one our stylesheet has to win
+ * the README's shadcn section shows, and the one our alias block has to win
  * against.
  */
 const shadcnBlocks = () => {
@@ -61,27 +57,6 @@ const shadcnBlocks = () => {
 
   return blocks.join("\n\n");
 };
-
-// Generated here rather than read from disk: the file is a build artifact, and
-// the suite has to pass without a build having run.
-let stylesheet: string;
-let stylesheetPath: string;
-
-beforeAll(async () => {
-  stylesheet = await generateStylesheet();
-  stylesheetPath = path.join(
-    fs.mkdtempSync(path.join(os.tmpdir(), "mtb-tailwind-")),
-    "tailwind.css",
-  );
-  fs.writeFileSync(stylesheetPath, stylesheet);
-});
-
-/** Every color name the stylesheet declares. */
-const stylesheetNames = () =>
-  [...stylesheet.matchAll(/--color-([\w-]+):/g)]
-    .map(([, name]) => name ?? "")
-    // the banner's `@plugin` example mentions custom colors in prose
-    .filter((name) => name && !name.startsWith("myCustomColor"));
 
 /** The `theme.extend.colors` map the plugin hands Tailwind for given options. */
 function colorsFor(options?: MtbTailwindPluginOptions) {
@@ -148,7 +123,19 @@ describe("tailwind plugin › colors", () => {
   });
 
   it("should emit no custom colors by default", () => {
-    expect(Object.keys(colorsFor())).not.toContain("myCustomColor1");
+    // They depend on the config, so they only ever come from the options. The
+    // `tailwind.css` this replaced shipped example ones, and taught people to
+    // copy-paste the block.
+    expect(
+      Object.keys(colorsFor()).filter((name) => /[A-Z]/.test(name)),
+    ).toEqual([]);
+  });
+
+  it("should declare 115 names", () => {
+    // 49 scheme tokens, plus eleven Tailwind shades for each of the six core
+    // palettes. The shipped vocabulary -- this number moving is a breaking
+    // change, not a refactor.
+    expect(Object.keys(colorsFor())).toHaveLength(115);
   });
 
   it("should respect the prefix option", () => {
@@ -235,11 +222,11 @@ describe("tailwind plugin › compiled output", () => {
     expect(css).toContain("background-color: var(--md-ref-palette-neutral-95)");
   });
 
-  // The one place the plugin is not interchangeable with the stylesheet:
-  // theme values a plugin contributes are defaults, so an `@theme` block of
-  // your own wins over them whatever the order -- where a later `@import` of
-  // the stylesheet would have won. Which is why the standard tokens are left
-  // to the stylesheet, and why the README documents that pairing alone.
+  // The one thing to know about carrying the vocabulary in a plugin rather
+  // than in a stylesheet: theme values a plugin contributes are defaults, so
+  // an `@theme` block of your own wins over them whatever the order -- where a
+  // later `@import` would have had to come after. Which is how shadcn keeps
+  // the three names both claim, and what the README documents.
   it.each([
     ["before", (theme: string, plugin: string) => plugin + theme],
     ["after", (theme: string, plugin: string) => theme + plugin],
@@ -273,82 +260,49 @@ describe("tailwind plugin › compiled output", () => {
     );
   });
 
-  it("should compile to what tailwind.css compiles to", async () => {
-    // Either half can carry the standard tokens, so the two have to agree
-    // across every name the stylesheet declares.
-    const candidates = stylesheetNames().map((name) => `bg-${name}`);
-
-    expect(candidates.length).toBeGreaterThan(100);
-
-    const [viaStylesheet, viaPlugin] = await Promise.all([
-      build(`${TAILWIND}@import "${stylesheetPath}";\n`, candidates),
-      build(`${TAILWIND}@plugin "./tailwind-plugin";\n`, candidates),
-    ]);
-
-    // The stylesheet is Prettier-formatted, so its longest `var()` calls come
-    // out wrapped over several lines. Only the whitespace differs.
-    const normalize = (css: string) =>
-      css.replace(/\s+/g, " ").replace(/\( /g, "(").replace(/ \)/g, ")");
-
-    expect(normalize(viaPlugin)).toBe(normalize(viaStylesheet));
-  });
-
-  // `styles/globals.css` pins one order, and so does every other test here, so
-  // nothing would notice if another stopped working.
-  it("should not depend on the order of the three lines", async () => {
-    const lines: Record<string, string> = {
-      tailwind: TAILWIND,
-      stylesheet: `@import "${stylesheetPath}";\n`,
-      plugin: `@plugin "./tailwind-plugin" {\n  custom-colors: myCustomColor1;\n}\n`,
-    };
-    const orders = [
-      ["tailwind", "stylesheet", "plugin"],
-      ["tailwind", "plugin", "stylesheet"],
-      ["stylesheet", "tailwind", "plugin"],
-      ["stylesheet", "plugin", "tailwind"],
-      ["plugin", "tailwind", "stylesheet"],
-      ["plugin", "stylesheet", "tailwind"],
-    ];
+  // `styles/globals.css` pins one order, and every other test here puts the
+  // `@plugin` line last, so nothing would notice if the other stopped working.
+  it("should not depend on where the @plugin line sits", async () => {
+    const tailwind = TAILWIND;
+    const plugin = `@plugin "./tailwind-plugin" {\n  custom-colors: myCustomColor1;\n}\n`;
     const candidates = ["bg-primary", "bg-primary-300", "bg-myCustomColor1"];
 
-    const [reference, ...rest] = await Promise.all(
-      orders.map((order) =>
-        build(order.map((name) => lines[name]).join(""), candidates),
-      ),
-    );
+    const [after, before] = await Promise.all([
+      build(tailwind + plugin, candidates),
+      build(plugin + tailwind, candidates),
+    ]);
 
-    // Equality alone would hold just as well over six empty stylesheets.
-    expect(reference).toContain(
-      "background-color: var(--md-sys-color-primary)",
-    );
-    expect(reference).toContain(
+    // Equality alone would hold just as well over two empty stylesheets.
+    expect(after).toContain("background-color: var(--md-sys-color-primary)");
+    expect(after).toContain(
       "background-color: var(--md-sys-color-my-custom-color-1)",
     );
 
-    for (const css of rest) expect(css).toBe(reference);
+    expect(before).toBe(after);
   });
 
-  // The recipe the README leads with, against a nominal shadcn scaffold: the
-  // stylesheet carries the standard tokens, the plugin carries only what the
-  // stylesheet cannot know. Neither half needs a hand-written block, and
-  // shadcn changes nothing.
-  it("should need no @theme of its own when the stylesheet carries the standard tokens", async () => {
+  // The recipe the README leads with, against a nominal shadcn scaffold: one
+  // `@plugin` line carries the whole vocabulary, standard tokens and custom
+  // colors alike. No hand-written block anywhere, and shadcn changes nothing.
+  it("should need no @theme of its own", async () => {
     const theme = shadcnTheme();
     const candidates = [
-      ...stylesheetNames().map((name) => `bg-${name}`),
+      ...Object.keys(colorsFor()).map((name) => `bg-${name}`),
       "bg-myCustomColor1",
       "text-on-myCustomColor2-container",
     ];
 
+    expect(candidates.length).toBeGreaterThan(100);
+
     const css = await build(
-      `${TAILWIND}@import "${stylesheetPath}";\n${theme}\n@plugin "./tailwind-plugin" {\n  custom-colors: myCustomColor1, myCustomColor2;\n}\n`,
+      `${TAILWIND}${theme}\n@plugin "./tailwind-plugin" {\n  custom-colors: myCustomColor1, myCustomColor2;\n}\n`,
       candidates,
     );
 
-    // Three names are claimed by both `@theme inline` blocks, and shadcn's is
-    // the later one, so those three go through its aliases -- which the
-    // mapping in `shadcn.css` then points back at M3. Everything else lands on
-    // its M3 role directly.
+    // Three names are claimed by shadcn's `@theme inline` too, and a plugin's
+    // theme values are defaults, so those three go through its aliases --
+    // which the mapping in `shadcn.css` then points back at M3. Everything
+    // else lands on its M3 role directly.
     for (const name of ["background", "primary", "secondary"]) {
       expect(css).toContain(`background-color: var(--${name})`);
     }
@@ -361,31 +315,6 @@ describe("tailwind plugin › compiled output", () => {
     expect(css).toContain(
       "color: var(--md-sys-color-on-my-custom-color-2-container)",
     );
-  });
-});
-
-describe("tailwind.css", () => {
-  it("should not depend on the source color", async () => {
-    // It names variables, never colors -- which is what lets one static file
-    // serve every theme, and what makes the generator's arbitrary source
-    // choice harmless.
-    expect(await generateStylesheet("#FF5722")).toBe(
-      await generateStylesheet("#6750A4"),
-    );
-  });
-
-  it("should carry no custom colors", () => {
-    // They depend on the config, so they are the plugin's job. A stylesheet
-    // that shipped example ones taught people to copy-paste the block. Read
-    // raw rather than through `stylesheetNames()`, which filters them out.
-    const declarations = stylesheet
-      .split("\n")
-      .filter((line) => line.trimStart().startsWith("--color-"));
-
-    expect(declarations.length).toBe(115);
-    expect(
-      declarations.filter((line) => /--color-\w*[A-Z]/.test(line)),
-    ).toEqual([]);
   });
 });
 
@@ -447,7 +376,10 @@ describe("shadcn.css", () => {
         "shadcn.css",
         builder("#6750A4").toShadcnAliases(),
       );
-      const ourPath = path.join(path.dirname(stylesheetPath), "ours.css");
+      const ourPath = path.join(
+        fs.mkdtempSync(path.join(os.tmpdir(), "mtb-shadcn-")),
+        "ours.css",
+      );
       fs.writeFileSync(ourPath, shadcnCss);
 
       const parts = [`@import "${ourPath}";\n`, `${shadcnBlocks()}\n`];
