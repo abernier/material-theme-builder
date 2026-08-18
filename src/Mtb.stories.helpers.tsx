@@ -1,12 +1,25 @@
 import type { Meta } from "@storybook/react-vite";
 import { cva, type VariantProps } from "class-variance-authority";
 import { kebabCase, startCase, upperFirst } from "lodash-es";
-import { createContext, useContext, type ComponentProps } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  type ComponentProps,
+} from "react";
+import { Fab } from "./components/m3/Fab";
 import { ExportButton } from "./ExportButton";
-import { schemeNames, STANDARD_TONES, type TokenName } from "./lib/builder";
+import {
+  DEFAULT_CONTRAST,
+  DEFAULT_PREFIX,
+  DEFAULT_SCHEME,
+  schemeNames,
+  STANDARD_TONES,
+  type MtbConfig,
+  type TokenName,
+} from "./lib/builder";
 import { cn } from "./lib/utils";
 import type { Mtb } from "./Mtb";
-import { useMtb } from "./Mtb.context";
 
 /**
  * `<Mtb>`'s props as controls, shared by every story that themes with them.
@@ -171,57 +184,65 @@ function Swatch({
 }
 
 /**
+ * The gaps, label size and cell heights `Scheme` and `Shades` paint with,
+ * `@scope`d to the element this sits in.
+ *
+ * Its own component because two places need it: `Layout`, and `SchemeOverlay`
+ * -- which docks a poster outside any `<Mtb>`, so it cannot go through
+ * `Layout`.
+ */
+function PosterStyle({ notext }: { notext?: boolean }) {
+  return (
+    <style>{`
+      @scope {
+        & {
+          --gap1:0.5rem;
+          --gap2:1px;
+
+          --fs:${notext ? 0 : ".8rem"};
+          @media (max-width: 768px) {--fs:0;}
+
+          @media (max-width: 768px) {
+            --gap1:2px;
+          }
+
+
+          p {
+            font-family:sans-serif;
+            color:white;mix-blend-mode:difference;
+            white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+
+            font-size:var(--fs);
+            margin:.35rem;
+
+          }
+
+          [class*="h-20"],[class*="h-16"] {
+            @media (max-width: 768px) {
+              height:45px;
+            }
+          }
+        }
+      }
+    `}</style>
+  );
+}
+
+/**
  * Storybook layout wrapper with optional source-color label and export button.
  */
 export function Layout({
   notext,
-  noExport,
   children,
 }: {
   /** Hide the source-color text label. */
   notext?: boolean;
-  /** Hide the export button. */
-  noExport?: boolean;
   /** Story content to render inside the layout. */
   children: React.ReactNode;
 }) {
-  const { initials } = useMtb();
-
   return (
     <div className="flex flex-col gap-6 max-w-208 mx-auto">
-      <style>{`
-        @scope {
-          & {
-            --gap1:0.5rem;
-            --gap2:1px;
-            
-            --fs:${notext ? 0 : ".8rem"};
-            @media (max-width: 768px) {--fs:0;}
-
-            @media (max-width: 768px) {
-              --gap1:2px;
-            }
-
-
-            p {
-              font-family:sans-serif;
-              color:white;mix-blend-mode:difference;
-              white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-
-              font-size:var(--fs);
-              margin:.35rem;
-
-            }
-
-            [class*="h-20"],[class*="h-16"] {
-              @media (max-width: 768px) {
-                height:45px;
-              }
-            }
-          }
-        }
-      `}</style>
-      {!noExport && <ExportButton config={initials} />}
+      <PosterStyle notext={notext} />
       {children}
     </div>
   );
@@ -1133,5 +1154,152 @@ export function TailwindScheme() {
         </p>
       </div>
     </>
+  );
+}
+
+/**
+ * The poster, docked in a corner of the canvas — the generated scheme, right
+ * next to whatever the story paints with it.
+ *
+ * Reads nothing from `<Mtb>`: the swatches paint from `--md-sys-color-*`, and
+ * the story's own provider declares those on `:root`/`.dark` for the whole
+ * document. That is what lets a global decorator render this from *outside*
+ * the provider, over any story.
+ *
+ * `theme` has to be told, and has to match the class on `<html>`: those two
+ * blocks are the only place the light and dark values differ, so a light
+ * poster inside a dark page would read the dark ones and lie.
+ */
+export function SchemeOverlay({
+  theme,
+  customColors,
+}: {
+  /** Which of the two scheme blocks to read — the page's own theme. */
+  theme: "light" | "dark";
+  /** Custom colors, as the story's `<Mtb>` got them. */
+  customColors?: ComponentProps<typeof Mtb>["customColors"];
+}) {
+  return (
+    <div className="fixed bottom-2 left-2 z-50 overflow-hidden rounded shadow-2xl ring-1 ring-neutral-500/50">
+      {/* Scaled as a whole rather than re-sized cell by cell, so the poster
+          stays the poster. `zoom` and not `transform`, which would leave the
+          wrapper reserving all 40rem of it. */}
+      <div className="w-160" style={{ zoom: 0.35 }}>
+        <PosterStyle notext />
+        <Scheme theme={theme} customColors={customColors}>
+          <Shades customColors={customColors} noTitle />
+        </Scheme>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * `name value`, unless the value is blank or already what the CLI defaults to.
+ *
+ * An empty string counts as blank on purpose: that is what a cleared color
+ * picker hands over, and `builder()` reads it as no override rather than as a
+ * color.
+ */
+function cliFlag(name: string, value?: string | number, fallback?: unknown) {
+  if (value === undefined || value === "" || value === fallback) return [];
+
+  return [
+    typeof value === "string" ? `${name} "${value}"` : `${name} ${value}`,
+  ];
+}
+
+/**
+ * The `shadcn-apply` invocation for a theme — the same theme, spelled as the
+ * CLI takes it.
+ *
+ * Only what differs from the defaults is written out, so the command reads as
+ * the *changes* made in the controls rather than as a dump of every option. Two
+ * of the props have no flag at all: `customColors`, which a registry item
+ * cannot carry, and `colorMatch`, which is not a CLI option.
+ *
+ * @see https://github.com/abernier/material-theme-builder#shadcn-apply
+ */
+function shadcnApplyCommand(config: MtbConfig) {
+  return [
+    `npx material-theme-builder@latest shadcn-apply "${config.source}"`,
+    ...cliFlag("--scheme", config.scheme, DEFAULT_SCHEME),
+    ...cliFlag("--contrast", config.contrast, DEFAULT_CONTRAST),
+    ...cliFlag("--primary", config.primary),
+    ...cliFlag("--secondary", config.secondary),
+    ...cliFlag("--tertiary", config.tertiary),
+    ...cliFlag("--error", config.error),
+    ...cliFlag("--neutral", config.neutral),
+    ...cliFlag("--neutral-variant", config.neutralVariant),
+    ...cliFlag("--prefix", config.prefix, DEFAULT_PREFIX),
+  ].join(" ");
+}
+
+/**
+ * FAB that copies the CLI command for the theme currently in the controls.
+ *
+ * The point of the stories is to find a theme by moving the controls around;
+ * this is what carries the one you settled on out of Storybook and into a
+ * project, without transcribing eight hex values by hand.
+ *
+ */
+function ShadcnApplyFab({ config }: { config: MtbConfig }) {
+  const [copied, setCopied] = useState(false);
+  const command = shadcnApplyCommand(config);
+
+  return (
+    <Fab
+      color="tertiary-container"
+      title={command}
+      aria-label={`Copy: ${command}`}
+      onClick={async () => {
+        await navigator.clipboard.writeText(command);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }}
+    >
+      {/* The shadcn mark, next to the Figma one on the FAB below: the pair
+          reads as the two places a theme can go, which a shell prompt did
+          not. The tick takes its place while the command sits on the
+          clipboard -- the only feedback a copy button gets. */}
+      {copied ? (
+        <span aria-hidden className="font-mono text-2xl leading-none">
+          ✓
+        </span>
+      ) : (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 256 256"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="32"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden
+        >
+          <line x1="208" y1="128" x2="128" y2="208" />
+          <line x1="192" y1="40" x2="40" y2="192" />
+        </svg>
+      )}
+    </Fab>
+  );
+}
+
+/**
+ * The story's floating actions, bottom-right: take this theme away as a CLI
+ * command, or as Figma tokens.
+ *
+ * One fixed container holding both, rather than two FABs each placing itself:
+ * placed separately, the second one lands on the first, and only on the stories
+ * that happen to draw both.
+ */
+export function Fabs({ config }: { config: MtbConfig }) {
+  return (
+    <div className="fixed right-6 bottom-6 z-50 flex flex-col gap-1">
+      <ShadcnApplyFab config={config} />
+      <ExportButton config={config} />
+    </div>
   );
 }

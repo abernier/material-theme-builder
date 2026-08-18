@@ -48,22 +48,18 @@ export function ExportButton({ config }: ExportButtonProps) {
       onClick={handleExport}
       title="Export Figma Tokens"
       aria-label="Export Figma Tokens"
-      className="fixed z-50 bottom-6 right-6"
     >
+      {/* The Figma mark: what comes down is a Figma tokens file, not a
+          generic download, and this is the one place a logo says which. */}
       <svg
         xmlns="http://www.w3.org/2000/svg"
         width="24"
         height="24"
         viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
+        fill="currentColor"
+        aria-hidden
       >
-        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-        <polyline points="7 10 12 15 17 10" />
-        <line x1="12" y1="15" x2="12" y2="3" />
+        <path d="M8 24a4 4 0 0 1-4-4 4 4 0 0 1 4-4h4v4a4 4 0 0 1-4 4Zm0-6.5A2.5 2.5 0 0 0 5.5 20 2.5 2.5 0 0 0 8 22.5 2.5 2.5 0 0 0 10.5 20v-2.5H8ZM8 16a4 4 0 0 1-4-4 4 4 0 0 1 4-4h4v8H8Zm0-6.5A2.5 2.5 0 0 0 5.5 12 2.5 2.5 0 0 0 8 14.5h2.5v-5H8ZM8 8a4 4 0 0 1-4-4 4 4 0 0 1 4-4h4v8H8Zm0-6.5A2.5 2.5 0 0 0 5.5 4 2.5 2.5 0 0 0 8 6.5h2.5v-5H8Zm8 6.5h-4V0h4a4 4 0 0 1 4 4 4 4 0 0 1-4 4Zm-2.5-1.5H16A2.5 2.5 0 0 0 18.5 4 2.5 2.5 0 0 0 16 1.5h-2.5v5ZM16 16a4 4 0 0 1-4-4 4 4 0 0 1 4-4 4 4 0 0 1 4 4 4 4 0 0 1-4 4Zm0-6.5a2.5 2.5 0 0 0-2.5 2.5 2.5 2.5 0 0 0 2.5 2.5 2.5 2.5 0 0 0 2.5-2.5A2.5 2.5 0 0 0 16 9.5Z" />
       </svg>
     </Fab>
   );
