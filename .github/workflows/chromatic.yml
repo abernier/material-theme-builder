@@ -15,6 +15,8 @@ jobs:
           node-version-file: ".nvmrc"
           cache: "pnpm"
       - run: pnpm install --frozen-lockfile
-      - run: pnpm run chromatic --exit-once-uploaded --auto-accept-changes main
+      # No `--auto-accept-changes main`: it accepted a broken shadcn baseline
+      # in #184 without anyone looking. Changes are accepted in the PR review.
+      - run: pnpm run chromatic --exit-once-uploaded
         env:
           CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
