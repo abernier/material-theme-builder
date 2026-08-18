@@ -9,8 +9,7 @@
 // $ node dist/cli.js '#6750A4' --format css
 // $ node dist/cli.js '#6750A4' --format shadcn
 // $ node dist/cli.js '#6750A4' --format registry-item
-// $ node dist/cli.js shadcn-init '#6750A4'
-// $ node dist/cli.js shadcn-apply '#6750A4' --print
+// $ node dist/cli.js shadcn-apply '#6750A4'
 // ```
 
 import * as fs from "node:fs";
@@ -23,7 +22,7 @@ import {
   addThemeOptions,
   builderOptions,
 } from "./cli.options";
-import { addChainOptions, runApply, runInit } from "./cli.shadcn";
+import { addChainOptions, runApply } from "./cli.shadcn";
 import {
   builder,
   DEFAULT_BLEND,
@@ -98,13 +97,13 @@ addThemeOptions(
       .name("material-theme-builder")
       .description("Generate a color theme from a source color"),
   )
-    // Required now that the theme options are declared on all three commands:
+    // Required now that the theme options are declared on the subcommand too:
     // without it, commander matches an option against the program first, so
-    // `init '#x' --scheme vibrant` would set the *program's* `--scheme` and hand
-    // `init` a default theme. Positional options recognize an option only where
-    // it was declared, which stops at the subcommand name. Nothing about the
-    // root command's own parsing changes -- the rule only applies to the operand
-    // that names a subcommand.
+    // `shadcn-apply '#x' --scheme vibrant` would set the *program's* `--scheme`
+    // and hand the subcommand a default theme. Positional options recognize an
+    // option only where it was declared, which stops at the subcommand name.
+    // Nothing about the root command's own parsing changes -- the rule only
+    // applies to the operand that names a subcommand.
     .enablePositionalOptions(),
 )
   // The root command's own: `--custom-colors` because only its formats can carry
@@ -183,7 +182,7 @@ addThemeOptions(
     writeOutput(result, opts);
   });
 
-// The subcommands live alongside the program's own action rather than turning it
+// The subcommand lives alongside the program's own action rather than turning it
 // into `.command(..., { isDefault: true })`: commander looks for a subcommand in
 // the first operand before reaching its own handler, so `<source>` keeps working
 // exactly as it did -- no hex color can collide with a subcommand name -- and
@@ -196,28 +195,11 @@ addThemeOptions(
 // us: it would also swallow a typo in one of our own flags and forward it
 // downstream, silently.
 //
-// Both carry the theme options too. They each generate a registry item, and a
-// command that could only ever generate the default theme would reproduce, inside
-// the two commands meant to remove the by-hand recipe, the very limitation that
-// motivated them -- the published item is impersonal precisely because it cannot
-// be asked for a scheme.
-
-addChainOptions(
-  addThemeOptions(
-    addSourceArgument(
-      program
-        .command("shadcn-init")
-        .description(
-          "Scaffold a new shadcn app themed from a source color, and start it",
-        ),
-    ).argument(
-      "[shadcn-args...]",
-      "Options after a `--`, forwarded verbatim to `shadcn init`",
-    ),
-  ),
-).action((source: string, shadcnArgs: string[], _opts, command: Command) =>
-  runInit(source, shadcnArgs, command),
-);
+// It carries the theme options too. It generates a registry item, and a command
+// that could only ever generate the default theme would reproduce, inside the
+// command meant to remove the by-hand recipe, the very limitation that motivated
+// it -- the published item is impersonal precisely because it cannot be asked
+// for a scheme.
 
 addChainOptions(
   addThemeOptions(
