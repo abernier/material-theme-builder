@@ -193,7 +193,8 @@ function toShadcnAliasVars(
  * `:root, .dark` rather than one or the other: both modes read the same M3
  * properties, which is where the light/dark split already happened.
  *
- * Each selector is doubled, `:root:root`, so the block outranks shadcn's own
+ * Each selector is doubled, `:root:root` -- the duplication MDN documents under
+ * "Increasing specificity by duplicating selector" -- so the block outranks shadcn's own
  * `:root` and `.dark` on specificity rather than on source order. Order would
  * mean importing this file below shadcn's blocks, which is below other rules,
  * which CSS forbids: a conforming parser drops such an `@import`, and one in

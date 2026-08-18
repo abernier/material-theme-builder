@@ -272,8 +272,10 @@ still follows the theme.
 For the opposite trade — concrete `oklch()` values and no `var()` at all, frozen
 at build time — see [`toShadcn()`](#programmatic-api).
 
-The selectors are doubled, `:root:root`, so the block outranks shadcn's own
-`:root` and `.dark` on specificity. Put the `@import` wherever your others go.
+The selectors are doubled — `:root:root`, `.dark.dark` — so the block outranks
+shadcn's own `:root` and `.dark` on
+[specificity](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_cascade/Specificity#increasing_specificity_by_duplicating_selector)
+rather than on order. Put the `@import` wherever your others go.
 
 <details>
 <summary>The three names both halves claim</summary>
