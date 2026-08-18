@@ -97,19 +97,43 @@ import { Mtb } from "material-theme-builder/react";
 >
 > Typically wrapping `{children}` in a
 > [layout](https://nextjs.org/docs/app/getting-started/layouts-and-pages#creating-a-layout).
+>
+> `<Mtb>` renders its `<style>`, so it works both server- and client-side.
+> Client-side is what you want when the theme has to be interactive through
+> `setMtbConfig`.
+
+> [!NOTE]
+>
+> For a theme that is not interactive / never changes at runtime, skip the
+> component entirely: the root entry holds `builder` alone, so a Server
+> Component can call it and emit `toCss()` into the document itself — no client
+> JS, and no `useMtb`.
+>
+> ```tsx
+> import { builder } from "material-theme-builder";
+>
+> const css = builder("#0e1216", { scheme: "vibrant" }).toCss();
+>
+> export default function RootLayout({
+>   children,
+> }: {
+>   children: React.ReactNode;
+> }) {
+>   return (
+>     <html lang="en">
+>       <head>
+>         <style dangerouslySetInnerHTML={{ __html: css }} />
+>       </head>
+>       <body>{children}</body>
+>     </html>
+>   );
+> }
+> ```
 
 > [!NOTE]
 >
 > CSS varnames are always kebab-cased, e.g. `myCustomColor1` →
 > `--md-sys-color-my-custom-color-1` / `--md-ref-palette-my-custom-color-1-<tone>`
-
-> [!NOTE]
->
-> `<Mtb>` injects the CSS from the client, and is the only thing here carrying
-> `"use client"`. The root entry holds `builder` alone — so from a
-> [React Server Component](https://react.dev/reference/rsc/server-components)
-> you can call it and emit `toCss()` into the document yourself, without
-> shipping components the page never renders.
 
 ## `useMtb`
 
