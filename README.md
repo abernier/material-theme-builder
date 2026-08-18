@@ -262,9 +262,12 @@ In your
 [shadcn's variables](https://ui.shadcn.com/docs/theming#list-of-variables) at
 the M3 custom properties, so every shadcn component follows whichever `<Mtb>` is
 above it in the tree. It carries no colors of its own — mount an `<Mtb>`, or
-emit [`toCss()`](#programmatic-api) server-side, or nothing resolves. The other
-two are the [Tailwind](#tailwind) recipe, unchanged: drop them and the
-components still follow, you just lose the M3 names in your own markup.
+emit [`toCss()`](#programmatic-api) server-side, or nothing resolves.
+
+The other two are optional. They are the [Tailwind](#tailwind) recipe unchanged,
+and what they add is names to write yourself — `bg-surface-container-low`,
+`text-on-primary`, your custom colors. Drop them and every shadcn component
+still follows the theme.
 
 For the opposite trade — concrete `oklch()` values and no `var()` at all, frozen
 at build time — see [`toShadcn()`](#programmatic-api).
