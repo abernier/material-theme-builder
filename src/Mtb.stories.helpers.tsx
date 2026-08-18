@@ -1149,8 +1149,8 @@ export function TailwindScheme() {
         </div>
 
         <p className="text-sm italic text-center">
-          Every <code>--color-*</code> declared in <code>tailwind.css</code> is
-          shown here as a Tailwind utility class
+          Every color the <code>@plugin</code> declares is shown here as a
+          Tailwind utility class
         </p>
       </div>
     </>

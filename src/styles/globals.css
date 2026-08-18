@@ -24,22 +24,18 @@
 
 /* ---- material-theme-builder ------------------------------------------------
  *
- * Ours, with the other imports -- where CSS requires an `@import` to be. Both
- * files are generated; see `scripts/generate.mjs`.
+ * Ours, with the other imports -- where CSS requires an `@import` to be.
+ * `shadcn.css` is generated; see `scripts/generate.mjs`. It points shadcn's own
+ * variables at the M3 properties, and outranks the `:root` / `.dark` below on
+ * specificity, so its position here costs it nothing.
  *
- * `tailwind.css` carries the M3 standard tokens. `shadcn.css` points shadcn's
- * own variables at the M3 properties, and outranks the `:root` / `.dark` below
- * on specificity, so its position here costs it nothing.
- *
- * On the three names both `@theme inline` blocks claim -- `background`,
- * `primary`, `secondary` -- shadcn's wins, being the later of the two. Which is
- * what the alias mapping is for: `bg-secondary` follows `--secondary`, the same
- * property `<Button variant="secondary">` reads.
+ * The plugin carries the whole M3 vocabulary -- standard tokens and custom
+ * colors alike. Its theme values are defaults, so on the three names shadcn's
+ * `@theme inline` also claims -- `background`, `primary`, `secondary` -- shadcn
+ * wins. Which is what the alias mapping is for: `bg-secondary` follows
+ * `--secondary`, the same property `<Button variant="secondary">` reads.
  */
-@import "../tailwind.css";
 @import "../shadcn.css";
-
-/* The plugin adds the custom colors, the one part a shipped file cannot know. */
 @plugin "../tailwind-plugin.ts" {
   custom-colors: myCustomColor1, myCustomColor2;
 }

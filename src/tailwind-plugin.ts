@@ -103,8 +103,8 @@ export function mtbColors({
 }
 
 /**
- * Tailwind v4 plugin — the `@theme inline` block of
- * `material-theme-builder/tailwind.css`, minus the copy-paste.
+ * Tailwind v4 plugin — the whole M3 vocabulary as theme colors, from one line
+ * of CSS.
  *
  * ```css
  * @import "tailwindcss";
@@ -114,22 +114,22 @@ export function mtbColors({
  * ```
  *
  * Colors declared through a plugin's `theme` are inlined by Tailwind — the
- * utility resolves straight to `var(--md-sys-color-primary)` and no
- * `--color-*` indirection is emitted — which is what the stylesheet's
- * `@theme inline` was there to get. That indirection is not cosmetic: a
+ * utility resolves straight to `var(--md-sys-color-primary)`, with no
+ * `--color-*` in between. That indirection is not cosmetic: a
  * `--color-primary: var(--md-sys-color-primary)` declared on `:root` resolves
  * once, against `:root`, so a nested `<Mtb>` re-declaring the M3 properties
  * would not reach the utilities.
  *
- * Unlike the stylesheet, custom colors need no hand-written block: name them
- * in the options and their four scheme roles plus eleven shades come with them.
+ * Custom colors need no hand-written block either: name them in the options
+ * and their four scheme roles plus eleven shades come with them — which is
+ * what no shipped stylesheet, knowing nothing of your config, could do. That
+ * is why this replaced the `tailwind.css` the package used to ship.
  *
- * One thing the stylesheet does that this cannot: theme values a plugin
- * contributes are defaults, so an `@theme` block in the consumer's own CSS
- * wins over them whatever the order — where a later `@import` of the
- * stylesheet would have won. Only colliding names are affected, and against
- * shadcn there are exactly three (`background`, `primary`, `secondary`), which
- * a three-line `@theme inline` of one's own hands back. See the README.
+ * The one thing to know: theme values a plugin contributes are defaults, so an
+ * `@theme` block in the consumer's own CSS wins over them whatever the order.
+ * Only colliding names are affected, and against shadcn there are exactly
+ * three — `background`, `primary`, `secondary` — which `shadcn.css` points
+ * back at M3 anyway. See the README.
  *
  * @see https://tailwindcss.com/docs/functions-and-directives#plugin-directive
  */

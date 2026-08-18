@@ -29,9 +29,9 @@ export default defineConfig([
     entryPoints: ["src/index.ts"],
     dts: true,
     clean: true,
-    // `dist/tailwind.css`, `dist/shadcn.css` and `dist/registry-item.json`
-    // are generated from the exporters this entry is what builds -- so they
-    // regenerate here, off the bundle they need.
+    // `dist/shadcn.css` and `dist/registry-item.json` are generated from the
+    // exporters this entry is what builds -- so they regenerate here, off the
+    // bundle they need.
     onSuccess: "node scripts/generate.mjs",
   },
   {
