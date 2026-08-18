@@ -1,7 +1,7 @@
 /*
  * The project's stylesheet, the one `components.json` names -- so `shadcn init`
- * wrote everything above the marker below and `shadcn add` keeps it current,
- * exactly as in a scaffolded project. Do NOT hand-edit that half: it used to
+ * wrote all of it except the two blocks marked below, and `shadcn add` keeps
+ * that current, exactly as in a scaffolded project. Do NOT hand-edit it: it used to
  * be a hand-kept approximation and had quietly drifted a whole major behind
  * (shadcn 3 `radix-nova` defaults, missing `--font-heading` and the
  * `--radius-2xl`..`4xl` scale). Ignored by Prettier so a CLI run diffs
@@ -15,12 +15,34 @@
  *   pnpm dlx shadcn@latest init --preset b0 --template vite --name probe --yes
  *   cat probe/src/index.css
  *
- * ...then paste it below this comment, above the marker.
+ * ...then paste it below this comment, keeping the two marked blocks.
  */
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/inter";
+
+/* ---- material-theme-builder ------------------------------------------------
+ *
+ * Ours, with the other imports -- where CSS requires an `@import` to be. Both
+ * files are generated; see `scripts/generate.mjs`.
+ *
+ * `tailwind.css` carries the M3 standard tokens. `shadcn.css` points shadcn's
+ * own variables at the M3 properties, and outranks the `:root` / `.dark` below
+ * on specificity, so its position here costs it nothing.
+ *
+ * On the three names both `@theme inline` blocks claim -- `background`,
+ * `primary`, `secondary` -- shadcn's wins, being the later of the two. Which is
+ * what the alias mapping is for: `bg-secondary` follows `--secondary`, the same
+ * property `<Button variant="secondary">` reads.
+ */
+@import "../tailwind.css";
+@import "../shadcn.css";
+
+/* The plugin adds the custom colors, the one part a shipped file cannot know. */
+@plugin "../tailwind-plugin.ts" {
+  custom-colors: myCustomColor1, myCustomColor2;
+}
 
 @custom-variant dark (&:is(.dark *));
 
@@ -146,28 +168,4 @@
   html {
     @apply font-sans;
     }
-}
-
-/* ---- material-theme-builder ------------------------------------------------
- *
- * Ours, below everything shadcn owns -- which is where the README tells a
- * reader to put it, and the only place it wins. `shadcn add` rewrites the
- * values inside the blocks above and leaves this alone; verified against the
- * real CLI.
- *
- * `tailwind.css` carries the M3 standard tokens: after shadcn's `@theme
- * inline`, so it takes back the three names both claim. `shadcn.css` points
- * shadcn's own variables at the M3 properties: after shadcn's `:root` and
- * `.dark`, which it overrides. Both are generated -- see `scripts/generate.mjs`.
- *
- * An `@import` this far down is not where CSS puts one, and Tailwind resolves
- * it in place regardless -- which is the arrangement a scaffolded project
- * forces, and what `tailwind-plugin.test.ts` checks.
- */
-@import "../tailwind.css";
-@import "../shadcn.css";
-
-/* The plugin adds the custom colors, the one part a shipped file cannot know. */
-@plugin "../tailwind-plugin.ts" {
-  custom-colors: myCustomColor1, myCustomColor2;
 }

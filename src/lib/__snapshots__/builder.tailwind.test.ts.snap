@@ -401,8 +401,8 @@ exports[`builder › toTailwind({ shadcn: true }) > should produce deterministic
   --color-neutral-variant-950: var(--md-ref-palette-neutral-variant-5);
 }
 
-:root,
-.dark {
+:root:root,
+.dark.dark {
   --background: var(--md-sys-color-surface);
   --foreground: var(--md-sys-color-on-surface);
   --card: var(--md-sys-color-surface-container-low);

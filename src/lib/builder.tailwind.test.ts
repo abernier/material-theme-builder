@@ -30,10 +30,10 @@ describe("builder › toTailwind()", () => {
 });
 
 describe("builder › toTailwind({ shadcn: true })", () => {
-  it("should append a :root, .dark block", () => {
+  it("should append a :root:root, .dark.dark block", () => {
     const result = builder("#769CDF").toTailwind({ shadcn: true });
     expect(result).toContain("@theme inline {");
-    expect(result).toContain(":root,\n.dark {");
+    expect(result).toContain(":root:root,\n.dark.dark {");
   });
 
   it("should map shadcn variables to M3 tokens", () => {

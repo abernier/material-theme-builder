@@ -329,9 +329,9 @@ describe("tailwind plugin › compiled output", () => {
   });
 
   // The recipe the README leads with, against a nominal shadcn scaffold: the
-  // stylesheet carries the standard tokens and wins the collisions by import
-  // order, the plugin carries only what the stylesheet cannot know. Neither
-  // half needs a hand-written block, and shadcn changes nothing.
+  // stylesheet carries the standard tokens, the plugin carries only what the
+  // stylesheet cannot know. Neither half needs a hand-written block, and
+  // shadcn changes nothing.
   it("should need no @theme of its own when the stylesheet carries the standard tokens", async () => {
     const theme = shadcnTheme();
     const candidates = [
@@ -341,12 +341,18 @@ describe("tailwind plugin › compiled output", () => {
     ];
 
     const css = await build(
-      `${TAILWIND}${theme}\n@import "${stylesheetPath}";\n@plugin "./tailwind-plugin" {\n  custom-colors: myCustomColor1, myCustomColor2;\n}\n`,
+      `${TAILWIND}@import "${stylesheetPath}";\n${theme}\n@plugin "./tailwind-plugin" {\n  custom-colors: myCustomColor1, myCustomColor2;\n}\n`,
       candidates,
     );
 
-    // the three names shadcn also claims
+    // Three names are claimed by both `@theme inline` blocks, and shadcn's is
+    // the later one, so those three go through its aliases -- which the
+    // mapping in `shadcn.css` then points back at M3. Everything else lands on
+    // its M3 role directly.
     for (const name of ["background", "primary", "secondary"]) {
+      expect(css).toContain(`background-color: var(--${name})`);
+    }
+    for (const name of ["surface", "tertiary", "error", "outline-variant"]) {
       expect(css).toContain(`background-color: var(--md-sys-color-${name})`);
     }
     expect(css).toContain(
@@ -383,6 +389,25 @@ describe("tailwind.css", () => {
   });
 });
 
+/**
+ * The specificity of the selector on the rule that declares `needle`.
+ *
+ * Counting `.class` and `:pseudo` tokens is enough for the selectors in play
+ * here -- `:root`, `.dark`, and the doubled forms the alias block ships.
+ */
+const specificityOf = (css: string, needle: string) => {
+  const rule = css.slice(0, css.indexOf(needle));
+  const selector = rule.slice(rule.lastIndexOf("}") + 1, rule.lastIndexOf("{"));
+
+  // Per selector in the list, not across it: `:root, .dark` is two selectors
+  // of specificity one, which is exactly what the doubled form has to beat.
+  return Math.max(
+    ...selector
+      .split(",")
+      .map((one) => (one.match(/[.:][\w-]+/g) ?? []).length),
+  );
+};
+
 describe("shadcn.css", () => {
   it("should make shadcn's own utilities resolve to the M3 properties", async () => {
     // The file is generated from `toShadcnAliases()`, so what is checked here
@@ -408,14 +433,15 @@ describe("shadcn.css", () => {
   });
 
   // The README's recipe, against the file layout a scaffold actually leaves:
-  // shadcn's blocks inline, our `@import` last. An import after a rule is not
-  // where CSS puts one, and the point of the check is that Tailwind resolves
-  // it there anyway -- inlined in place, so the cascade goes our way.
+  // shadcn's blocks inline. Ours wins on specificity, so it wins from either
+  // side of them -- which is what lets the `@import` sit with the others, where
+  // CSS requires it. The colors themselves are checked end to end by the
+  // `Shadcn/dashboard-01` story.
   it.each([
     ["after", true],
     ["before", false],
   ] as const)(
-    "should win the cascade only when imported %s shadcn's blocks",
+    "should outrank shadcn's own blocks, imported %s them",
     async (_, ourImportLast) => {
       const shadcnCss = await formatOutput(
         "shadcn.css",
@@ -430,46 +456,34 @@ describe("shadcn.css", () => {
         TAILWIND +
           shadcnTheme() +
           "\n" +
-          (ourImportLast ? parts.reverse() : parts).join(""),
+          (ourImportLast ? parts : parts.reverse()).join(""),
         ["bg-card"],
       );
 
-      // Which block lands last is the whole question, so compare positions --
-      // asserting on shadcn's own value would tie the test to a scaffold that
-      // is meant to be refreshed from upstream.
-      const ours = css.indexOf(
-        "--card: var(--md-sys-color-surface-container-low)",
+      expect(specificityOf(css, "--card: var(--md-sys-color-")).toBeGreaterThan(
+        specificityOf(css, "--card: oklch("),
       );
-      const theirs = css.lastIndexOf("--card: oklch(");
-
-      expect(ours).toBeGreaterThan(-1);
-      expect(theirs).toBeGreaterThan(-1);
-      expect(ours > theirs).toBe(ourImportLast);
     },
   );
 });
 
 describe("styles/globals.css", () => {
-  it("should import both generated halves below everything shadcn owns", () => {
-    // The repo dogfoods the arrangement the README documents, and the whole of
-    // it is positional: hoisted up with the other imports -- where an
-    // `@import` normally goes -- both halves lose, silently. Nothing else here
-    // reads this file, so nothing else would notice.
+  it("should keep every @import ahead of the first rule", () => {
+    // The repo dogfoods the arrangement the README documents. CSS drops an
+    // `@import` that follows a rule, and one tool in the chain -- the
+    // `postcss-import` Vite prepends -- does exactly that, silently: the file
+    // still compiles, minus whichever half was imported too late.
     const css = fs.readFileSync(path.join(here, "styles/globals.css"), "utf8");
+    const stripped = css.replace(/\/\*[\s\S]*?\*\//g, "");
 
-    const shadcnTheme = css.indexOf("@theme inline {");
-    const shadcnDark = css.indexOf("\n.dark {");
-    const standardTokens = css.indexOf('@import "../tailwind.css";');
-    const aliases = css.indexOf('@import "../shadcn.css";');
+    const lastImport = stripped.lastIndexOf("@import ");
+    const firstRule = stripped.search(
+      /^\s*(?:@(?:custom-variant|theme|layer)\b|[.:#\\w])/m,
+    );
 
-    for (const offset of [shadcnTheme, shadcnDark, standardTokens, aliases]) {
-      expect(offset).toBeGreaterThan(-1);
-    }
-
-    // `tailwind.css` takes back the names shadcn's `@theme inline` claims...
-    expect(standardTokens).toBeGreaterThan(shadcnTheme);
-    // ...and `shadcn.css` overrides the values in shadcn's own blocks.
-    expect(aliases).toBeGreaterThan(shadcnDark);
+    expect(lastImport).toBeGreaterThan(-1);
+    expect(firstRule).toBeGreaterThan(-1);
+    expect(lastImport).toBeLessThan(firstRule);
   });
 });
 

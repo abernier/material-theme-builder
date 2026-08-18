@@ -224,13 +224,20 @@ Pre-requisites:
 - You should use
   [`tailwind.cssVariables`](https://ui.shadcn.com/docs/theming#css-variables)
 
-One import at the end of your
+In your
 [`globals.css`](https://ui.shadcn.com/docs/installation/manual#configure-styles):
 
 ```css
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+
+/* 👇🏻 ADD THIS 👇🏻 */
+@import "material-theme-builder/tailwind.css"; /* the M3 tw classNames */
+@import "material-theme-builder/shadcn.css"; /* shadcn's variables remapping on M3 */
+@plugin "material-theme-builder/tailwind" { /* your custom colors */
+  custom-colors: myCustomColor1, myCustomColor2;
+}
 
 @custom-variant dark (&:is(.dark *));
 
@@ -249,46 +256,77 @@ One import at the end of your
   --background: oklch(0.145 0 0);
   ...
 }
-
-@layer base {
-  ...
-}
-
-/**
- * 👇🏻 ADD THIS 👇🏻
- */
-
-@import "material-theme-builder/shadcn.css";
 ```
 
-> [!IMPORTANT]
->
-> It must come after `:root` and `.dark`, because it overrides them. Moved up
-> with the other imports, shadcn's own colors win instead — no error, no
-> warning.
->
-> An `@import` after CSS rules is unusual, yes. Tailwind resolves it where it is
-> written, so it works.
-
-That points
+`shadcn.css` is the one that matters: it points
 [shadcn's variables](https://ui.shadcn.com/docs/theming#list-of-variables) at
 the M3 custom properties, so every shadcn component follows whichever `<Mtb>` is
 above it in the tree. It carries no colors of its own — mount an `<Mtb>`, or
 emit [`toCss()`](#programmatic-api) server-side, or nothing resolves.
 
+The other two are optional. They are the [Tailwind](#tailwind) recipe unchanged,
+and what they add is names to write yourself — `bg-surface-container-low`,
+`text-on-primary`, your custom colors. Drop them and every shadcn component
+still follows the theme.
+
 For the opposite trade — concrete `oklch()` values and no `var()` at all, frozen
 at build time — see [`toShadcn()`](#programmatic-api).
+
+<details>
+<summary>The three names both halves claim</summary>
+
+> [!NOTE]
+>
+> Written down for the record. It moves one utility by one role, and you almost
+> certainly do not need to care.
+
+Material and shadcn picked the same name for three things — `background`,
+`primary`, `secondary`. shadcn's `@theme inline` is the later of the two, so on
+those three it wins, and the utility goes through the mapping above:
+
+```
+bg-secondary → --color-secondary → var(--secondary) → var(--md-sys-color-secondary-container)
+```
+
+Without shadcn it is one hop shorter, and lands on the role of the same name:
+
+```
+bg-secondary → --color-secondary → var(--md-sys-color-secondary)
+```
+
+Same destination either way, M3 — just not the same role. And only for
+`secondary`: `primary` maps to `primary`, and M3 `background` and `surface` are
+the same color.
+
+If you ever want the M3 role itself, `<Mtb>` still emits it:
+
+```html
+<div class="bg-[var(--md-sys-color-secondary)]"></div>
+```
+
+or give it a name of its own:
+
+```css
+@theme inline {
+  --color-m3-secondary: var(--md-sys-color-secondary);
+}
+```
+
+</details>
 
 <details>
 <summary>The variables it remaps</summary>
 
 Both halves are generated from [`toShadcnAliases()`](#programmatic-api) and
 [`toShadcnRegistryItem()`](#programmatic-api), off one mapping, so they cannot
-drift:
+drift. The selectors are doubled so the block outranks shadcn's own `:root` and
+`.dark` on
+[specificity](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_cascade/Specificity#increasing_specificity_by_duplicating_selector)
+rather than on order — which is what lets the `@import` sit with your others.
 
 ```css
-:root,
-.dark {
+:root:root,
+.dark.dark {
   --background: var(--md-sys-color-surface);
   --foreground: var(--md-sys-color-on-surface);
   --card: var(--md-sys-color-surface-container-low);
