@@ -1,23 +1,8 @@
-// Generates the files the package ships that are derived from an exporter --
-// `tailwind.css` from `toTailwind()`, `shadcn.css` from `toShadcnAliases()`,
-// `registry-item.json` from `toShadcnRegistryItem()` -- into `src/` and
-// `dist/`.
+// Generates the exporter-derived files the package ships. Each has one
+// mapping behind it, so a hand-maintained copy could drift from it -- and did.
 //
-// The stylesheets used to be maintained by hand alongside the exporter they
-// mirror, which is how `--color-surface-tint` and `--color-surface-variant`
-// came to be missing from one and not the other. Generating them removes the
-// possibility: there is one mapping per file now, and the file is its output.
-//
-//   node scripts/generate.mjs
-//
-// Every copy is build output and all are gitignored: `dist/` is what ships,
-// `src/` is what Storybook `@import`s, so that its stylesheet can dogfood the
-// same arrangement the README recommends rather than a second-best one of its
-// own. That is why `pnpm run storybook` builds first. The registry item has no
-// `src/` copy -- nothing in the repo reads it, it is only ever fetched by
-// `shadcn add` from the published package.
-//
-// Runs from `tsup`'s `onSuccess`, so `pnpm run build` keeps them all current.
+// Run from `tsup`'s `onSuccess`. Every copy is gitignored build output: `dist/`
+// ships, `src/` is what Storybook `@import`s.
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -26,23 +11,12 @@ import prettier from "prettier";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
-// The outputs name variables, never colors, so the source is arbitrary -- every
-// exporter here returns the same thing whatever it is asked about. Keep it that
-// way: an output that varied with the source would mean this file publishing one
-// theme, chosen here, to everyone who installs it. That is why the registry item
-// below is built without `{ fallback: true }` -- the variant that does bake
-// colors in belongs to the CLI, which is given a real source color.
+// Arbitrary, and has to stay able to be: these outputs name variables, never
+// colors. Hence no `{ fallback: true }` below -- baking colors in is for the
+// CLI, which is given a real source.
 const SOURCE = "#6750A4";
 
-/**
- * The generated files: which exporter fills each, under which header, in which
- * directories.
- *
- * The headers exist to explain to a reader of `dist/*.css` why editing is
- * futile, and to say what the file deliberately leaves out. JSON has no comment
- * syntax, so `registry-item.json` goes without one -- and needs it less, being
- * a file the `shadcn` CLI reads rather than a human.
- */
+/** Which exporter fills each file, under which banner, into which directories. */
 const FILES = {
   "tailwind.css": {
     parser: "css",
@@ -88,10 +62,7 @@ export const GENERATED_FILES = /** @type {(keyof FILES)[]} */ (
   Object.keys(FILES)
 );
 
-/**
- * The subset with a `src/` copy — the stylesheets Storybook `@import`s, and so
- * the only ones its dev-server plugin has to keep current.
- */
+/** The subset with a `src/` copy -- what Storybook `@import`s. */
 export const STYLESHEETS = GENERATED_FILES.filter((name) =>
   FILES[name].dirs.includes("src"),
 );
@@ -111,11 +82,8 @@ export async function formatOutput(name, body) {
 }
 
 /**
- * A file's contents, from whichever `builder` the caller can reach.
- *
- * Taking it as an argument is what lets Storybook regenerate on the fly: it
- * loads `builder` from source through Vite, where this module can only reach
- * the built bundle.
+ * A file's contents, from whichever `builder` the caller can reach -- this
+ * module can only reach `dist/`, Storybook loads `src/` through Vite.
  *
  * @param {keyof FILES} name which file, e.g. `tailwind.css`
  * @param {(source: string) => Record<string, () => never>} builder
@@ -125,11 +93,8 @@ export const outputFrom = (name, builder) =>
   formatOutput(name, FILES[name].from(builder));
 
 /**
- * Write `content` to `path`, unless that is what it already says.
- *
- * Only writing on a real change is what leaves the working tree alone when a
- * build has nothing to say -- and, in Storybook, what stops an unrelated edit
- * under `src/lib/` from invalidating the stylesheet and every utility with it.
+ * Write `content` to `path`, unless that is what it already says -- so a build
+ * with nothing to say leaves the working tree alone.
  *
  * @param {string} path
  * @param {string} content
@@ -148,10 +113,8 @@ if (
   process.argv[1] &&
   import.meta.url === pathToFileURL(process.argv[1]).href
 ) {
-  // Imported lazily, and through a URL rather than a literal specifier, so
-  // that only the writing half needs a build to have happened -- a literal
-  // would have Vite resolve `dist/` at transform time when the test imports
-  // this module.
+  // A URL rather than a literal specifier: a literal would have Vite resolve
+  // `dist/` at transform time when the test imports this module.
   const { builder } = await import(
     new URL("../dist/index.js", import.meta.url).href
   );

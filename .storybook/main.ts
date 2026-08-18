@@ -13,18 +13,8 @@ import {
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 /**
- * Keep `src/tailwind.css` and `src/shadcn.css` current while the dev server
- * runs.
- *
- * They are generated from their exporters by `pnpm run build`, which fires
- * once — so without this, editing the M3 vocabulary would leave the stories
- * showing the tokens as they were at boot, while everything around them hot
- * reloaded. Reading `builder` through `ssrLoadModule` is what makes it live:
- * it comes from `src/`, through Vite's module graph, so an edit invalidates it
- * the same way it invalidates a component.
- *
- * Dev only. `storybook build` has no server to load modules through, and needs
- * none: `pnpm run build-storybook` builds first.
+ * Generate the stylesheets the stories `@import`, so a fresh clone needs no
+ * prior build. Dev only -- `build-storybook` builds first.
  */
 function generateCss(): Plugin {
   return {
@@ -32,24 +22,14 @@ function generateCss(): Plugin {
     apply: "serve",
 
     async configureServer(server) {
-      const write = async () => {
-        const { builder } = await server.ssrLoadModule("/src/lib/builder.ts");
+      const { builder } = await server.ssrLoadModule("/src/lib/builder.ts");
 
-        for (const name of STYLESHEETS) {
-          const css = await outputFrom(name, builder);
-
-          if (writeIfChanged(join(root, "src", name), css)) {
-            server.config.logger.info(`[mtb] regenerated src/${name}`);
-          }
-        }
-      };
-
-      // Before the first request, so a fresh clone needs no prior build.
-      await write();
-
-      server.watcher.on("change", async (file) => {
-        if (file.startsWith(join(root, "src/lib"))) await write();
-      });
+      for (const name of STYLESHEETS) {
+        writeIfChanged(
+          join(root, "src", name),
+          await outputFrom(name, builder),
+        );
+      }
     },
   };
 }

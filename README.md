@@ -168,8 +168,9 @@ stylesheet for the standard tokens, and a plugin for the custom colors:
 Drop the `@plugin` line if you have no custom colors.
 
 <details>
-  Each name listed brings its four scheme roles and eleven shades — `bg-myCustomColor1`,
-`text-on-myCustomColor1`, `bg-myCustomColor1-container`,
+
+Each name listed brings its four scheme roles and eleven shades —
+`bg-myCustomColor1`, `text-on-myCustomColor1`, `bg-myCustomColor1-container`,
 `bg-myCustomColor1-300`.
 
 `prefix` mirrors `builder({ prefix })`:
@@ -417,11 +418,13 @@ some.
 </details>
 
 <details>
-  <summary>mapping details</summary>
-  see:
-  
-    - https://chatgpt.com/share/6899f20a-422c-8011-a072-62fb649589a0
-    - https://gemini.google.com/share/51e072b6f1d2
+<summary>mapping details</summary>
+
+see:
+
+- https://chatgpt.com/share/6899f20a-422c-8011-a072-62fb649589a0
+- https://gemini.google.com/share/51e072b6f1d2
+
 </details>
 
 # Dev
