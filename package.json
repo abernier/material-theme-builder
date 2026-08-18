@@ -127,7 +127,8 @@
     "build-figma": "vite build --config figma-plugin/vite.config.ts && tsup --config figma-plugin/tsup.config.ts",
     "chromatic": "chromatic --project-token $CHROMATIC_PROJECT_TOKEN",
     "prepare": "pnpm run pretest && husky",
-    "changeset": "pnpm exec changeset"
+    "changeset": "pnpm exec changeset",
+    "dev": "pnpm run storybook"
   },
   "peerDependencies": {
     "react": "^19.2.3",
