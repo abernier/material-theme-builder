@@ -272,11 +272,6 @@ still follows the theme.
 For the opposite trade — concrete `oklch()` values and no `var()` at all, frozen
 at build time — see [`toShadcn()`](#programmatic-api).
 
-The selectors are doubled — `:root:root`, `.dark.dark` — so the block outranks
-shadcn's own `:root` and `.dark` on
-[specificity](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_cascade/Specificity#increasing_specificity_by_duplicating_selector)
-rather than on order. Put the `@import` wherever your others go.
-
 <details>
 <summary>The three names both halves claim</summary>
 
@@ -324,7 +319,10 @@ or give it a name of its own:
 
 Both halves are generated from [`toShadcnAliases()`](#programmatic-api) and
 [`toShadcnRegistryItem()`](#programmatic-api), off one mapping, so they cannot
-drift:
+drift. The selectors are doubled so the block outranks shadcn's own `:root` and
+`.dark` on
+[specificity](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_cascade/Specificity#increasing_specificity_by_duplicating_selector)
+rather than on order — which is what lets the `@import` sit with your others.
 
 ```css
 :root:root,
