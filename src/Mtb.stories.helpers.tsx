@@ -1,11 +1,45 @@
+import type { Meta } from "@storybook/react-vite";
 import { cva, type VariantProps } from "class-variance-authority";
 import { kebabCase, startCase, upperFirst } from "lodash-es";
 import { createContext, useContext, type ComponentProps } from "react";
 import { ExportButton } from "./ExportButton";
-import { STANDARD_TONES, type TokenName } from "./lib/builder";
+import { schemeNames, STANDARD_TONES, type TokenName } from "./lib/builder";
 import { cn } from "./lib/utils";
 import type { Mtb } from "./Mtb";
 import { useMtb } from "./Mtb.context";
+
+/**
+ * `<Mtb>`'s props as controls, shared by every story that themes with them.
+ *
+ * Every color gets a picker. Left to infer, a `string` prop renders as a "Set
+ * string" button whose first click hands the builder `''` -- a color to pick is
+ * both the better control and the one that cannot produce a value the prop has
+ * no reading for.
+ */
+export const mtbArgTypes = {
+  source: { control: "color" },
+  scheme: { control: "select", options: schemeNames },
+  contrast: { control: { type: "range", min: -1, max: 1, step: 0.1 } },
+  primary: { control: "color" },
+  secondary: { control: "color" },
+  tertiary: { control: "color" },
+  error: { control: "color" },
+  neutral: { control: "color" },
+  neutralVariant: { control: "color" },
+  children: {
+    table: { disable: true }, // hide
+  },
+} satisfies Meta<typeof Mtb>["argTypes"];
+
+/**
+ * Same reason, for the one prop a picker cannot cover: an unset `object`
+ * control is a "Set object" button that clicks to `{}`, which is not a list of
+ * custom colors. Starting it at `[]` -- the builder's own default -- opens the
+ * array editor instead, and changes nothing about what is rendered.
+ */
+export const mtbArgs = {
+  customColors: [],
+} satisfies Partial<ComponentProps<typeof Mtb>>;
 
 function Foo({ children, ...props }: ComponentProps<"div">) {
   return (

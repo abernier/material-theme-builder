@@ -1,11 +1,18 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { type ComponentProps, useMemo } from "react";
 import { allModes } from "../.storybook/modes";
-import { type MtbConfig, schemeNames } from "./lib/builder";
+import { type MtbConfig } from "./lib/builder";
 import { recolorizeSvg } from "./lib/recolorizeSvg";
 import { Mtb } from "./Mtb";
 import { useMtb } from "./Mtb.context";
-import { Layout, Scheme, Shades, TailwindScheme } from "./Mtb.stories.helpers";
+import {
+  Layout,
+  mtbArgs,
+  mtbArgTypes,
+  Scheme,
+  Shades,
+  TailwindScheme,
+} from "./Mtb.stories.helpers";
 
 import exampleSvg from "./assets/example.svg?raw";
 
@@ -41,39 +48,8 @@ const meta = {
   //     { name: "myCustomColor3", hex: "#E126C6", blend: false },
   //   ],
   // },
-  argTypes: {
-    source: {
-      control: "color",
-    },
-    scheme: {
-      control: "select",
-      options: schemeNames,
-    },
-    contrast: {
-      control: { type: "range", min: -1, max: 1, step: 0.1 },
-    },
-    primary: {
-      control: "color",
-    },
-    secondary: {
-      control: "color",
-    },
-    tertiary: {
-      control: "color",
-    },
-    error: {
-      control: "color",
-    },
-    neutral: {
-      control: "color",
-    },
-    neutralVariant: {
-      control: "color",
-    },
-    children: {
-      table: { disable: true }, // hide
-    },
-  },
+  args: mtbArgs,
+  argTypes: mtbArgTypes,
 } satisfies Meta<typeof Mtb>;
 
 export default meta;

@@ -7,8 +7,8 @@ import { DataTable } from "./components/data-table";
 import { SectionCards } from "./components/section-cards";
 import { SiteHeader } from "./components/site-header";
 import { SidebarInset, SidebarProvider } from "./components/ui/sidebar";
-import { schemeNames } from "./lib/builder";
 import { Mtb } from "./Mtb";
+import { mtbArgs, mtbArgTypes } from "./Mtb.stories.helpers";
 
 // Where `shadcn add dashboard-01` put it. Left there rather than tidied into
 // `fixtures/`, so that re-running the command diffs to nothing.
@@ -50,14 +50,8 @@ const meta = {
       delay: 2000,
     },
   },
-  argTypes: {
-    source: { control: "color" },
-    scheme: { control: "select", options: schemeNames },
-    contrast: { control: { type: "range", min: -1, max: 1, step: 0.1 } },
-    children: {
-      table: { disable: true }, // hide
-    },
-  },
+  args: mtbArgs,
+  argTypes: mtbArgTypes,
 } satisfies Meta<typeof Mtb>;
 
 export default meta;
