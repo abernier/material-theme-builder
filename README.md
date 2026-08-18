@@ -224,14 +224,20 @@ Pre-requisites:
 - You should use
   [`tailwind.cssVariables`](https://ui.shadcn.com/docs/theming#css-variables)
 
-One import in your
+In your
 [`globals.css`](https://ui.shadcn.com/docs/installation/manual#configure-styles):
 
 ```css
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "material-theme-builder/shadcn.css"; /* 👈🏻 ADD THIS */
+
+/* 👇🏻 ADD THIS 👇🏻 */
+@import "material-theme-builder/shadcn.css"; /* shadcn's variables, on M3 */
+@import "material-theme-builder/tailwind.css"; /* the M3 names, for your markup */
+@plugin "material-theme-builder/tailwind" { /* your custom colors */
+  custom-colors: myCustomColor1, myCustomColor2;
+}
 
 @custom-variant dark (&:is(.dark *));
 
@@ -252,11 +258,13 @@ One import in your
 }
 ```
 
-That points
+`shadcn.css` is the one that matters: it points
 [shadcn's variables](https://ui.shadcn.com/docs/theming#list-of-variables) at
 the M3 custom properties, so every shadcn component follows whichever `<Mtb>` is
 above it in the tree. It carries no colors of its own — mount an `<Mtb>`, or
-emit [`toCss()`](#programmatic-api) server-side, or nothing resolves.
+emit [`toCss()`](#programmatic-api) server-side, or nothing resolves. The other
+two are the [Tailwind](#tailwind) recipe, unchanged: drop them and the
+components still follow, you just lose the M3 names in your own markup.
 
 For the opposite trade — concrete `oklch()` values and no `var()` at all, frozen
 at build time — see [`toShadcn()`](#programmatic-api).
@@ -265,30 +273,12 @@ The selectors are doubled, `:root:root`, so the block outranks shadcn's own
 `:root` and `.dark` on specificity. Put the `@import` wherever your others go.
 
 <details>
-<summary>Using it alongside <code>tailwind.css</code></summary>
-
-The two stack — the [Tailwind](#tailwind) half brings the M3 utility names, the
-plugin brings your custom colors:
-
-```css
-@import "tailwindcss";
-@import "tw-animate-css";
-@import "shadcn/tailwind.css";
-
-@import "material-theme-builder/tailwind.css";
-@import "material-theme-builder/shadcn.css";
-@plugin "material-theme-builder/tailwind" {
-  custom-colors: myCustomColor1, myCustomColor2;
-}
-
-@custom-variant dark (&:is(.dark *));
-...
-```
+<summary>The three names both halves claim</summary>
 
 > [!NOTE]
 >
-> The rest is written down for the record. It moves one utility by one role, and
-> you almost certainly do not need to care.
+> Written down for the record. It moves one utility by one role, and you almost
+> certainly do not need to care.
 
 Material and shadcn picked the same name for three things — `background`,
 `primary`, `secondary`. shadcn's `@theme inline` is the later of the two, so on
