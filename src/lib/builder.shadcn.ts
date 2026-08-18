@@ -191,29 +191,30 @@ function toShadcnAliasVars(
  * `toTailwind({ shadcn: true })` appends.
  *
  * `:root, .dark` rather than one or the other: both modes read the same M3
- * properties, which is where the light/dark split already happened. It has to
- * come after shadcn's own `:root` and `.dark` blocks to win — which is the one
- * thing a reader has to know, and the reason
- * `buildShadcnRegistryItem()` exists.
+ * properties, which is where the light/dark split already happened.
+ *
+ * Each selector is doubled, `:root:root`, so the block outranks shadcn's own
+ * `:root` and `.dark` on specificity rather than on source order. Order would
+ * mean importing this file below shadcn's blocks, which is below other rules,
+ * which CSS forbids: a conforming parser drops such an `@import`, and one in
+ * the chain already did. Specificity lets the `@import` sit where imports go.
  */
 export function buildShadcnAliases(ctx: BuilderContext) {
   const lines = Object.entries(toShadcnAliasVars(ctx.prefix)).map(
     ([name, value]) => `--${name}: ${value};`,
   );
 
-  return `:root,\n.dark {\n  ${lines.join("\n  ")}\n}\n`;
+  return `:root:root,\n.dark.dark {\n  ${lines.join("\n  ")}\n}\n`;
 }
 
 /**
  * Generate the same alias mapping as `toShadcnAliases()`, shaped as a shadcn
  * registry item — installable with `shadcn add`.
  *
- * Why both: the stylesheet has to be imported *after* shadcn's own `:root` and
- * `.dark` to win the cascade, and the natural place for an `@import` is at the
- * top of the file with the others — which is exactly where it silently loses.
- * A registry item has no ordering to get wrong: the CLI rewrites the values
- * inside shadcn's existing blocks, in place, which is also the gesture every
- * other shadcn theme uses.
+ * Why both: the stylesheet is one `@import`, the registry item is the gesture
+ * every other shadcn theme uses — the CLI rewrites the values inside shadcn's
+ * existing blocks, in place, so nothing is layered over anything. It is also
+ * the only one of the two that can carry fallbacks.
  *
  * The values stay `var()` references, so this is not `toShadcn()` in a
  * wrapper: the colors still follow whichever `<Mtb>` is above them at runtime,

@@ -166,10 +166,10 @@ describe("builder › toShadcnAliases()", () => {
   const declared = (css: string) =>
     [...css.matchAll(/^ +--([\w-]+):/gm)].map(([, name]) => name);
 
-  it("should declare every shadcn variable in a :root, .dark block", () => {
+  it("should declare every shadcn variable in a :root:root, .dark.dark block", () => {
     const css = builder(SOURCE).toShadcnAliases();
 
-    expect(css).toContain(":root,\n.dark {");
+    expect(css).toContain(":root:root,\n.dark.dark {");
     expect(declared(css).sort()).toEqual([...SHADCN_VARS].sort());
   });
 

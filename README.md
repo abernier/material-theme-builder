@@ -224,13 +224,14 @@ Pre-requisites:
 - You should use
   [`tailwind.cssVariables`](https://ui.shadcn.com/docs/theming#css-variables)
 
-One import at the end of your
+One import in your
 [`globals.css`](https://ui.shadcn.com/docs/installation/manual#configure-styles):
 
 ```css
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+@import "material-theme-builder/shadcn.css"; /* 👈🏻 ADD THIS */
 
 @custom-variant dark (&:is(.dark *));
 
@@ -249,26 +250,7 @@ One import at the end of your
   --background: oklch(0.145 0 0);
   ...
 }
-
-@layer base {
-  ...
-}
-
-/**
- * 👇🏻 ADD THIS 👇🏻
- */
-
-@import "material-theme-builder/shadcn.css";
 ```
-
-> [!IMPORTANT]
->
-> It must come after `:root` and `.dark`, because it overrides them. Moved up
-> with the other imports, shadcn's own colors win instead — no error, no
-> warning.
->
-> An `@import` after CSS rules is unusual, yes. Tailwind resolves it where it is
-> written, so it works.
 
 That points
 [shadcn's variables](https://ui.shadcn.com/docs/theming#list-of-variables) at
@@ -279,6 +261,51 @@ emit [`toCss()`](#programmatic-api) server-side, or nothing resolves.
 For the opposite trade — concrete `oklch()` values and no `var()` at all, frozen
 at build time — see [`toShadcn()`](#programmatic-api).
 
+The selectors are doubled, `:root:root`, so the block outranks shadcn's own
+`:root` and `.dark` on specificity. Put the `@import` wherever your others go.
+
+<details>
+<summary>Using it alongside <code>tailwind.css</code></summary>
+
+> [!NOTE]
+>
+> Written down for the record. It moves one utility by one role, and you almost
+> certainly do not need to care.
+
+Material and shadcn picked the same name for three things — `background`,
+`primary`, `secondary`. shadcn's `@theme inline` is the later of the two, so on
+those three it wins, and the utility goes through the mapping above:
+
+```
+bg-secondary → --color-secondary → var(--secondary) → var(--md-sys-color-secondary-container)
+```
+
+Without shadcn it is one hop shorter, and lands on the role of the same name:
+
+```
+bg-secondary → --color-secondary → var(--md-sys-color-secondary)
+```
+
+Same destination either way, M3 — just not the same role. And only for
+`secondary`: `primary` maps to `primary`, and M3 `background` and `surface` are
+the same color.
+
+If you ever want the M3 role itself, `<Mtb>` still emits it:
+
+```html
+<div class="bg-[var(--md-sys-color-secondary)]"></div>
+```
+
+or give it a name of its own:
+
+```css
+@theme inline {
+  --color-m3-secondary: var(--md-sys-color-secondary);
+}
+```
+
+</details>
+
 <details>
 <summary>The variables it remaps</summary>
 
@@ -287,8 +314,8 @@ Both halves are generated from [`toShadcnAliases()`](#programmatic-api) and
 drift:
 
 ```css
-:root,
-.dark {
+:root:root,
+.dark.dark {
   --background: var(--md-sys-color-surface);
   --foreground: var(--md-sys-color-on-surface);
   --card: var(--md-sys-color-surface-container-low);
