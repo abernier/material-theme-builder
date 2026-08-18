@@ -231,35 +231,24 @@ One command, from inside your project:
 $ npx material-theme-builder shadcn-apply "#6750A4"
 ```
 
-Or from nothing at all — `shadcn-init` scaffolds a stock shadcn app
-(`shadcn init --preset b0 --template vite`), themes it and starts it:
+From nothing at all, scaffold with shadcn's own CLI first — this is what the repo
+itself dogfoods:
 
 ```sh
-$ npx material-theme-builder shadcn-init "#6750A4"
+$ npx shadcn@latest init --preset b0 --template vite
+$ cd material-theme-app && npx material-theme-builder shadcn-apply "#6750A4"
 ```
 
-The verbs are shadcn's own — there, `init` is the new project and `apply` the
-existing one — and they are prefixed because shadcn is one integration here
-among Figma, CSS, Tailwind and Flutter: a bare `init` would read as "initialize
-material-theme-builder", and would leave no room for a `tailwind-init` later.
-
-Anything after a `--` is forwarded verbatim to the shadcn command underneath —
-`shadcn init` for `shadcn-init`, `shadcn add` for `shadcn-apply` — so
-`shadcn-init "#6750A4" -- --template next -n my-app` scaffolds Next instead.
-Options of ours go before the separator; one written after it is refused, rather
-than forwarded into an error from shadcn about a flag it has never heard of.
-`--print` writes the equivalent shell chain and runs nothing.
+Anything after a `--` is forwarded verbatim to `shadcn add` underneath, without
+exception — `shadcn-apply "#6750A4" -- --overwrite --dry-run`. Options of ours go
+before the separator.
 
 `--shadcn-cli <spec>` pins which shadcn runs — `--shadcn-cli shadcn@4.18.0`, a
 tag, a fork, anything `npx` resolves — defaulting to `shadcn@latest`. (Not
 `--shadcn`: the root command has used that name since 3.2.0 for something else
-entirely, a boolean that appends the alias block to `--format tailwind`.) It
-reaches for neighbouring versions rather than back in time, though: the defaults
-these commands pass are shadcn 4.x vocabulary (`--preset b0` is a 4.x preset
-code), so pinning far enough back also means passing that era's preset after the
-`--`.
+entirely, a boolean that appends the alias block to `--format tailwind`.)
 
-Both do the same two things by hand, if you would rather: generate a registry
+It does the same two things by hand, if you would rather: generate a registry
 item for your source color, and install it the way you install any shadcn theme.
 
 ```sh
@@ -288,15 +277,15 @@ So it works both ways round: live under an `<Mtb>`, and static — server-render
 zero client JS — anywhere there is none.
 
 Every option lands in those fallbacks, `--scheme` and `--contrast` included, and
-`shadcn-init` and `shadcn-apply` take them all — so the item they generate is the one the
-by-hand route would have produced:
+`shadcn-apply` takes them all — so the item it generates is the one the by-hand
+route would have produced:
 
 ```sh
 $ npx material-theme-builder shadcn-apply "#6750A4" --scheme vibrant --contrast 0.5
 ```
 
-`--no-fallback` leaves the fallbacks out, on all three. `--custom-colors` is the
-one option the two subcommands do not take, and that is not an oversight:
+`--no-fallback` leaves the fallbacks out, on both. `--custom-colors` is the one
+option the subcommand does not take, and that is not an oversight:
 shadcn's variable set is fixed, so no component reads a custom color and a
 registry item cannot carry one.
 
