@@ -15,14 +15,14 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 
-import { Command } from "commander";
+import { Command, Option } from "commander";
 import { z } from "zod";
 import {
   addSourceArgument,
   addThemeOptions,
   builderOptions,
 } from "./cli.options";
-import { addChainOptions, runApply } from "./cli.shadcn";
+import { DEFAULT_SHADCN, runApply } from "./cli.shadcn";
 import {
   builder,
   DEFAULT_BLEND,
@@ -58,10 +58,27 @@ function writeFigmaTokens(theme: Theme, outputDir: string) {
   }
 }
 
+// The list `--format` accepts, and the list `writeOutput()` handles -- one array,
+// so a format cannot be offered without being written, or written without being
+// offered. Commander prints it in `--help` and refuses anything else, which is
+// what retires the `default:` branch that used to answer `--format bananas` with
+// JSON and not a word.
+const FORMATS = [
+  "json",
+  "css",
+  "figma",
+  "tailwind",
+  "shadcn",
+  "registry-item",
+  "flutter",
+] as const;
+
+type Format = (typeof FORMATS)[number];
+
 function writeOutput(
   theme: Theme,
   opts: {
-    format: string;
+    format: Format;
     output?: string;
     shadcn?: boolean;
     fallback?: boolean;
@@ -70,6 +87,8 @@ function writeOutput(
   const json = (value: unknown) => JSON.stringify(value, null, 2) + "\n";
 
   switch (opts.format) {
+    case "json":
+      return process.stdout.write(json(theme.toJson()));
     case "css":
       return process.stdout.write(theme.toCss());
     case "tailwind":
@@ -84,8 +103,6 @@ function writeOutput(
       return process.stdout.write(theme.toFlutter());
     case "figma":
       return writeFigmaTokens(theme, opts.output ?? "material-theme");
-    default:
-      return process.stdout.write(json(theme.toJson()));
   }
 }
 
@@ -113,10 +130,10 @@ addThemeOptions(
     "--custom-colors <json>",
     'Custom colors as JSON array (e.g. \'[{"name":"brand","hex":"#FF5733","blend":true}]\')',
   )
-  .option(
-    "--format <type>",
-    "Output format: json, css, figma, tailwind, shadcn, registry-item, or flutter",
-    "figma",
+  .addOption(
+    new Option("--format <type>", "Output format")
+      .choices(FORMATS)
+      .default("figma"),
   )
   .option("--output <dir>", "Output directory (required for figma format)")
   .option(
@@ -201,19 +218,25 @@ addThemeOptions(
 // it -- the published item is impersonal precisely because it cannot be asked
 // for a scheme.
 
-addChainOptions(
-  addThemeOptions(
-    addSourceArgument(
-      program
-        .command("shadcn-apply")
-        .description("Theme the shadcn project in the current directory"),
-    ).argument(
-      "[shadcn-args...]",
-      "Options after a `--`, forwarded verbatim to `shadcn add`",
-    ),
+addThemeOptions(
+  addSourceArgument(
+    program
+      .command("shadcn-apply")
+      .description("Theme the shadcn project in the current directory"),
+  ).argument(
+    "[shadcn-args...]",
+    "Options after a `--`, forwarded verbatim to `shadcn add`",
   ),
-).action((source: string, shadcnArgs: string[], _opts, command: Command) =>
-  runApply(source, shadcnArgs, command),
-);
+)
+  // `--shadcn-cli` rather than the obvious `--shadcn`, which is taken: the root
+  // command has shipped a boolean `--shadcn` since 3.2.0, just above.
+  .option(
+    "--shadcn-cli <spec>",
+    "npx package spec for the shadcn CLI to run (a version, tag, fork or tarball — anything npx resolves)",
+    DEFAULT_SHADCN,
+  )
+  .action((source: string, shadcnArgs: string[], _opts, command: Command) =>
+    runApply(source, shadcnArgs, command),
+  );
 
 program.parse();

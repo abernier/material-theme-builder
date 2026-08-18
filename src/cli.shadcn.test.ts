@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import { addThemeOptions, themeFrom } from "./cli.options";
-import { addArgv, addChainOptions } from "./cli.shadcn";
+import { addArgv } from "./cli.shadcn";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -61,7 +61,7 @@ describe("addArgv()", () => {
 
 describe("theme options", () => {
   const command = (argv: string[]) => {
-    const parsed = addChainOptions(addThemeOptions(new Command()));
+    const parsed = addThemeOptions(new Command());
     parsed.parse(argv, { from: "user" });
     return parsed;
   };
@@ -129,6 +129,14 @@ describe("cli", () => {
     ["--scheme vibrant", ["--scheme", "vibrant", "--format", "css"], ":root {"],
   ] as const)("should still answer `%s`", (_, args, expected) => {
     expect(run(["#6750A4", ...args])).toContain(expected);
+  });
+
+  it.runIf(fs.existsSync(cli))("should refuse an unknown --format", () => {
+    // It used to fall through to JSON, silently -- a typo answered with output
+    // that looked like a deliberate choice.
+    expect(() => run(["#6750A4", "--format", "bananas"])).toThrow(
+      /Allowed choices are json, css, figma, tailwind, shadcn, registry-item, flutter/,
+    );
   });
 
   it.runIf(fs.existsSync(cli))(
@@ -199,7 +207,7 @@ describe("cli", () => {
   it.runIf(fs.existsSync(cli))(
     "should not claim our own options back from after the `--`",
     () => {
-      const parsed = addChainOptions(addThemeOptions(new Command()))
+      const parsed = addThemeOptions(new Command())
         .argument("<source>")
         .argument("[shadcn-args...]");
       parsed.parse(["#769CDF", "--", "--scheme", "vibrant"], { from: "user" });

@@ -17,7 +17,9 @@ import { builder } from "./lib/builder";
 // Spawned rather than assumed installed, so a bare `npx material-theme-builder
 // shadcn-apply` works with nothing on disk.
 const NPX = ["npx", "--yes"];
-const DEFAULT_SHADCN = "shadcn@latest";
+
+/** The shadcn `--shadcn-cli` runs when it is not told otherwise. */
+export const DEFAULT_SHADCN = "shadcn@latest";
 
 // `shadcn add` defaults its own `--yes` to *false*, and prompts for
 // confirmation on a `registry:theme` item ("You are about to install a new
@@ -32,22 +34,6 @@ const YES = "--yes";
 // taste. This runs inside someone's own project, hence a name unlikely to be
 // theirs, and a check before writing.
 const ITEM = "mtb.json";
-
-/**
- * Declare the options describing the run itself rather than the theme it
- * installs.
- *
- * `--shadcn-cli` rather than the obvious `--shadcn`, which is taken: the root
- * command has shipped a boolean `--shadcn` since 3.2.0 (it appends the alias
- * block to `--format tailwind`).
- */
-export function addChainOptions(command: Command) {
-  return command.option(
-    "--shadcn-cli <spec>",
-    "npx package spec for the shadcn CLI to run (a version, tag, fork or tarball — anything npx resolves)",
-    DEFAULT_SHADCN,
-  );
-}
 
 /**
  * The argv for the `shadcn add` that installs the generated item.

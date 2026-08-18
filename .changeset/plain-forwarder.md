@@ -37,3 +37,7 @@ Everything after a `--` now goes to `shadcn add` untouched, with no exception:
 The theme options (`--scheme`, `--contrast`, the color overrides, `--prefix`,
 `--no-fallback`) are unchanged, and so is `--format registry-item` for piping it
 somewhere else yourself.
+
+Unrelated to shadcn, and in this release because it is breaking too:
+`--format` now declares its own list, so `--format bananas` is refused by name
+instead of silently producing JSON.
