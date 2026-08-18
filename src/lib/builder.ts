@@ -210,6 +210,19 @@ function assertHexInputs(
 }
 
 /**
+ * A core override as a UI hands it over, where "not set" arrives as `''`
+ * rather than as a missing key -- a cleared color picker, an empty text field.
+ *
+ * Every override is optional, so a blank one is the *absence* of an override:
+ * clearing the picker falls back to the palette generated from the source,
+ * which is the only reading that isn't a dead end. (`source` itself is
+ * required, so `''` there stays an error.)
+ */
+function optionalHex(hex: string | undefined) {
+  return hex?.trim() || undefined;
+}
+
+/**
  * The 28 standard tone values used in Material You tonal palettes.
  *
  * Tones are perceptual lightness in HCT, which is why the same tone reads as
@@ -504,21 +517,26 @@ export function builder(
     prefix = DEFAULT_PREFIX,
   }: Omit<MtbConfig, "source"> = {},
 ) {
-  assertHexInputs(
-    hexSource,
-    { primary, secondary, tertiary, error, neutral, neutralVariant },
-    hexCustomColors,
-  );
+  const cores = {
+    primary: optionalHex(primary),
+    secondary: optionalHex(secondary),
+    tertiary: optionalHex(tertiary),
+    error: optionalHex(error),
+    neutral: optionalHex(neutral),
+    neutralVariant: optionalHex(neutralVariant),
+  };
+
+  assertHexInputs(hexSource, cores, hexCustomColors);
 
   const sourceArgb = argbFromHex(hexSource);
   const sourceHct = Hct.fromInt(sourceArgb);
 
   // Determine the effective source for harmonization
   // When primary is defined, it becomes the effective source
-  const effectiveSource = primary || hexSource;
+  const effectiveSource = cores.primary || hexSource;
   const effectiveSourceArgb = argbFromHex(effectiveSource);
-  const effectiveSourceForHarmonization = primary
-    ? argbFromHex(primary)
+  const effectiveSourceForHarmonization = cores.primary
+    ? argbFromHex(cores.primary)
     : sourceArgb;
 
   // Create a base scheme to get the standard chroma values
@@ -531,32 +549,32 @@ export function builder(
     // Core colors (hex may be undefined)
     {
       name: "primary",
-      hex: primary,
+      hex: cores.primary,
       core: true,
       chromaSource: "primary",
     },
     {
       name: "secondary",
-      hex: secondary,
+      hex: cores.secondary,
       core: true,
       chromaSource: "primary",
     },
     {
       name: "tertiary",
-      hex: tertiary,
+      hex: cores.tertiary,
       core: true,
       chromaSource: "primary",
     },
-    { name: "error", hex: error, core: true, chromaSource: "primary" },
+    { name: "error", hex: cores.error, core: true, chromaSource: "primary" },
     {
       name: "neutral",
-      hex: neutral,
+      hex: cores.neutral,
       core: true,
       chromaSource: "neutral",
     },
     {
       name: "neutralVariant",
-      hex: neutralVariant,
+      hex: cores.neutralVariant,
       core: true,
       chromaSource: "neutralVariant",
     },

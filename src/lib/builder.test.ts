@@ -81,6 +81,23 @@ describe("builder() › hex validation", () => {
     ).not.toThrow();
   });
 
+  // Storybook's controls, and any color picker, hand back `''` for "cleared"
+  // instead of dropping the key -- so an emptied override has to read as no
+  // override at all. Only `source` is required, and it keeps refusing `''`
+  // (above).
+  it.each([
+    ["primary"],
+    ["secondary"],
+    ["tertiary"],
+    ["error"],
+    ["neutral"],
+    ["neutralVariant"],
+  ])("should read a blank %s as no override", (option) => {
+    expect(builder(SOURCE, { [option]: "" }).toCss()).toEqual(
+      builder(SOURCE).toCss(),
+    );
+  });
+
   // It throws before any conversion, so a caller cannot get a half-built theme
   // out of a bad input by reaching for a different exporter.
   it("should refuse at the entry, not at an exporter", () => {
