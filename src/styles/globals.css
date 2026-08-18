@@ -1,18 +1,173 @@
-/* shadcn's own stylesheet, pristine -- `@import "tailwindcss"` and the rest of
-   what `shadcn init` writes are in there, so nothing comes above it. */
-@import "./shadcn.css";
+/*
+ * The project's stylesheet, the one `components.json` names -- so `shadcn init`
+ * wrote everything above the marker below and `shadcn add` keeps it current,
+ * exactly as in a scaffolded project. Do NOT hand-edit that half: it used to
+ * be a hand-kept approximation and had quietly drifted a whole major behind
+ * (shadcn 3 `radix-nova` defaults, missing `--font-heading` and the
+ * `--radius-2xl`..`4xl` scale). Ignored by Prettier so a CLI run diffs
+ * cleanly, and `tailwind-plugin.test.ts` reads shadcn's `@theme inline`,
+ * `:root` and `.dark` straight out of here.
+ *
+ * Captured from `shadcn@4.18.0`. Refresh with `pnpm dlx shadcn@latest apply`,
+ * or from scratch with:
+ *
+ *   cd "$(mktemp -d)"
+ *   pnpm dlx shadcn@latest init --preset b0 --template vite --name probe --yes
+ *   cat probe/src/index.css
+ *
+ * ...then paste it below this comment, above the marker.
+ */
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/inter";
 
-/* The pairing the README recommends, dogfooded: the generated stylesheet for
-   the standard tokens -- imported after shadcn's `@theme`, so it takes back
-   the three names both claim -- and the plugin below for the custom colors,
-   the one part the stylesheet cannot know. */
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+    --font-heading: var(--font-sans);
+    --font-sans: 'Inter Variable', sans-serif;
+    --color-sidebar-ring: var(--sidebar-ring);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar: var(--sidebar);
+    --color-chart-5: var(--chart-5);
+    --color-chart-4: var(--chart-4);
+    --color-chart-3: var(--chart-3);
+    --color-chart-2: var(--chart-2);
+    --color-chart-1: var(--chart-1);
+    --color-ring: var(--ring);
+    --color-input: var(--input);
+    --color-border: var(--border);
+    --color-destructive: var(--destructive);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-accent: var(--accent);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-muted: var(--muted);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-secondary: var(--secondary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-primary: var(--primary);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-popover: var(--popover);
+    --color-card-foreground: var(--card-foreground);
+    --color-card: var(--card);
+    --color-foreground: var(--foreground);
+    --color-background: var(--background);
+    --radius-sm: calc(var(--radius) * 0.6);
+    --radius-md: calc(var(--radius) * 0.8);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) * 1.4);
+    --radius-2xl: calc(var(--radius) * 1.8);
+    --radius-3xl: calc(var(--radius) * 2.2);
+    --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+    --background: oklch(1 0 0);
+    --foreground: oklch(0.145 0 0);
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.145 0 0);
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.145 0 0);
+    --primary: oklch(0.205 0 0);
+    --primary-foreground: oklch(0.985 0 0);
+    --secondary: oklch(0.97 0 0);
+    --secondary-foreground: oklch(0.205 0 0);
+    --muted: oklch(0.97 0 0);
+    --muted-foreground: oklch(0.556 0 0);
+    --accent: oklch(0.97 0 0);
+    --accent-foreground: oklch(0.205 0 0);
+    --destructive: oklch(0.577 0.245 27.325);
+    --border: oklch(0.922 0 0);
+    --input: oklch(0.922 0 0);
+    --ring: oklch(0.708 0 0);
+    --chart-1: oklch(0.87 0 0);
+    --chart-2: oklch(0.556 0 0);
+    --chart-3: oklch(0.439 0 0);
+    --chart-4: oklch(0.371 0 0);
+    --chart-5: oklch(0.269 0 0);
+    --radius: 0.625rem;
+    --sidebar: oklch(0.985 0 0);
+    --sidebar-foreground: oklch(0.145 0 0);
+    --sidebar-primary: oklch(0.205 0 0);
+    --sidebar-primary-foreground: oklch(0.985 0 0);
+    --sidebar-accent: oklch(0.97 0 0);
+    --sidebar-accent-foreground: oklch(0.205 0 0);
+    --sidebar-border: oklch(0.922 0 0);
+    --sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark {
+    --background: oklch(0.145 0 0);
+    --foreground: oklch(0.985 0 0);
+    --card: oklch(0.205 0 0);
+    --card-foreground: oklch(0.985 0 0);
+    --popover: oklch(0.205 0 0);
+    --popover-foreground: oklch(0.985 0 0);
+    --primary: oklch(0.922 0 0);
+    --primary-foreground: oklch(0.205 0 0);
+    --secondary: oklch(0.269 0 0);
+    --secondary-foreground: oklch(0.985 0 0);
+    --muted: oklch(0.269 0 0);
+    --muted-foreground: oklch(0.708 0 0);
+    --accent: oklch(0.269 0 0);
+    --accent-foreground: oklch(0.985 0 0);
+    --destructive: oklch(0.704 0.191 22.216);
+    --border: oklch(1 0 0 / 10%);
+    --input: oklch(1 0 0 / 15%);
+    --ring: oklch(0.556 0 0);
+    --chart-1: oklch(0.87 0 0);
+    --chart-2: oklch(0.556 0 0);
+    --chart-3: oklch(0.439 0 0);
+    --chart-4: oklch(0.371 0 0);
+    --chart-5: oklch(0.269 0 0);
+    --sidebar: oklch(0.205 0 0);
+    --sidebar-foreground: oklch(0.985 0 0);
+    --sidebar-primary: oklch(0.488 0.243 264.376);
+    --sidebar-primary-foreground: oklch(0.985 0 0);
+    --sidebar-accent: oklch(0.269 0 0);
+    --sidebar-accent-foreground: oklch(0.985 0 0);
+    --sidebar-border: oklch(1 0 0 / 10%);
+    --sidebar-ring: oklch(0.556 0 0);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    }
+  body {
+    @apply bg-background text-foreground;
+    }
+  html {
+    @apply font-sans;
+    }
+}
+
+/* ---- material-theme-builder ------------------------------------------------
+ *
+ * Ours, below everything shadcn owns -- which is where the README tells a
+ * reader to put it, and the only place it wins. `shadcn add` rewrites the
+ * values inside the blocks above and leaves this alone; verified against the
+ * real CLI.
+ *
+ * `tailwind.css` carries the M3 standard tokens: after shadcn's `@theme
+ * inline`, so it takes back the three names both claim. `shadcn.css` points
+ * shadcn's own variables at the M3 properties: after shadcn's `:root` and
+ * `.dark`, which it overrides. Both are generated -- see `scripts/generate.mjs`.
+ *
+ * An `@import` this far down is not where CSS puts one, and Tailwind resolves
+ * it in place regardless -- which is the arrangement a scaffolded project
+ * forces, and what `tailwind-plugin.test.ts` checks.
+ */
 @import "../tailwind.css";
-/* And ours, pointing shadcn's variables at the M3 properties -- after theirs
-   above, which it overrides. Both files are generated; see
-   `scripts/generate.mjs`. */
 @import "../shadcn.css";
 
-/* After the imports, which CSS requires to come first. */
+/* The plugin adds the custom colors, the one part a shipped file cannot know. */
 @plugin "../tailwind-plugin.ts" {
   custom-colors: myCustomColor1, myCustomColor2;
 }

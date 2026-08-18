@@ -22,24 +22,44 @@ const generateStylesheet = (source = "#6750A4") =>
 
 /**
  * shadcn's `@theme inline` block — the names it claims — read out of
- * `styles/shadcn.css`.
+ * `styles/globals.css`.
  *
- * That file is pristine `shadcn init` output, so it is the authority on the
- * question. Only the one block, though: around it the file `@import`s
+ * That file is the one `components.json` names, so its top half is what the
+ * shadcn CLI writes and maintains -- the authority on the question. Only the one block, though: around it the file `@import`s
  * tailwindcss, an animation library and a webfont, none of which the harness
  * below has any business resolving. Extracted rather than kept as a fixture of
  * its own, so upstream lives in the repo once — a second copy is how "which
  * names does shadcn claim?" came to be answered by a file a major behind.
  */
 const shadcnTheme = () => {
-  const css = fs.readFileSync(path.join(here, "styles/shadcn.css"), "utf8");
+  const css = fs.readFileSync(path.join(here, "styles/globals.css"), "utf8");
   // Everything inside the block is indented, so the first `}` at column 0
   // closes it.
   const block = /^@theme inline \{$[\s\S]*?^\}$/m.exec(css)?.[0];
 
-  if (!block) throw new Error("no `@theme inline` block in styles/shadcn.css");
+  if (!block) throw new Error("no `@theme inline` block in styles/globals.css");
 
   return block;
+};
+
+/**
+ * shadcn's own `:root` and `.dark` blocks, out of the same file.
+ *
+ * In a scaffolded project these sit inline in `globals.css` -- the arrangement
+ * the README's shadcn section shows, and the one our stylesheet has to win
+ * against.
+ */
+const shadcnBlocks = () => {
+  const css = fs.readFileSync(path.join(here, "styles/globals.css"), "utf8");
+  const blocks = css.match(/^(?::root|\.dark) \{$[\s\S]*?^\}$/gm);
+
+  if (blocks?.length !== 2) {
+    throw new Error(
+      "expected one `:root` and one `.dark` in styles/globals.css",
+    );
+  }
+
+  return blocks.join("\n\n");
 };
 
 // Generated here rather than read from disk: the file is a build artifact, and
@@ -218,7 +238,8 @@ describe("tailwind plugin › compiled output", () => {
   // The one place the plugin is not interchangeable with the stylesheet:
   // theme values a plugin contributes are defaults, so an `@theme` block of
   // your own wins over them whatever the order -- where a later `@import` of
-  // the stylesheet would have won.
+  // the stylesheet would have won. Which is why the standard tokens are left
+  // to the stylesheet, and why the README documents that pairing alone.
   it.each([
     ["before", (theme: string, plugin: string) => plugin + theme],
     ["after", (theme: string, plugin: string) => theme + plugin],
@@ -237,36 +258,6 @@ describe("tailwind plugin › compiled output", () => {
       expect(css).toContain("background-color: var(--mine)");
     },
   );
-
-  // ...and the remedy the README documents. The list is short because names
-  // have to collide to be at risk, and against a nominal shadcn scaffold
-  // exactly three do.
-  it("should be winnable back by an @theme of the consumer's own", async () => {
-    const theme = shadcnTheme();
-    const claimed = new Set(
-      [...theme.matchAll(/--color-([\w-]+):/g)].map(([, name]) => name),
-    );
-    const collisions = Object.keys(mtbColors()).filter((name) =>
-      claimed.has(name),
-    );
-
-    expect(collisions).toEqual(["background", "primary", "secondary"]);
-
-    const handBack = `@theme inline {\n${collisions
-      .map((name) => `  --color-${name}: var(--md-sys-color-${name});`)
-      .join("\n")}\n}\n`;
-
-    // Upstream verbatim, so the recipe is checked against what shadcn actually
-    // emits rather than a hand-written stand-in for it.
-    const css = await build(
-      `${TAILWIND}${theme}\n@plugin "./tailwind-plugin";\n${handBack}`,
-      collisions.map((name) => `bg-${name}`),
-    );
-
-    for (const name of collisions) {
-      expect(css).toContain(`background-color: var(--md-sys-color-${name})`);
-    }
-  });
 
   it("should generate custom color utilities from the @plugin options", async () => {
     const css = await build(
@@ -300,6 +291,41 @@ describe("tailwind plugin › compiled output", () => {
       css.replace(/\s+/g, " ").replace(/\( /g, "(").replace(/ \)/g, ")");
 
     expect(normalize(viaPlugin)).toBe(normalize(viaStylesheet));
+  });
+
+  // `styles/globals.css` pins one order, and so does every other test here, so
+  // nothing would notice if another stopped working.
+  it("should not depend on the order of the three lines", async () => {
+    const lines: Record<string, string> = {
+      tailwind: TAILWIND,
+      stylesheet: `@import "${stylesheetPath}";\n`,
+      plugin: `@plugin "./tailwind-plugin" {\n  custom-colors: myCustomColor1;\n}\n`,
+    };
+    const orders = [
+      ["tailwind", "stylesheet", "plugin"],
+      ["tailwind", "plugin", "stylesheet"],
+      ["stylesheet", "tailwind", "plugin"],
+      ["stylesheet", "plugin", "tailwind"],
+      ["plugin", "tailwind", "stylesheet"],
+      ["plugin", "stylesheet", "tailwind"],
+    ];
+    const candidates = ["bg-primary", "bg-primary-300", "bg-myCustomColor1"];
+
+    const [reference, ...rest] = await Promise.all(
+      orders.map((order) =>
+        build(order.map((name) => lines[name]).join(""), candidates),
+      ),
+    );
+
+    // Equality alone would hold just as well over six empty stylesheets.
+    expect(reference).toContain(
+      "background-color: var(--md-sys-color-primary)",
+    );
+    expect(reference).toContain(
+      "background-color: var(--md-sys-color-my-custom-color-1)",
+    );
+
+    for (const css of rest) expect(css).toBe(reference);
   });
 
   // The recipe the README leads with, against a nominal shadcn scaffold: the
@@ -380,27 +406,70 @@ describe("shadcn.css", () => {
     );
     expect(css).toContain("color: var(--muted-foreground)");
   });
+
+  // The README's recipe, against the file layout a scaffold actually leaves:
+  // shadcn's blocks inline, our `@import` last. An import after a rule is not
+  // where CSS puts one, and the point of the check is that Tailwind resolves
+  // it there anyway -- inlined in place, so the cascade goes our way.
+  it.each([
+    ["after", true],
+    ["before", false],
+  ] as const)(
+    "should win the cascade only when imported %s shadcn's blocks",
+    async (_, ourImportLast) => {
+      const shadcnCss = await formatOutput(
+        "shadcn.css",
+        builder("#6750A4").toShadcnAliases(),
+      );
+      const ourPath = path.join(path.dirname(stylesheetPath), "ours.css");
+      fs.writeFileSync(ourPath, shadcnCss);
+
+      const parts = [`@import "${ourPath}";\n`, `${shadcnBlocks()}\n`];
+
+      const css = await build(
+        TAILWIND +
+          shadcnTheme() +
+          "\n" +
+          (ourImportLast ? parts.reverse() : parts).join(""),
+        ["bg-card"],
+      );
+
+      // Which block lands last is the whole question, so compare positions --
+      // asserting on shadcn's own value would tie the test to a scaffold that
+      // is meant to be refreshed from upstream.
+      const ours = css.indexOf(
+        "--card: var(--md-sys-color-surface-container-low)",
+      );
+      const theirs = css.lastIndexOf("--card: oklch(");
+
+      expect(ours).toBeGreaterThan(-1);
+      expect(theirs).toBeGreaterThan(-1);
+      expect(ours > theirs).toBe(ourImportLast);
+    },
+  );
 });
 
 describe("styles/globals.css", () => {
-  it("should keep every @import ahead of the @plugin block", () => {
-    // CSS requires imports to come first, and PostCSS only says so while
-    // Storybook is running -- which `pnpm run lgtm` never does. Cheap to
-    // assert here instead of finding out from a warning in a build log.
-    const statements = fs
-      .readFileSync(path.join(here, "styles/globals.css"), "utf8")
-      .split("\n")
-      .map((line) => line.trim())
-      .filter((line) => line.startsWith("@"));
+  it("should import both generated halves below everything shadcn owns", () => {
+    // The repo dogfoods the arrangement the README documents, and the whole of
+    // it is positional: hoisted up with the other imports -- where an
+    // `@import` normally goes -- both halves lose, silently. Nothing else here
+    // reads this file, so nothing else would notice.
+    const css = fs.readFileSync(path.join(here, "styles/globals.css"), "utf8");
 
-    const firstOther = statements.findIndex(
-      (line) => !line.startsWith("@import"),
-    );
+    const shadcnTheme = css.indexOf("@theme inline {");
+    const shadcnDark = css.indexOf("\n.dark {");
+    const standardTokens = css.indexOf('@import "../tailwind.css";');
+    const aliases = css.indexOf('@import "../shadcn.css";');
 
-    expect(firstOther).toBeGreaterThan(0);
-    expect(
-      statements.slice(firstOther).filter((line) => line.startsWith("@import")),
-    ).toEqual([]);
+    for (const offset of [shadcnTheme, shadcnDark, standardTokens, aliases]) {
+      expect(offset).toBeGreaterThan(-1);
+    }
+
+    // `tailwind.css` takes back the names shadcn's `@theme inline` claims...
+    expect(standardTokens).toBeGreaterThan(shadcnTheme);
+    // ...and `shadcn.css` overrides the values in shadcn's own blocks.
+    expect(aliases).toBeGreaterThan(shadcnDark);
   });
 });
 
