@@ -233,8 +233,8 @@ In your
 @import "shadcn/tailwind.css";
 
 /* 👇🏻 ADD THIS 👇🏻 */
-@import "material-theme-builder/shadcn.css"; /* shadcn's variables, on M3 */
 @import "material-theme-builder/tailwind.css"; /* the M3 names, for your markup */
+@import "material-theme-builder/shadcn.css"; /* shadcn's variables, on M3 */
 @plugin "material-theme-builder/tailwind" { /* your custom colors */
   custom-colors: myCustomColor1, myCustomColor2;
 }
