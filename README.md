@@ -267,10 +267,28 @@ The selectors are doubled, `:root:root`, so the block outranks shadcn's own
 <details>
 <summary>Using it alongside <code>tailwind.css</code></summary>
 
+The two stack — the [Tailwind](#tailwind) half brings the M3 utility names, the
+plugin brings your custom colors:
+
+```css
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@import "material-theme-builder/tailwind.css";
+@import "material-theme-builder/shadcn.css";
+@plugin "material-theme-builder/tailwind" {
+  custom-colors: myCustomColor1, myCustomColor2;
+}
+
+@custom-variant dark (&:is(.dark *));
+...
+```
+
 > [!NOTE]
 >
-> Written down for the record. It moves one utility by one role, and you almost
-> certainly do not need to care.
+> The rest is written down for the record. It moves one utility by one role, and
+> you almost certainly do not need to care.
 
 Material and shadcn picked the same name for three things — `background`,
 `primary`, `secondary`. shadcn's `@theme inline` is the later of the two, so on
