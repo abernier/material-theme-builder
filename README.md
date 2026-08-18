@@ -165,11 +165,10 @@ stylesheet for the standard tokens, and a plugin for the custom colors:
 }
 ```
 
-Their order does not matter. Only an `@theme` block of your own is
-order-sensitive — see the warning below.
+Drop the `@plugin` line if you have no custom colors.
 
-Drop the `@plugin` line if you have no custom colors. Each name listed brings
-its four scheme roles and eleven shades — `bg-myCustomColor1`,
+<details>
+  Each name listed brings its four scheme roles and eleven shades — `bg-myCustomColor1`,
 `text-on-myCustomColor1`, `bg-myCustomColor1-container`,
 `bg-myCustomColor1-300`.
 
@@ -182,8 +181,7 @@ its four scheme roles and eleven shades — `bg-myCustomColor1`,
 }
 ```
 
-The plugin can carry the standard tokens on its own — `@plugin` without the
-`@import`. Read the warning below first if you also use shadcn.
+</details>
 
 > [!TIP]
 >
@@ -192,28 +190,6 @@ The plugin can carry the standard tokens on its own — `@plugin` without the
 > `bg-primary` compiles to `background-color: var(--md-sys-color-primary)`, with
 > no `--color-primary` in between. That one would sit on `:root`, out of reach
 > of a nested `<Mtb>`.
-
-> [!WARNING]
->
-> Theme values a plugin contributes are _defaults_: an `@theme` block of your
-> own wins whatever the order. The stylesheet, being CSS, wins by import order.
->
-> That is why the standard tokens are left to the stylesheet. shadcn's
-> `@theme inline` claims three names M3 also uses — `background`, `primary`,
-> `secondary` — and the stylesheet takes them back. Drop the `@import` and let
-> the plugin carry the standard tokens, and you hand those three back yourself:
->
-> ```css
-> @theme inline {
->   --color-background: var(--md-sys-color-background);
->   --color-primary: var(--md-sys-color-primary);
->   --color-secondary: var(--md-sys-color-secondary);
-> }
-> ```
->
-> Left alone, `bg-secondary` resolves through shadcn's `--secondary`, which the
-> [shadcn](#shadcn) section remaps to `secondary-container` — a tone 90 where
-> you asked for a tone 40.
 
 <details>
 <summary>The theme variables the stylesheet declares</summary>
@@ -247,131 +223,60 @@ Pre-requisites:
 - You should use
   [`tailwind.cssVariables`](https://ui.shadcn.com/docs/theming#css-variables)
 
-One command, from inside your project:
-
-```sh
-$ npx material-theme-builder shadcn-apply "#6750A4"
-```
-
-From nothing at all, scaffold with shadcn's own CLI first — what this repo
-dogfoods:
-
-```sh
-$ npx shadcn@latest init --preset b0 --template vite
-$ cd material-theme-app && npx material-theme-builder shadcn-apply "#6750A4"
-```
-
-Anything after a `--` is forwarded verbatim to `shadcn add`. Our options go
-before it:
-
-```sh
-$ npx material-theme-builder shadcn-apply "#6750A4" -- --overwrite --dry-run
-```
-
-`--shadcn-cli <spec>` pins which shadcn runs — a tag, a fork, anything `npx`
-resolves. Defaults to `shadcn@latest`. (Not `--shadcn`: the root command has
-used that name since 3.2.0 for a boolean appending the alias block to
-`--format tailwind`.)
-
-By hand, if you would rather — generate a registry item, install it like any
-shadcn theme:
-
-```sh
-$ npx material-theme-builder "#6750A4" --format registry-item > mtb.json
-$ npx shadcn@latest add ./mtb.json && rm mtb.json
-```
-
-Either way, your `:root` and `.dark` blocks are rewritten in place.
-[shadcn's variables](https://ui.shadcn.com/docs/theming#list-of-variables) now
-point at the M3 custom properties, with the theme's own colors left in as the
-`var()` fallbacks:
-
-```css
-:root {
-  --card: var(--md-sys-color-surface-container-low, oklch(0.968 0.012 317.742));
-}
-
-.dark {
-  --card: var(--md-sys-color-surface-container-low, oklch(0.227 0.01 303.714));
-}
-```
-
-Every shadcn component then follows whichever `<Mtb>` is above it in the tree.
-Where there is none, the fallbacks render the theme statically — server-rendered,
-zero client JS.
-
-`shadcn-apply` takes every option the root command does, and they all land in
-those fallbacks:
-
-```sh
-$ npx material-theme-builder shadcn-apply "#6750A4" --scheme vibrant --contrast 0.5
-```
-
-`--no-fallback` leaves the fallbacks out, on both. `--custom-colors` is the one
-option missing: shadcn's variable set is fixed, so a registry item cannot carry
-one.
-
-> [!WARNING]
->
-> `shadcn add` overwrites shadcn's own `oklch()` values — they are not a safety
-> net. With nothing declaring the M3 properties and no fallbacks, every variable
-> resolves to nothing and components render transparent. `git diff` your CSS, or
-> re-run `shadcn init`, to get the defaults back.
-
-> [!NOTE]
->
-> shadcn's CLI also appends a self-referential `--card: var(--card);` per
-> variable to your `@theme inline` block. Noise, not a bug: they land _above_
-> your `:root`, so the real values win. Delete them if they bother you.
-
-For the opposite trade — concrete `oklch()` values and no `var()` at all, frozen
-at build time — see [`toShadcn()`](#programmatic-api).
-
-<details>
-<summary>Install the mapping alone, without generating anything</summary>
-
-The package publishes one, so `shadcn add` has something to fetch without a
-build step:
-
-```sh
-$ npx shadcn@latest add https://unpkg.com/material-theme-builder/registry-item.json
-```
-
-The mapping and nothing else — 31 `var()` references, no colors. The same file
-whatever your source color, scheme or contrast, since those arrive at runtime.
-Hence its one requirement: mount an `<Mtb>`, or emit
-[`toCss()`](#programmatic-api) server-side, or nothing resolves. Generate your
-own, as above, to have colors to fall back on.
-
-</details>
-
-<details>
-<summary>Rather import a stylesheet than let the CLI edit your file</summary>
-
-A stylesheet is shipped too — the mapping in one line you can delete:
+One import at the end of your
+[`globals.css`](https://ui.shadcn.com/docs/installation/manual#configure-styles):
 
 ```css
 @import "tailwindcss";
-@import "./shadcn.css"; /* shadcn's own `:root` and `.dark` */
-@import "material-theme-builder/shadcn.css"; /* ...then ours */
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  ...
+}
+
+:root {
+  --radius: 0.625rem;
+  --background: oklch(1 0 0);
+  ...
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  ...
+}
+
+@layer base {
+  ...
+}
+
+/**
+ * 👇🏻 ADD THIS 👇🏻
+ */
+
+@import "material-theme-builder/shadcn.css";
 ```
 
 > [!IMPORTANT]
 >
-> It has to come AFTER shadcn's own `:root { ... }` and `.dark { ... }`, which
-> it overrides. **Not** at the top with your other imports, where it silently
-> loses:
+> It must come after `:root` and `.dark`, because it overrides them. Moved up
+> with the other imports, shadcn's own colors win instead — no error, no
+> warning.
 >
-> ```css
-> /* ✗ `--card` falls back to shadcn's grey; nothing warns you */
-> @import "tailwindcss";
-> @import "material-theme-builder/shadcn.css";
-> @import "./shadcn.css";
-> ```
->
-> The registry item above exists to make this impossible to get wrong.
+> An `@import` after CSS rules is unusual, yes. Tailwind resolves it where it is
+> written, so it works.
 
-</details>
+That points
+[shadcn's variables](https://ui.shadcn.com/docs/theming#list-of-variables) at
+the M3 custom properties, so every shadcn component follows whichever `<Mtb>` is
+above it in the tree. It carries no colors of its own — mount an `<Mtb>`, or
+emit [`toCss()`](#programmatic-api) server-side, or nothing resolves.
+
+For the opposite trade — concrete `oklch()` values and no `var()` at all, frozen
+at build time — see [`toShadcn()`](#programmatic-api).
 
 <details>
 <summary>The variables it remaps</summary>
@@ -416,6 +321,98 @@ drift:
   --sidebar-ring: var(--md-sys-color-primary);
 }
 ```
+
+</details>
+
+### `shadcn-apply`
+
+The alternative, for colors to fall back on and no import to place. One command,
+from inside your project:
+
+```sh
+$ npx material-theme-builder shadcn-apply "#6750A4"
+```
+
+From nothing at all, scaffold with shadcn's own CLI first — what this repo
+dogfoods:
+
+```sh
+$ npx shadcn@latest init --preset b0 --name material-theme-app
+$ cd material-theme-app && npx material-theme-builder shadcn-apply "#6750A4"
+```
+
+It generates a registry item for your source color and hands it to `shadcn add`,
+which rewrites the values inside your existing `:root` and `.dark` blocks, in
+place. Same mapping as the stylesheet, with that theme's own colors left in as
+the `var()` fallbacks:
+
+```css
+:root {
+  --card: var(--md-sys-color-surface-container-low, oklch(0.968 0.012 317.742));
+}
+
+.dark {
+  --card: var(--md-sys-color-surface-container-low, oklch(0.227 0.01 303.714));
+}
+```
+
+So it works with no `<Mtb>` at all — the fallbacks render the theme statically,
+server-rendered, zero client JS. Your old values are overwritten, not kept
+anywhere: `git diff` is the undo.
+
+Both steps by hand, if you would rather:
+
+```sh
+$ npx material-theme-builder "#6750A4" --format registry-item > mtb.json
+$ npx shadcn@latest add ./mtb.json && rm mtb.json
+```
+
+`shadcn-apply` takes every theme option `material-theme-builder` itself takes,
+and they all land in those fallbacks:
+
+```sh
+$ npx material-theme-builder shadcn-apply "#6750A4" --scheme vibrant --contrast 0.5
+```
+
+<details>
+<summary>The rest of the options</summary>
+
+`--no-fallback` leaves the fallbacks out, on both — so shadcn's own colors are
+dropped rather than kept in reserve. Nothing then declares those variables
+except an `<Mtb>` or a [`toCss()`](#programmatic-api): without one, they resolve
+to nothing and the components render transparent.
+
+`--custom-colors` is the one option missing: shadcn's variable set is fixed, so
+a registry item cannot carry one.
+
+Anything after a `--` is forwarded verbatim to `shadcn add`. Our options go
+before it:
+
+```sh
+$ npx material-theme-builder shadcn-apply "#6750A4" -- --overwrite --dry-run
+```
+
+> [!NOTE]
+>
+> shadcn's CLI also appends a self-referential `--card: var(--card);` per
+> variable to your `@theme inline` block. Noise, not a bug: they land _above_
+> your `:root`, so the real values win. Delete them if they bother you.
+
+</details>
+
+<details>
+<summary>Install the mapping alone, without generating anything</summary>
+
+The package publishes a registry item too, so `shadcn add` has something to
+fetch without a build step:
+
+```sh
+$ npx shadcn@latest add https://unpkg.com/material-theme-builder/registry-item.json
+```
+
+It is the stylesheet's content, installed the registry way: the mapping and
+nothing else, no colors to fall back on. Generate your own, as above, to have
+some.
 
 </details>
 
