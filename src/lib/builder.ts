@@ -22,9 +22,16 @@ import { buildFigmaTokens, buildFigmaVariables } from "./builder.figma";
 import { buildFlutter } from "./builder.flutter";
 import { buildJson } from "./builder.json";
 import {
+  buildMapping,
+  buildMappingAliases,
+  type Mapping,
+  type MappingAliasesOptions,
+} from "./builder.mapping";
+import {
   buildShadcn,
   buildShadcnAliases,
   buildShadcnRegistryItem,
+  type ShadcnOptions,
   type ShadcnRegistryItemOptions,
 } from "./builder.shadcn";
 import { buildTailwind, type TailwindOptions } from "./builder.tailwind";
@@ -33,6 +40,14 @@ import { DEFAULT_PREFIX, tokenNames } from "./tokens";
 // ─── Re-exports (types defined alongside their exporter) ─────────────────
 
 export type {
+  Mapping,
+  MappingAliasesOptions,
+  MappingVars,
+} from "./builder.mapping";
+
+export { SHADCN_MAPPING } from "./builder.shadcn";
+export type {
+  ShadcnOptions,
   ShadcnRegistryItem,
   ShadcnRegistryItemOptions,
   ShadcnTheme,
@@ -706,8 +721,12 @@ export function builder(
     toFigmaVariables: () => buildFigmaVariables(ctx),
     toFigmaTokens: () => buildFigmaTokens(ctx),
     toTailwind: (options?: TailwindOptions) => buildTailwind(ctx, options),
-    toShadcn: () => buildShadcn(ctx),
-    toShadcnAliases: () => buildShadcnAliases(ctx),
+    toMapping: (mapping: Mapping) => buildMapping(ctx, mapping),
+    toMappingAliases: (mapping: Mapping, options?: MappingAliasesOptions) =>
+      buildMappingAliases(ctx, mapping, options),
+    toShadcn: (options?: ShadcnOptions) => buildShadcn(ctx, options),
+    toShadcnAliases: (options?: ShadcnOptions) =>
+      buildShadcnAliases(ctx, options),
     toShadcnRegistryItem: (options?: ShadcnRegistryItemOptions) =>
       buildShadcnRegistryItem(ctx, options),
     toFlutter: () => buildFlutter(ctx),

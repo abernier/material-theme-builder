@@ -8,11 +8,16 @@
 // still shipped `Mtb` and the color utilities to the browser, for a component
 // the page never rendered.
 
-export { builder } from "./lib/builder";
+export { SHADCN_MAPPING, builder } from "./lib/builder";
 export type {
+  Mapping,
+  MappingAliasesOptions,
+  MappingVars,
   McuConfig,
   MtbConfig,
+  ShadcnOptions,
   ShadcnRegistryItem,
+  ShadcnRegistryItemOptions,
   ShadcnTheme,
   ShadcnVarName,
 } from "./lib/builder";

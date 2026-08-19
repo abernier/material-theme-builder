@@ -63,8 +63,11 @@ function writeItem(source: string, command: Command, file: string) {
   // in a project that is not ours. Both are idempotent.
   process.on("exit", () => fs.rmSync(file, { force: true }));
 
-  const { options, fallback } = themeFrom(command);
-  const item = builder(source, options).toShadcnRegistryItem({ fallback });
+  const { options, fallback, mapping } = themeFrom(command);
+  const item = builder(source, options).toShadcnRegistryItem({
+    fallback,
+    mapping,
+  });
   fs.writeFileSync(file, `${JSON.stringify(item, null, 2)}\n`);
 }
 

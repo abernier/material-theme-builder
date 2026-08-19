@@ -12,12 +12,15 @@
 // `--format json|css|figma|tailwind` really do emit them. An option that provably
 // does nothing would be worse than a missing one.
 
+import * as fs from "node:fs";
+
 import {
   InvalidArgumentError,
   Option,
   type Command,
   type OptionValues,
 } from "commander";
+import { z } from "zod";
 
 import {
   DEFAULT_CONTRAST,
@@ -25,8 +28,56 @@ import {
   DEFAULT_SCHEME,
   isHexColor,
   schemeNames,
+  type Mapping,
   type MtbConfig,
 } from "./lib/builder";
+
+// A flat object of strings, and no more: the M3 token each name is checked
+// against is the theme's business -- `builder()` knows which tokens exist,
+// including this theme's custom colors, and says so by name. Here it is only the
+// *shape* that has to be right, so that a JSON array or a nested object is
+// refused as such rather than reaching the builder as an unreadable mapping.
+const mappingSchema = z.record(
+  z.string(),
+  z.string(),
+) satisfies z.ZodType<Mapping>;
+
+/**
+ * Commander parser for `--mapping` — a path to a JSON file.
+ *
+ * A file rather than an inline `<json>` like `--custom-colors`: a mapping is
+ * thirty-odd lines someone keeps and edits, not something typed at a prompt.
+ *
+ * Read and checked here, at parse time, so a missing file or a stray array is
+ * one line with the path in it -- the same reason `parseHexColor()` restates
+ * what `builder()` already enforces.
+ */
+export function parseMappingFile(file: string): Mapping {
+  let contents: string;
+  try {
+    contents = fs.readFileSync(file, "utf8");
+  } catch {
+    throw new InvalidArgumentError(`could not read '${file}'.`);
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(contents);
+  } catch {
+    throw new InvalidArgumentError(`'${file}' is not valid JSON.`);
+  }
+
+  const result = mappingSchema.safeParse(parsed);
+  if (!result.success) {
+    const issue = result.error.issues[0];
+    const where = issue?.path.length ? ` at ${issue.path.join(".")}` : "";
+    throw new InvalidArgumentError(
+      `'${file}'${where}: ${issue?.message ?? "is invalid"}. Expected an object of CSS variable to M3 token, e.g. {"--primary": "tertiary"}.`,
+    );
+  }
+
+  return result.data;
+}
 
 /**
  * Commander parser for a hex color — the `<source>` argument, and every
@@ -74,6 +125,8 @@ export type Theme = {
   options: ThemeOptions;
   /** Whether the item bakes this theme's colors in as the `var()` fallbacks. */
   fallback: boolean;
+  /** Variables to map differently, merged over the shadcn preset. */
+  mapping?: Mapping;
 };
 
 /**
@@ -104,6 +157,11 @@ export function addThemeOptions(command: Command) {
       "--neutral-variant <hex>",
       "Neutral variant color override",
       parseHexColor,
+    )
+    .option(
+      "--mapping <file>",
+      'JSON file of shadcn variable to M3 token, merged over the defaults (e.g. {"--primary": "tertiary"})',
+      parseMappingFile,
     )
     .option(
       "--no-fallback",
@@ -152,5 +210,6 @@ export function themeFrom(command: Command): Theme {
     // which is what makes baking its colors in as the fallbacks free. See
     // `buildShadcnRegistryItem()`.
     fallback: opts.fallback ?? true,
+    mapping: opts.mapping,
   };
 }
