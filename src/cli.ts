@@ -15,7 +15,7 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 
-import { Command, Option } from "commander";
+import { Command, Option, type OptionValues } from "commander";
 import { z } from "zod";
 import {
   addSourceArgument,
@@ -28,6 +28,7 @@ import {
   DEFAULT_BLEND,
   isHexColor,
   type HexCustomColor,
+  type Mapping,
 } from "./lib/builder";
 
 // `hex` is refined rather than left a bare string, so that a bad color inside the
@@ -82,6 +83,7 @@ function writeOutput(
     output?: string;
     shadcn?: boolean;
     fallback?: boolean;
+    mapping?: Mapping;
   },
 ) {
   const json = (value: unknown) => JSON.stringify(value, null, 2) + "\n";
@@ -92,18 +94,70 @@ function writeOutput(
     case "css":
       return process.stdout.write(theme.toCss());
     case "tailwind":
-      return process.stdout.write(theme.toTailwind({ shadcn: opts.shadcn }));
+      return process.stdout.write(
+        theme.toTailwind({
+          shadcn: opts.shadcn && { mapping: opts.mapping },
+        }),
+      );
     case "shadcn":
-      return process.stdout.write(json(theme.toShadcn()));
+      return process.stdout.write(
+        json(theme.toShadcn({ mapping: opts.mapping })),
+      );
     case "registry-item":
       return process.stdout.write(
-        json(theme.toShadcnRegistryItem({ fallback: opts.fallback })),
+        json(
+          theme.toShadcnRegistryItem({
+            fallback: opts.fallback,
+            mapping: opts.mapping,
+          }),
+        ),
       );
     case "flutter":
       return process.stdout.write(theme.toFlutter());
     case "figma":
       return writeFigmaTokens(theme, opts.output ?? "material-theme");
   }
+}
+
+// The option combinations that mean nothing, refused in one place.
+//
+// Each of these was, at some point, an option that silently did nothing: an
+// output format has one shadcn-shaped question at most, and the flags that
+// answer the others are one keystroke away from a format that has them.
+function assertOptionsApply(opts: OptionValues, command: Command) {
+  const fail = (message: string): never => {
+    console.error(`Error: ${message}`);
+    process.exit(1);
+  };
+
+  // --shadcn only ever modified the tailwind output.
+  if (opts.shadcn && opts.format !== "tailwind")
+    fail(
+      "--shadcn only applies to --format tailwind. For concrete color values, use --format shadcn.",
+    );
+
+  // A mapping only ever reaches the shadcn renderings, and `--format css
+  // --mapping mine.json` would otherwise emit the M3 properties as if nothing
+  // had been asked for.
+  const shadcnFormat =
+    opts.format === "shadcn" ||
+    opts.format === "registry-item" ||
+    (opts.format === "tailwind" && opts.shadcn);
+
+  if (opts.mapping && !shadcnFormat)
+    fail(
+      "--mapping only applies to --format shadcn|registry-item, or --format tailwind --shadcn.",
+    );
+
+  // Same reasoning, and the source matters more here: someone who asked for no
+  // fallbacks and got a format that has none anyway would think they had opted
+  // out of something. `fallback` defaults to true, so only an explicit
+  // --no-fallback counts.
+  if (
+    command.getOptionValueSource("fallback") === "cli" &&
+    opts.format !== "registry-item"
+  )
+    fail("--no-fallback only applies to --format registry-item.");
 }
 
 const program = new Command();
@@ -141,28 +195,7 @@ addThemeOptions(
     "Append the shadcn var() alias block to --format tailwind (for concrete values, use --format shadcn)",
   )
   .action((source: string, opts, command: Command) => {
-    // --shadcn only ever modified the tailwind output; silently dropping it
-    // elsewhere is now a likelier mistake, --format shadcn being one keystroke away.
-    if (opts.shadcn && opts.format !== "tailwind") {
-      console.error(
-        "Error: --shadcn only applies to --format tailwind. For concrete color values, use --format shadcn.",
-      );
-      process.exit(1);
-    }
-
-    // Same reasoning, and the source matters more here: someone who asked for
-    // no fallbacks and got a format that has none anyway would think they had
-    // opted out of something. `fallback` defaults to true, so only an explicit
-    // --no-fallback counts.
-    if (
-      command.getOptionValueSource("fallback") === "cli" &&
-      opts.format !== "registry-item"
-    ) {
-      console.error(
-        "Error: --no-fallback only applies to --format registry-item.",
-      );
-      process.exit(1);
-    }
+    assertOptionsApply(opts, command);
 
     let customColors: HexCustomColor[] = [];
     if (opts.customColors) {

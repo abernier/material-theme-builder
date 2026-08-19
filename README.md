@@ -50,6 +50,20 @@ theme.toFlutter();
 theme.toShadcn();
 theme.toShadcnAliases();
 theme.toShadcnRegistryItem({ fallback: true });
+
+// Any other design system whose colors are CSS variables
+theme.toMapping({ "--bs-body-bg": "surface", "--bs-primary": "primary" });
+theme.toMappingAliases({ "--bs-primary": "primary" });
+```
+
+Every M3 token is mappable — including this theme's custom colors. `toMapping()`
+freezes the colors in, `toMappingAliases()` emits a `var()` block that follows
+whichever `<Mtb>` is above it:
+
+```css
+:root {
+  --bs-primary: var(--md-sys-color-primary);
+}
 ```
 
 ## CLI
@@ -349,6 +363,43 @@ rather than on order — which is what lets the `@import` sit with your others.
   --sidebar-ring: var(--md-sys-color-primary);
 }
 ```
+
+</details>
+
+<details>
+<summary>Changing what maps to what</summary>
+
+Pass `mapping` to any of the three exporters. It is merged over the defaults, so
+name only what changes:
+
+```ts
+const theme = builder("#6750A4", {
+  customColors: [{ name: "brand", hex: "#FF5733" }],
+});
+
+theme.toShadcnAliases({
+  mapping: {
+    "--primary": "tertiary", // redirect one
+    "--brand": "brand", // or add one shadcn does not have
+  },
+});
+```
+
+Values are M3 sys-color tokens, kebab-case; an unknown one throws rather than
+emitting a `var()` nothing declares. The same option reaches
+`toShadcn()`, `toShadcnRegistryItem()` and `toTailwind({ shadcn: { mapping } })`,
+so the halves cannot drift.
+
+From the CLI, the same thing as a JSON file:
+
+```sh
+$ echo '{"--primary": "tertiary"}' > mapping.json
+$ npx material-theme-builder "#6750A4" --format registry-item --mapping mapping.json
+$ npx material-theme-builder shadcn-apply "#6750A4" --mapping mapping.json
+```
+
+For a vocabulary that is not shadcn's at all, see
+[`toMapping()`](#programmatic-api).
 
 </details>
 

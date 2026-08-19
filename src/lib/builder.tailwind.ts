@@ -1,13 +1,18 @@
 import { kebabCase } from "lodash-es";
 
 import type { BuilderContext } from "./builder";
-import { buildShadcnAliases } from "./builder.shadcn";
+import { buildShadcnAliases, type ShadcnOptions } from "./builder.shadcn";
 import { CORE_PALETTES, SHADE_TO_TONE } from "./tokens";
 
 /** Options for the Tailwind CSS exporter. */
 export type TailwindOptions = {
-  /** When true, append a shadcn CSS variable block after the Tailwind theme. */
-  shadcn?: boolean;
+  /**
+   * Append a shadcn CSS variable block after the Tailwind theme.
+   *
+   * `true` uses the default mapping; an object appends the same block with the
+   * mapping it carries — `{ shadcn: { mapping: { "--primary": "tertiary" } } }`.
+   */
+  shadcn?: boolean | ShadcnOptions;
 };
 
 /**
@@ -63,7 +68,11 @@ export function buildTailwind(ctx: BuilderContext, options?: TailwindOptions) {
   // The same block `material-theme-builder/shadcn.css` is generated from --
   // one mapping, so a `shadcn: true` inline copy and the shipped file cannot
   // say different things.
-  if (options?.shadcn) output += `\n${buildShadcnAliases(ctx)}`;
+  if (options?.shadcn)
+    output += `\n${buildShadcnAliases(
+      ctx,
+      typeof options.shadcn === "object" ? options.shadcn : undefined,
+    )}`;
 
   return output;
 }

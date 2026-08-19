@@ -1,6 +1,7 @@
 import { Command } from "commander";
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -9,6 +10,20 @@ import { addThemeOptions, themeFrom } from "./cli.options";
 import { addArgv } from "./cli.shadcn";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
+
+// Written rather than committed: `--mapping` takes a path, so what is exercised
+// is reading one, and three one-line files say more inline than in a fixtures
+// directory nobody opens.
+const fixtures = fs.mkdtempSync(path.join(os.tmpdir(), "mtb-mapping-"));
+const fixture = (name: string, contents: string) => {
+  const file = path.join(fixtures, name);
+  fs.writeFileSync(file, contents);
+  return file;
+};
+
+const mappingFile = fixture("mapping.json", '{"--primary": "tertiary"}');
+fixture("not-json.txt", "not json");
+fixture("mapping-array.json", '["--primary"]');
 
 /** The args `shadcn add` is really spawned with, past its own name. */
 const added = (forwarded: string[] = []) => {
@@ -79,6 +94,13 @@ describe("theme options", () => {
     expect(themeFrom(command([])).fallback).toBe(true);
     expect(themeFrom(command(["--no-fallback"])).fallback).toBe(false);
   });
+
+  it("should read --mapping off disk, as an object", () => {
+    expect(themeFrom(command([])).mapping).toBeUndefined();
+    expect(themeFrom(command(["--mapping", mappingFile])).mapping).toEqual({
+      "--primary": "tertiary",
+    });
+  });
 });
 
 // The built binary, on the invocations that have to keep behaving exactly as
@@ -127,6 +149,16 @@ describe("cli", () => {
       "--md-sys-color-brand:",
     ],
     ["--scheme vibrant", ["--scheme", "vibrant", "--format", "css"], ":root {"],
+    [
+      "--format registry-item --mapping",
+      ["--format", "registry-item", "--mapping", mappingFile],
+      '"primary": "var(--md-sys-color-tertiary,',
+    ],
+    [
+      "--format tailwind --shadcn --mapping",
+      ["--format", "tailwind", "--shadcn", "--mapping", mappingFile],
+      "--primary: var(--md-sys-color-tertiary);",
+    ],
   ] as const)("should still answer `%s`", (_, args, expected) => {
     expect(run(["#6750A4", ...args])).toContain(expected);
   });
@@ -145,11 +177,57 @@ describe("cli", () => {
       for (const args of [
         ["--format", "json", "--shadcn"],
         ["--format", "css", "--no-fallback"],
+        ["--format", "css", "--mapping", mappingFile],
+        ["--format", "tailwind", "--mapping", mappingFile],
       ]) {
         expect(() => run(["#6750A4", ...args])).toThrow(/only applies to/);
       }
     },
   );
+
+  // The one format whose values are concrete, so the override cannot be read off
+  // a `var()` name: two runs, and only the variable that was named moves.
+  it.runIf(fs.existsSync(cli))(
+    "should theme --format shadcn through the mapping",
+    () => {
+      const themed = JSON.parse(
+        run(["#6750A4", "--format", "shadcn", "--mapping", mappingFile]),
+      );
+      const plain = JSON.parse(run(["#6750A4", "--format", "shadcn"]));
+
+      expect(themed.light.primary).not.toBe(plain.light.primary);
+      expect(themed.light.secondary).toBe(plain.light.secondary);
+    },
+  );
+
+  // Same shape as the hex refusals below, in the vocabulary `--mapping` arrives
+  // in: a path someone typed, a file someone wrote.
+  it.runIf(fs.existsSync(cli)).each([
+    ["a missing file", "nowhere.json", "could not read"],
+    ["a file that is not JSON", "not-json.txt", "not valid JSON"],
+    [
+      "a mapping that is not an object",
+      "mapping-array.json",
+      "Expected an object",
+    ],
+  ] as const)("should refuse %s in one line", (_, name, expected) => {
+    let message = "";
+    try {
+      run([
+        "#6750A4",
+        "--format",
+        "shadcn",
+        "--mapping",
+        path.join(fixtures, name),
+      ]);
+    } catch (error) {
+      message = String((error as { stderr?: string }).stderr ?? error);
+    }
+
+    expect(message).toContain("option '--mapping <file>'");
+    expect(message).toContain(expected);
+    expect(message).not.toContain("node_modules");
+  });
 
   // The library throws on a bad hex; what is checked here is the CLI's answer to
   // one -- a single line from commander with the value quoted, not the stack

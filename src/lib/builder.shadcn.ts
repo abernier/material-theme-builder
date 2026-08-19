@@ -1,59 +1,68 @@
-import { camelCase } from "lodash-es";
-
 import type { BuilderContext } from "./builder";
+import {
+  buildMapping,
+  buildMappingAliasVars,
+  buildMappingAliases,
+  resolveMapping,
+  type Mapping,
+  type MappingVars,
+} from "./builder.mapping";
 
 /**
  * shadcn CSS variable → M3 sys-color token mapping.
  *
- * The single source of truth for which M3 token backs which shadcn variable:
- * `toShadcn()` reads it to emit concrete values, `toTailwind({ shadcn: true })`
- * reads it to emit `var()` aliases. Neither can name a variable the other
- * doesn't.
+ * The preset the three `toShadcn*()` exporters start from: `toShadcn()` reads it
+ * to emit concrete values, `toShadcnAliases()` and `toShadcnRegistryItem()` read
+ * it to emit `var()` aliases. Neither can name a variable the other doesn't.
+ *
+ * Exported so a caller can extend it, or read it to see what the defaults are.
+ * To *change* one, pass a partial `mapping` to any of the three — it is merged
+ * over this, so naming `--primary` leaves the other thirty alone.
  *
  * Token names are kebab-case (the CSS spelling); the camelCase spelling the
- * scheme objects use is derived from them here, in one place.
+ * scheme objects use is derived from them in `builder.mapping`.
  *
  * @see https://ui.shadcn.com/docs/theming#list-of-variables
  */
-export const SHADCN_MAPPING = [
-  ["--background", "surface"],
-  ["--foreground", "on-surface"],
-  ["--card", "surface-container-low"],
-  ["--card-foreground", "on-surface"],
-  ["--popover", "surface-container-high"],
-  ["--popover-foreground", "on-surface"],
-  ["--primary", "primary"],
-  ["--primary-foreground", "on-primary"],
-  ["--secondary", "secondary-container"],
-  ["--secondary-foreground", "on-secondary-container"],
-  ["--muted", "surface-container-highest"],
-  ["--muted-foreground", "on-surface-variant"],
-  ["--accent", "secondary-container"],
-  ["--accent-foreground", "on-secondary-container"],
-  ["--destructive", "error"],
-  ["--border", "outline-variant"],
-  ["--input", "outline"],
-  ["--ring", "primary"],
-  ["--chart-1", "primary-fixed"],
-  ["--chart-2", "secondary-fixed"],
-  ["--chart-3", "tertiary-fixed"],
-  ["--chart-4", "primary-fixed-dim"],
-  ["--chart-5", "secondary-fixed-dim"],
-  ["--sidebar", "surface-container-low"],
-  ["--sidebar-foreground", "on-surface"],
-  ["--sidebar-primary", "primary"],
-  ["--sidebar-primary-foreground", "on-primary"],
-  ["--sidebar-accent", "secondary-container"],
-  ["--sidebar-accent-foreground", "on-secondary-container"],
-  ["--sidebar-border", "outline-variant"],
-  ["--sidebar-ring", "primary"],
-] as const;
+export const SHADCN_MAPPING = {
+  "--background": "surface",
+  "--foreground": "on-surface",
+  "--card": "surface-container-low",
+  "--card-foreground": "on-surface",
+  "--popover": "surface-container-high",
+  "--popover-foreground": "on-surface",
+  "--primary": "primary",
+  "--primary-foreground": "on-primary",
+  "--secondary": "secondary-container",
+  "--secondary-foreground": "on-secondary-container",
+  "--muted": "surface-container-highest",
+  "--muted-foreground": "on-surface-variant",
+  "--accent": "secondary-container",
+  "--accent-foreground": "on-secondary-container",
+  "--destructive": "error",
+  "--border": "outline-variant",
+  "--input": "outline",
+  "--ring": "primary",
+  "--chart-1": "primary-fixed",
+  "--chart-2": "secondary-fixed",
+  "--chart-3": "tertiary-fixed",
+  "--chart-4": "primary-fixed-dim",
+  "--chart-5": "secondary-fixed-dim",
+  "--sidebar": "surface-container-low",
+  "--sidebar-foreground": "on-surface",
+  "--sidebar-primary": "primary",
+  "--sidebar-primary-foreground": "on-primary",
+  "--sidebar-accent": "secondary-container",
+  "--sidebar-accent-foreground": "on-secondary-container",
+  "--sidebar-border": "outline-variant",
+  "--sidebar-ring": "primary",
+} as const satisfies Mapping;
 
 // Distributes over the union of CSS variable names, stripping each `--`.
 type StripDashes<T extends string> = T extends `--${infer Bare}` ? Bare : never;
 
 /** A bare shadcn color variable name, e.g. `primary` or `chart-1`. */
-export type ShadcnVarName = StripDashes<(typeof SHADCN_MAPPING)[number][0]>;
+export type ShadcnVarName = StripDashes<keyof typeof SHADCN_MAPPING>;
 
 /**
  * Concrete shadcn colors, split by mode.
@@ -62,8 +71,24 @@ export type ShadcnVarName = StripDashes<(typeof SHADCN_MAPPING)[number][0]>;
  * assigned there without rewriting keys or values.
  */
 export type ShadcnTheme = {
-  light: Record<ShadcnVarName, string>;
-  dark: Record<ShadcnVarName, string>;
+  light: MappingVars<ShadcnVarName>;
+  dark: MappingVars<ShadcnVarName>;
+};
+
+/** What every `toShadcn*()` takes. */
+export type ShadcnOptions = {
+  /**
+   * Variables to map differently, merged over `SHADCN_MAPPING`.
+   *
+   * Name only what changes — `{ "--primary": "tertiary" }` redirects that one
+   * variable and leaves the rest of the preset alone. A name shadcn doesn't
+   * have is added rather than refused, so the same option grows the vocabulary
+   * as well as redirects it.
+   *
+   * Values are M3 sys-color tokens, kebab-case, and may name one of this
+   * theme's custom colors. An unknown one throws.
+   */
+  mapping?: Mapping;
 };
 
 /**
@@ -82,7 +107,7 @@ export type ShadcnRegistryItem = {
 };
 
 /** Options for `toShadcnRegistryItem()`. */
-export type ShadcnRegistryItemOptions = {
+export type ShadcnRegistryItemOptions = ShadcnOptions & {
   /**
    * Embed this theme's concrete colors as the `var()` fallbacks, so the item
    * also works where nothing declares the M3 custom properties. Off by default
@@ -93,92 +118,21 @@ export type ShadcnRegistryItemOptions = {
   fallback?: boolean;
 };
 
-// ─── sRGB → OKLCh ────────────────────────────────────────────────────────
-//
-// A fixed sRGB → linear → OKLab → OKLCh pipeline, in-repo rather than via a
-// color library: the package carries no color dependency beyond Material
-// Color Utilities, and this conversion does not warrant one.
-//
-// @see https://bottosson.github.io/posts/oklab/
-
-function srgbToLinear(channel: number) {
-  return channel <= 0.04045
-    ? channel / 12.92
-    : ((channel + 0.055) / 1.055) ** 2.4;
-}
-
-// 3 decimals, trailing zeros trimmed — the precision shadcn's own themes use.
-function round(n: number) {
-  return String(Number(n.toFixed(3)));
-}
-
-function argbToOklch(argb: number) {
-  const r = srgbToLinear(((argb >> 16) & 0xff) / 255);
-  const g = srgbToLinear(((argb >> 8) & 0xff) / 255);
-  const b = srgbToLinear((argb & 0xff) / 255);
-
-  const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
-  const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
-  const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
-
-  const lightness = 0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s;
-  const a = 1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s;
-  const bb = 0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s;
-
-  const chroma = Math.hypot(a, bb);
-  // atan2(0, 0) is meaningless: an achromatic color has no hue.
-  const hue =
-    Number(chroma.toFixed(3)) === 0
-      ? 0
-      : ((Math.atan2(bb, a) * 180) / Math.PI + 360) % 360;
-
-  return `oklch(${round(lightness)} ${round(chroma)} ${round(hue)})`;
-}
-
-// ─── Exporter ────────────────────────────────────────────────────────────
-
-// Project one mode's M3 colors onto shadcn's variable set, in oklch.
-// The mapping spells M3 tokens kebab-case (the CSS spelling); the merged
-// colors key them camelCase. This is the one place that bridges the two.
-function toShadcnVars(mergedColors: Record<string, number>) {
-  const entries = SHADCN_MAPPING.map(([cssVar, m3Token]) => {
-    const argb = mergedColors[camelCase(m3Token)];
-    if (argb === undefined) {
-      throw new Error(
-        `M3 token '${m3Token}' is missing from the scheme, needed by '${cssVar}'. This is likely a bug in the implementation.`,
-      );
-    }
-    return [cssVar.slice(2), argbToOklch(argb)];
-  });
-
-  return Object.fromEntries(entries) as Record<ShadcnVarName, string>;
-}
-
-// shadcn's variables pointing at the `--{prefix}-sys-color-*` custom
-// properties, keyed by bare variable name. The one place the alias values are
-// spelled; both renderings below read it, so the CSS block and the registry
-// item cannot disagree about what points where.
-//
-// `fallbacks`, when given, goes inside the `var()` as the second argument —
-// what the property resolves to where nothing declares the M3 custom
-// properties. Keyed the same way, so one mode's concrete colors drop straight
-// in.
-function toShadcnAliasVars(
-  prefix: string,
-  fallbacks?: Record<ShadcnVarName, string>,
-) {
-  const entries = SHADCN_MAPPING.map(([cssVar, m3Token]) => {
-    const bare = cssVar.slice(2) as ShadcnVarName;
-    const property = `--${prefix}-sys-color-${m3Token}`;
-
-    return [
-      bare,
-      fallbacks ? `var(${property}, ${fallbacks[bare]})` : `var(${property})`,
-    ];
-  });
-
-  return Object.fromEntries(entries) as Record<ShadcnVarName, string>;
-}
+/**
+ * The selectors the alias block is emitted under.
+ *
+ * `:root` *and* `.dark` rather than one or the other: both modes read the same
+ * M3 properties, which is where the light/dark split already happened, so the
+ * block has to win in both of shadcn's own blocks.
+ *
+ * Each is doubled -- the duplication MDN documents under "Increasing
+ * specificity by duplicating selector" -- so the block outranks shadcn's `:root`
+ * and `.dark` on specificity rather than on source order. Order would mean
+ * importing this below shadcn's blocks, which is below other rules, which CSS
+ * forbids: a conforming parser drops such an `@import`, and one in the chain
+ * already did. Specificity lets the `@import` sit where imports go.
+ */
+const SHADCN_SELECTORS = [":root:root", ".dark.dark"];
 
 /**
  * Generate the shadcn alias block — shadcn's variables pointing at the
@@ -189,23 +143,14 @@ function toShadcnAliasVars(
  * them in the tree instead of being frozen at build time. This is what
  * `material-theme-builder/shadcn.css` is generated from, and what
  * `toTailwind({ shadcn: true })` appends.
- *
- * `:root, .dark` rather than one or the other: both modes read the same M3
- * properties, which is where the light/dark split already happened.
- *
- * Each selector is doubled, `:root:root` -- the duplication MDN documents under
- * "Increasing specificity by duplicating selector" -- so the block outranks shadcn's own
- * `:root` and `.dark` on specificity rather than on source order. Order would
- * mean importing this file below shadcn's blocks, which is below other rules,
- * which CSS forbids: a conforming parser drops such an `@import`, and one in
- * the chain already did. Specificity lets the `@import` sit where imports go.
  */
-export function buildShadcnAliases(ctx: BuilderContext) {
-  const lines = Object.entries(toShadcnAliasVars(ctx.prefix)).map(
-    ([name, value]) => `--${name}: ${value};`,
-  );
-
-  return `:root:root,\n.dark.dark {\n  ${lines.join("\n  ")}\n}\n`;
+export function buildShadcnAliases(
+  ctx: BuilderContext,
+  { mapping }: ShadcnOptions = {},
+) {
+  return buildMappingAliases(ctx, resolveMapping(SHADCN_MAPPING, mapping), {
+    selectors: SHADCN_SELECTORS,
+  });
 }
 
 /**
@@ -237,15 +182,18 @@ export function buildShadcnAliases(ctx: BuilderContext) {
  */
 export function buildShadcnRegistryItem(
   ctx: BuilderContext,
-  { fallback = false }: ShadcnRegistryItemOptions = {},
+  { fallback = false, mapping }: ShadcnRegistryItemOptions = {},
 ): ShadcnRegistryItem {
-  const concrete = fallback ? buildShadcn(ctx) : undefined;
+  const resolved = resolveMapping(SHADCN_MAPPING, mapping);
+  const concrete = fallback
+    ? buildMapping<ShadcnVarName>(ctx, resolved)
+    : undefined;
 
   // Called once per mode rather than spread from one object: each mode needs
   // its own fallbacks, and a fresh object per call also keeps a caller's
   // mutation of one mode out of the other.
   const vars = (mode: keyof ShadcnTheme) =>
-    toShadcnAliasVars(ctx.prefix, concrete?.[mode]);
+    buildMappingAliasVars<ShadcnVarName>(ctx, resolved, concrete?.[mode]);
 
   return {
     $schema: "https://ui.shadcn.com/schema/registry-item.json",
@@ -272,15 +220,17 @@ export function buildShadcnRegistryItem(
  * Reads the same merged colors as `toCss()`, so `contrast` — and every other
  * option — lands here exactly as it does there, at full resolution.
  *
- * `customColors` and `prefix` have no effect here: shadcn's variable set is
- * fixed, so no component reads a custom color, and the mapping replaces the
- * prefixed M3 variable names with shadcn ones.
+ * `prefix` has no effect here: the mapping replaces the prefixed M3 variable
+ * names with shadcn ones. `customColors` reach this only through `mapping` —
+ * shadcn's variable set is fixed, so no component reads one until something
+ * points a shadcn variable at it.
  */
-export function buildShadcn(ctx: BuilderContext): ShadcnTheme {
-  const { mergedColorsLight, mergedColorsDark } = ctx;
-
-  return {
-    light: toShadcnVars(mergedColorsLight),
-    dark: toShadcnVars(mergedColorsDark),
-  };
+export function buildShadcn(
+  ctx: BuilderContext,
+  { mapping }: ShadcnOptions = {},
+): ShadcnTheme {
+  return buildMapping<ShadcnVarName>(
+    ctx,
+    resolveMapping(SHADCN_MAPPING, mapping),
+  );
 }

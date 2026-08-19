@@ -44,8 +44,11 @@ const SHADCN_VARS = [
   "sidebar-ring",
 ];
 
-function hexOf(value: string) {
-  const parsed = parse(value);
+// Takes `string | undefined` because a mapping's variable set is open -- every
+// lookup outside the shadcn preset is optional -- and an absent variable is a
+// failed test either way.
+function hexOf(value: string | undefined) {
+  const parsed = value === undefined ? undefined : parse(value);
   if (!parsed) throw new Error(`not a parseable color: ${value}`);
   return formatHex(parsed);
 }
@@ -56,9 +59,11 @@ describe("builder › toShadcn()", () => {
   });
 
   it("should map every shadcn color variable to an M3 token", () => {
-    expect(SHADCN_MAPPING.map(([cssVar]) => cssVar.slice(2)).sort()).toEqual(
-      [...SHADCN_VARS].sort(),
-    );
+    expect(
+      Object.keys(SHADCN_MAPPING)
+        .map((cssVar) => cssVar.slice(2))
+        .sort(),
+    ).toEqual([...SHADCN_VARS].sort());
   });
 
   it("should cover every shadcn color variable in both modes", () => {
@@ -391,5 +396,84 @@ describe("builder › toShadcnRegistryItem({ fallback: true })", () => {
       builder(SOURCE).toShadcnRegistryItem().description,
     );
     expect(withFallback.description).toContain("Falls back");
+  });
+});
+
+describe("builder › toShadcn*({ mapping })", () => {
+  const OVERRIDE = { "--primary": "tertiary" };
+
+  it("should redirect the named variable and leave the rest alone", () => {
+    const theme = builder(SOURCE);
+    const base = theme.toShadcn();
+    const overridden = theme.toShadcn({ mapping: OVERRIDE });
+
+    expect(hexOf(overridden.light.primary)).toBe(
+      hexOf(theme.toMapping({ "--x": "tertiary" }).light.x),
+    );
+    expect(hexOf(overridden.light.primary)).not.toBe(hexOf(base.light.primary));
+
+    // The other thirty are untouched -- that is what makes it an override and
+    // not a replacement.
+    const rest = (vars: Record<string, string>) =>
+      Object.fromEntries(
+        Object.entries(vars).filter(([name]) => name !== "primary"),
+      );
+    expect(rest(overridden.light)).toEqual(rest(base.light));
+  });
+
+  it("should add a variable shadcn does not have", () => {
+    const { light } = builder(SOURCE, {
+      customColors: [{ name: "brand", hex: "#FF5733", blend: false }],
+    }).toShadcn({ mapping: { "--brand": "brand" } });
+
+    expect(light).toHaveProperty("brand");
+    expect(Object.keys(light)).toHaveLength(SHADCN_VARS.length + 1);
+  });
+
+  it("should say the same thing in every rendering", () => {
+    // The whole point of one preset behind the three exporters: an override
+    // reaches the CSS block, the registry item and the tailwind block alike.
+    const theme = builder(SOURCE);
+    const options = { mapping: OVERRIDE };
+
+    expect(theme.toShadcnAliases(options)).toContain(
+      "--primary: var(--md-sys-color-tertiary);",
+    );
+    expect(theme.toShadcnRegistryItem(options).cssVars.light.primary).toBe(
+      "var(--md-sys-color-tertiary)",
+    );
+    expect(theme.toTailwind({ shadcn: options })).toContain(
+      theme.toShadcnAliases(options),
+    );
+  });
+
+  it("should fall back to the overridden color, not the default one", () => {
+    const theme = builder(SOURCE);
+    const { cssVars } = theme.toShadcnRegistryItem({
+      fallback: true,
+      mapping: OVERRIDE,
+    });
+
+    expect(cssVars.light.primary).toBe(
+      `var(--md-sys-color-tertiary, ${theme.toShadcn({ mapping: OVERRIDE }).light.primary})`,
+    );
+  });
+
+  it("should read a variable name with or without the leading dashes", () => {
+    // Otherwise the friendlier spelling would *add* a variable rather than
+    // override one -- silently, and with the default still in place.
+    expect(
+      builder(SOURCE).toShadcn({ mapping: { primary: "tertiary" } }),
+    ).toEqual(builder(SOURCE).toShadcn({ mapping: OVERRIDE }));
+  });
+
+  it("should leave every rendering untouched when no mapping is given", () => {
+    const theme = builder(SOURCE);
+
+    expect(theme.toShadcn({})).toEqual(theme.toShadcn());
+    expect(theme.toShadcnAliases({})).toBe(theme.toShadcnAliases());
+    expect(theme.toTailwind({ shadcn: {} })).toBe(
+      theme.toTailwind({ shadcn: true }),
+    );
   });
 });
