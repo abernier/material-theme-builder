@@ -12,6 +12,7 @@ import type {
   FigmaVariableValue,
 } from "./builder";
 import { builder, STANDARD_TONES } from "./builder";
+import { SHADCN_MAPPING } from "./builder.shadcn";
 
 function isDtcgColorValue(v: string | DtcgColorValue): v is DtcgColorValue {
   return typeof v !== "string";
@@ -101,6 +102,36 @@ describe("builder › toFigmaVariables()", () => {
     const refVars = variables.filter((v) => v.path.startsWith("ref/palette/"));
 
     for (const v of refVars) {
+      expect(v.values["Light"]).toEqual(v.values["Dark"]);
+    }
+  });
+
+  it("should alias every shadcn variable onto a sys color variable it defines", () => {
+    const variables = builder("#6750A4").toFigmaVariables();
+    const paths = new Set(variables.map((v) => v.path));
+    const shadcnVars = variables.filter((v) => v.path.startsWith("shadcn/"));
+
+    expect(shadcnVars).toHaveLength(SHADCN_MAPPING.length);
+
+    for (const v of shadcnVars) {
+      for (const mode of ["Light", "Dark"] as const) {
+        const value = v.values[mode];
+        expect(value).toBeDefined();
+        if (!value || !isAlias(value))
+          throw new Error(`${v.path} is not an alias in ${mode}`);
+
+        // A dangling alias is a variable Figma silently paints black.
+        expect(value.alias).toMatch(/^sys\/color\/.+$/);
+        expect(paths.has(value.alias)).toBe(true);
+      }
+    }
+  });
+
+  it("should point both modes of a shadcn variable at the same sys variable", () => {
+    // The mode lives in the sys token, not here — same reference, read twice.
+    const variables = builder("#6750A4").toFigmaVariables();
+
+    for (const v of variables.filter((v) => v.path.startsWith("shadcn/"))) {
       expect(v.values["Light"]).toEqual(v.values["Dark"]);
     }
   });
@@ -325,6 +356,66 @@ describe("builder › toFigmaTokens()", () => {
       expect(file.sys.color).toHaveProperty("Brand Container");
       expect(file.sys.color).toHaveProperty("On Brand Container");
     }
+  });
+
+  it("should mirror the shadcn remap in a shadcn group", () => {
+    // Derived from SHADCN_MAPPING rather than spelled out: that the mapping is
+    // the full shadcn variable set is builder.shadcn.test.ts's assertion, and
+    // this one is about the Figma export covering whatever the mapping holds.
+    const result = builder("#6750A4").toFigmaTokens();
+
+    for (const key of ["Light.tokens.json", "Dark.tokens.json"] as const) {
+      const { shadcn, sys } = result[key];
+
+      expect(Object.keys(shadcn)).toHaveLength(SHADCN_MAPPING.length);
+
+      for (const [cssVar] of SHADCN_MAPPING) {
+        const token = Object.values(shadcn).find(
+          (t) => t.$extensions["css.variable"] === cssVar,
+        );
+        expect(token, `no shadcn token for ${cssVar}`).toBeDefined();
+        if (!token) continue;
+
+        // An alias into sys, and one that resolves: `{sys.color.Card}` would
+        // import as a broken reference, not as an error.
+        expect(token.$type).toBe("color");
+        expect(token.$value).toMatch(/^\{sys\.color\..+\}$/);
+        const target = String(token.$value).slice("{sys.color.".length, -1);
+        expect(Object.keys(sys.color)).toContain(target);
+      }
+    }
+  });
+
+  it("should give shadcn tokens Title Case names", () => {
+    const { shadcn } = builder("#6750A4").toFigmaTokens()["Light.tokens.json"];
+
+    expect(shadcn).toHaveProperty("Card");
+    expect(shadcn).toHaveProperty("Muted Foreground");
+    expect(shadcn).toHaveProperty("Chart 1");
+    expect(shadcn).toHaveProperty("Sidebar Accent Foreground");
+  });
+
+  it("should keep shadcn tokens identical in both mode files", () => {
+    // Both files carry the same alias; the sys token it points at is what
+    // differs per mode.
+    const result = builder("#6750A4").toFigmaTokens();
+
+    expect(result["Light.tokens.json"].shadcn).toEqual(
+      result["Dark.tokens.json"].shadcn,
+    );
+  });
+
+  it("should leave shadcn variable names unprefixed", () => {
+    // `prefix` renames the M3 layer; shadcn's variable set is fixed, so a
+    // `--brand-card` would name a variable no shadcn component reads.
+    const { sys, shadcn } = builder("#6750A4", {
+      prefix: "brand",
+    }).toFigmaTokens()["Light.tokens.json"];
+
+    expect(sys.color["Primary"]?.$extensions["css.variable"]).toBe(
+      "--brand-sys-color-primary",
+    );
+    expect(shadcn["Card"]?.$extensions["css.variable"]).toBe("--card");
   });
 
   it("should contain com.figma.modeName in each mode file", () => {
