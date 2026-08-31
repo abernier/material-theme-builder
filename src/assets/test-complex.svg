@@ -1,0 +1,43 @@
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Nested definitions: pattern with gradient -->
+    <linearGradient id="nestedGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FF6B6B" />
+      <stop offset="100%" stop-color="#4ECDC4" />
+    </linearGradient>
+    
+    <pattern id="nestedPattern" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+      <rect width="20" height="20" fill="url(#nestedGrad)" />
+      <circle cx="10" cy="10" r="5" fill="#FFE66D" stroke="#6750A4" stroke-width="1" />
+    </pattern>
+    
+    <!-- Gradient with opacity -->
+    <radialGradient id="gradWithOpacity">
+      <stop offset="0%" stop-color="#6750A4" stop-opacity="0.8" />
+      <stop offset="100%" stop-color="#D0BCFF" stop-opacity="0.3" />
+    </radialGradient>
+    
+    <!-- Complex shape in defs used via use element -->
+    <g id="complexShape">
+      <circle cx="0" cy="0" r="15" fill="#FF6B6B" />
+      <rect x="-10" y="-10" width="20" height="20" fill="none" stroke="#4ECDC4" stroke-width="2" />
+    </g>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="200" height="200" fill="#F5F5F5" />
+  
+  <!-- Using nested pattern (pattern with gradient) -->
+  <rect x="10" y="10" width="80" height="80" fill="url(#nestedPattern)" />
+  
+  <!-- Using gradient with opacity -->
+  <circle cx="140" cy="50" r="35" fill="url(#gradWithOpacity)" />
+  
+  <!-- Using complex shape via use -->
+  <use href="#complexShape" x="50" y="130" />
+  <use href="#complexShape" x="100" y="130" />
+  <use href="#complexShape" x="150" y="130" />
+  
+  <!-- Mix of direct colors and url references -->
+  <rect x="10" y="150" width="50" height="40" fill="#6750A4" stroke="url(#nestedGrad)" stroke-width="3" />
+</svg>
