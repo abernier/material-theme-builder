@@ -9,6 +9,7 @@ import {
 
 import type { BuilderContext, TokenName } from "./builder";
 import { DEFAULT_BLEND, schemeToVariant } from "./builder";
+import { overriddenRoleGroups, readRoles } from "./roleGroups";
 
 // The 18 baseline tones matching the Material Theme Builder JSON output
 const MTB_TONES = [
@@ -123,29 +124,6 @@ export function buildJson(ctx: BuilderContext) {
   };
 
   function buildJsonSchemes() {
-    // Extract scheme colors in fixture token order
-    function extractSchemeColors(
-      scheme: DynamicScheme,
-      backgroundScheme?: DynamicScheme,
-    ) {
-      const colors: Record<string, string> = {};
-
-      for (const tokenName of FIXTURE_TOKEN_ORDER) {
-        const dynamicColor = MaterialDynamicColors[tokenName];
-        const useScheme =
-          backgroundScheme &&
-          (tokenName === "background" || tokenName === "onBackground")
-            ? backgroundScheme
-            : scheme;
-
-        colors[tokenName] = hexFromArgb(
-          dynamicColor.getArgb(useScheme),
-        ).toUpperCase();
-      }
-
-      return colors;
-    }
-
     // Resolve an override palette from a hex color string.
     // Returns null when hex is undefined (no override for that role).
     function resolveOverridePalette(
@@ -181,23 +159,45 @@ export function buildJson(ctx: BuilderContext) {
       // Base scheme from primary — provides default palettes for all roles
       const baseScheme = new SchemeClass(primaryHct, isDark, contrast);
 
-      // Compose scheme: override palette where specified, base default otherwise
-      const composedScheme = new DynamicScheme({
-        sourceColorArgb: effectiveSourceArgb,
-        variant: schemeToVariant[scheme],
-        contrastLevel: contrast,
-        isDark,
-        primaryPalette: baseScheme.primaryPalette,
-        secondaryPalette: secPalette || baseScheme.secondaryPalette,
-        tertiaryPalette: terPalette || baseScheme.tertiaryPalette,
-        neutralPalette: neuPalette || baseScheme.neutralPalette,
-        neutralVariantPalette: nvPalette || baseScheme.neutralVariantPalette,
-      });
+      // One scheme per input color: override palette where specified, base
+      // default otherwise, sourced on that input.
+      function composedScheme(sourceColorArgb: number) {
+        const composed = new DynamicScheme({
+          sourceColorArgb,
+          variant: schemeToVariant[scheme],
+          contrastLevel: contrast,
+          isDark,
+          primaryPalette: baseScheme.primaryPalette,
+          secondaryPalette: secPalette || baseScheme.secondaryPalette,
+          tertiaryPalette: terPalette || baseScheme.tertiaryPalette,
+          neutralPalette: neuPalette || baseScheme.neutralPalette,
+          neutralVariantPalette: nvPalette || baseScheme.neutralVariantPalette,
+        });
+        if (errPalette) composed.errorPalette = errPalette;
+        return composed;
+      }
 
-      if (errPalette) composedScheme.errorPalette = errPalette;
+      // Each overridden core color's role group from the scheme sourced on
+      // that override; every other token from the one sourced on the primary.
+      const colors = readRoles(
+        FIXTURE_TOKEN_ORDER,
+        composedScheme(effectiveSourceArgb),
+        overriddenRoleGroups({ secondary, tertiary, error }, (hex) =>
+          composedScheme(argbFromHex(hex)),
+        ),
+      );
 
       // background/onBackground always from base scheme (primary-based)
-      jsonSchemes[name] = extractSchemeColors(composedScheme, baseScheme);
+      colors.background = MaterialDynamicColors.background.getArgb(baseScheme);
+      colors.onBackground =
+        MaterialDynamicColors.onBackground.getArgb(baseScheme);
+
+      jsonSchemes[name] = Object.fromEntries(
+        Object.entries(colors).map(([token, argb]) => [
+          token,
+          hexFromArgb(argb).toUpperCase(),
+        ]),
+      );
     }
 
     return jsonSchemes;

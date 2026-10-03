@@ -28,6 +28,11 @@ import {
   type ShadcnRegistryItemOptions,
 } from "./builder.shadcn";
 import { buildTailwind, type TailwindOptions } from "./builder.tailwind";
+import {
+  overriddenRoleGroups,
+  readRoles,
+  type RoleGroupSources,
+} from "./roleGroups";
 import { DEFAULT_PREFIX, tokenNames } from "./tokens";
 
 // ─── Re-exports (types defined alongside their exporter) ─────────────────
@@ -323,13 +328,6 @@ export function deriveCustomPaletteName(
 
 // ─── Internal helpers ────────────────────────────────────────────────────
 
-function toRecord<T, K extends string, V>(
-  arr: readonly T[],
-  getEntry: (item: T) => readonly [K, V],
-) {
-  return Object.fromEntries(arr.map(getEntry));
-}
-
 function getPalette(palettes: ColorPalettes, colorName: string) {
   const palette = palettes[colorName];
   if (!palette) {
@@ -348,19 +346,17 @@ function getPalette(palettes: ColorPalettes, colorName: string) {
 
 function mergeBaseAndCustomColors(
   scheme: DynamicScheme,
+  roleGroupSources: RoleGroupSources,
   customColors: CustomColor[],
   colorPalettes: ColorPalettes,
 ) {
   //
-  // Base colors (all listed in tokenNames)
+  // Base colors (all listed in tokenNames), each overridden core color's role
+  // group read from the scheme built on that override
   //
   // returns: { primary: 0xFF6200EE, onPrimary: 0xFFFFFFFF, ... }
   //
-  const baseVars = toRecord(tokenNames, (tokenName) => {
-    const dynamicColor = MaterialDynamicColors[tokenName];
-    const argb = dynamicColor.getArgb(scheme);
-    return [tokenName, argb];
-  });
+  const baseVars = readRoles(tokenNames, scheme, roleGroupSources);
 
   //
   // Custom colors - using MaterialDynamicColors-like approach
@@ -615,16 +611,36 @@ export function builder(
     neutralVariantPalette:
       colorPalettes["neutralVariant"] || baseScheme.neutralVariantPalette,
   };
-  const lightScheme = new DynamicScheme({ ...schemeConfig, isDark: false });
-  const darkScheme = new DynamicScheme({ ...schemeConfig, isDark: true });
-
-  // Note: DynamicScheme constructor doesn't accept errorPalette as parameter
-  // We need to set it after creation
-  const errorPalette = colorPalettes["error"];
-  if (errorPalette) {
-    lightScheme.errorPalette = errorPalette;
-    darkScheme.errorPalette = errorPalette;
+  // One scheme per input color: the same palettes, sourced on that input.
+  function composedScheme(sourceColorArgb: number, isDark: boolean) {
+    const composed = new DynamicScheme({
+      ...schemeConfig,
+      sourceColorArgb,
+      isDark,
+    });
+    // Note: DynamicScheme constructor doesn't accept errorPalette as parameter
+    // We need to set it after creation
+    const errorPalette = colorPalettes["error"];
+    if (errorPalette) composed.errorPalette = errorPalette;
+    return composed;
   }
+
+  // The base scheme, sourced on the primary: every token outside an
+  // overridden core color's role group is read from it.
+  const lightScheme = composedScheme(effectiveSourceArgb, false);
+  const darkScheme = composedScheme(effectiveSourceArgb, true);
+
+  // Each overridden core color's role group, read from the scheme sourced on
+  // that override.
+  const roleGroupSources = (isDark: boolean) =>
+    overriddenRoleGroups(
+      {
+        secondary: cores.secondary,
+        tertiary: cores.tertiary,
+        error: cores.error,
+      },
+      (hex) => composedScheme(argbFromHex(hex), isDark),
+    );
 
   // Scheme-transformed palettes used by toCss() for CSS variables.
   // These match what MTB displays visually (eg SchemeTonalSpot clamps chroma),
@@ -655,11 +671,13 @@ export function builder(
 
   const mergedColorsLight = mergeBaseAndCustomColors(
     lightScheme,
+    roleGroupSources(false),
     customColors,
     colorPalettes,
   );
   const mergedColorsDark = mergeBaseAndCustomColors(
     darkScheme,
+    roleGroupSources(true),
     customColors,
     colorPalettes,
   );

@@ -1,3 +1,4 @@
+import { argbFromHex, Hct } from "@material/material-color-utilities";
 import { describe, expect, it } from "vitest";
 
 import { builder, isHexColor } from "./builder";
@@ -98,6 +99,15 @@ describe("builder() › hex validation", () => {
     );
   });
 
+  it.each([["secondary"], ["tertiary"], ["error"]])(
+    "should read a blank %s as no override in toJson() too",
+    (option) => {
+      expect(builder(SOURCE, { [option]: "" }).toJson().schemes).toEqual(
+        builder(SOURCE).toJson().schemes,
+      );
+    },
+  );
+
   // It throws before any conversion, so a caller cannot get a half-built theme
   // out of a bad input by reaching for a different exporter.
   it("should refuse at the entry, not at an exporter", () => {
@@ -117,6 +127,44 @@ describe("isHexColor()", () => {
     "should be false for %s",
     (value) => {
       expect(isHexColor(value)).toBe(false);
+    },
+  );
+});
+
+// Each overridden core color's role group is read from a scheme built on that
+// override, not from one scheme sourced on the primary with the override's
+// palette swapped in. The two only disagree where a role reads the scheme's
+// source color: under `fidelity` and `content`, a container lands on the tone
+// of its scheme's source -- so `tertiaryContainer` must land on the tertiary
+// input's tone (#80CBC4, tone ~77), not on the primary's (#6750A4, tone ~40).
+describe("builder() › role groups", () => {
+  const TERTIARY = "#80CBC4"; // HCT tone 76.9
+
+  function tone(color: number | string | undefined) {
+    if (color === undefined) throw new Error("token missing from the theme");
+    return Hct.fromInt(typeof color === "string" ? argbFromHex(color) : color)
+      .tone;
+  }
+
+  it.each([["content"], ["fidelity"]] as const)(
+    "should land %s tertiaryContainer on the tertiary input's tone (CSS path)",
+    (scheme) => {
+      const { mergedColorsLight } = builder(SOURCE, {
+        scheme,
+        tertiary: TERTIARY,
+      });
+      expect(tone(mergedColorsLight.tertiaryContainer)).toBeCloseTo(77, 0);
+    },
+  );
+
+  it.each([["content"], ["fidelity"]] as const)(
+    "should land %s tertiaryContainer on the tertiary input's tone (JSON path)",
+    (scheme) => {
+      const { schemes } = builder(SOURCE, {
+        scheme,
+        tertiary: TERTIARY,
+      }).toJson();
+      expect(tone(schemes.light?.tertiaryContainer)).toBeCloseTo(77, 0);
     },
   );
 });
