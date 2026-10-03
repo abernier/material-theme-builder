@@ -297,6 +297,18 @@ describe("builder() › colorMatch", () => {
     it("toFlutter()", () => {
       expect(theme.toFlutter()).toMatchSnapshot();
     });
+
+    it("toShadcn()", () => {
+      expect(theme.toShadcn()).toMatchSnapshot();
+    });
+
+    it("toFigmaVariables()", () => {
+      expect(theme.toFigmaVariables()).toMatchSnapshot();
+    });
+
+    it("toFigmaTokens()", () => {
+      expect(theme.toFigmaTokens()).toMatchSnapshot();
+    });
   });
 });
 
