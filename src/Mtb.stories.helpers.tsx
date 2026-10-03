@@ -28,10 +28,34 @@ import type { Mtb } from "./Mtb";
  * string" button whose first click hands the builder `''` -- a color to pick is
  * both the better control and the one that cannot produce a value the prop has
  * no reading for.
+ *
+ * `scheme` and `customColors` also spell out their `type`. A URL `args=` param
+ * is checked against `type`, not against `control`, and what docgen infers for
+ * these two -- a type alias, an array of an intersection -- comes out as
+ * `other`, which Storybook drops from the URL without a word. The controls
+ * worked either way; a shared link with `scheme:vibrant` did not.
  */
 export const mtbArgTypes = {
   source: { control: "color" },
-  scheme: { control: "select", options: schemeNames },
+  scheme: {
+    type: { name: "enum", value: [...schemeNames] },
+    control: "select",
+    options: schemeNames,
+  },
+  customColors: {
+    type: {
+      name: "array",
+      value: {
+        name: "object",
+        value: {
+          name: { name: "string" },
+          hex: { name: "string" },
+          blend: { name: "boolean" },
+        },
+      },
+    },
+    control: "object",
+  },
   contrast: { control: { type: "range", min: -1, max: 1, step: 0.1 } },
   primary: { control: "color" },
   secondary: { control: "color" },
