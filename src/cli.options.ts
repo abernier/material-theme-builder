@@ -20,6 +20,8 @@ import {
 } from "commander";
 
 import {
+  COLOR_MATCH_SCHEME,
+  DEFAULT_COLOR_MATCH,
   DEFAULT_CONTRAST,
   DEFAULT_PREFIX,
   DEFAULT_SCHEME,
@@ -85,9 +87,17 @@ export type Theme = {
 export function addThemeOptions(command: Command) {
   return command
     .addOption(
-      new Option("--scheme <name>", "Color scheme variant")
+      new Option(
+        "--scheme <name>",
+        `Color scheme variant (ignored with --color-match, which forces ${COLOR_MATCH_SCHEME})`,
+      )
         .choices(schemeNames)
         .default(DEFAULT_SCHEME),
+    )
+    .option(
+      "--color-match",
+      'Stay true to the input colors, as Material Theme Builder\'s "Color match" does',
+      DEFAULT_COLOR_MATCH,
     )
     .option(
       "--contrast <number>",
@@ -126,6 +136,7 @@ export function addThemeOptions(command: Command) {
 export function builderOptions(opts: OptionValues): ThemeOptions {
   return {
     scheme: opts.scheme,
+    colorMatch: opts.colorMatch,
     contrast: opts.contrast,
     primary: opts.primary,
     secondary: opts.secondary,

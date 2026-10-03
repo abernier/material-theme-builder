@@ -7,6 +7,7 @@
 // ```sh
 // $ node dist/cli.js '#6750A4'
 // $ node dist/cli.js '#6750A4' --format css
+// $ node dist/cli.js '#6750A4' --format css --color-match
 // $ node dist/cli.js '#6750A4' --format shadcn
 // $ node dist/cli.js '#6750A4' --format registry-item
 // $ node dist/cli.js shadcn-apply '#6750A4'

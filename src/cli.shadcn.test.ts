@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 
 import { addThemeOptions, themeFrom } from "./cli.options";
 import { addArgv } from "./cli.shadcn";
+import { builder } from "./lib/builder";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -73,6 +74,11 @@ describe("theme options", () => {
 
     expect(theme.options.scheme).toBe("vibrant");
     expect(theme.options.prefix).toBe("my");
+  });
+
+  it("should read --color-match as the library's `colorMatch`", () => {
+    expect(themeFrom(command(["--color-match"])).options.colorMatch).toBe(true);
+    expect(themeFrom(command([])).options.colorMatch).toBe(false);
   });
 
   it("should default `fallback` to true, being declared as a negation", () => {
@@ -180,6 +186,46 @@ describe("cli", () => {
     expect(message).toContain("3, 6 or 8 hex digits");
     expect(message).not.toContain("node_modules");
   });
+
+  // The library is the oracle here: the flag is meant to mean exactly what
+  // `colorMatch: true` means there, in every format.
+  it.runIf(fs.existsSync(cli)).each([
+    ["css", (theme: ReturnType<typeof builder>) => theme.toCss()],
+    [
+      "registry-item",
+      (theme: ReturnType<typeof builder>) =>
+        JSON.stringify(
+          theme.toShadcnRegistryItem({ fallback: true }),
+          null,
+          2,
+        ) + "\n",
+    ],
+  ] as const)(
+    "should theme `--format %s` as the library's `colorMatch: true`",
+    (format, render) => {
+      const matched = run(["#6750A4", "--color-match", "--format", format]);
+
+      expect(matched).toBe(render(builder("#6750A4", { colorMatch: true })));
+      expect(matched).not.toBe(run(["#6750A4", "--format", format]));
+    },
+  );
+
+  it.runIf(fs.existsSync(cli))(
+    "should leave the output untouched without --color-match",
+    () => {
+      expect(run(["#6750A4", "--format", "css"])).toBe(
+        builder("#6750A4").toCss(),
+      );
+    },
+  );
+
+  it.runIf(fs.existsSync(cli))(
+    "should offer --color-match on both commands",
+    () => {
+      expect(run(["--help"])).toContain("--color-match");
+      expect(run(["shadcn-apply", "--help"])).toContain("--color-match");
+    },
+  );
 
   it.runIf(fs.existsSync(cli))("should list the subcommand in --help", () => {
     const help = run(["--help"]);
