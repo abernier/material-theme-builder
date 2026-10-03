@@ -29,7 +29,8 @@ import {
 } from "./builder.shadcn";
 import { buildTailwind, type TailwindOptions } from "./builder.tailwind";
 import {
-  overriddenRoleGroups,
+  colorMatchScheme,
+  coreRoleGroupSources,
   readRoles,
   type RoleGroupSources,
 } from "./roleGroups";
@@ -638,12 +639,12 @@ export function builder(
 
   // Under colorMatch, each input color gets a `SchemeContent` of its own,
   // built on that input -- harmonized first, for a custom color that blends.
-  function colorMatchScheme(
+  function inputColorMatchScheme(
     colorDef: ColorDefinition & { hex: string },
     isDark: boolean,
   ) {
-    return new SchemeContent(
-      Hct.fromInt(blendedArgb(colorDef, effectiveSourceForHarmonization)),
+    return colorMatchScheme(
+      blendedArgb(colorDef, effectiveSourceForHarmonization),
       isDark,
       contrast,
     );
@@ -654,7 +655,7 @@ export function builder(
   // chroma: its primary palette for primary, secondary, tertiary, error and
   // custom colors, and `C/8` / `C/8 + 4` for neutral / neutral variant.
   function colorMatchPalette(colorDef: ColorDefinition & { hex: string }) {
-    const inputScheme = colorMatchScheme(colorDef, false);
+    const inputScheme = inputColorMatchScheme(colorDef, false);
     if (colorDef.chromaSource === "neutral") return inputScheme.neutralPalette;
     if (colorDef.chromaSource === "neutralVariant")
       return inputScheme.neutralVariantPalette;
@@ -709,25 +710,20 @@ export function builder(
   const darkScheme = composedScheme(effectiveSourceArgb, true);
 
   // Each overridden core color's role group, read from the scheme sourced on
-  // that override. Under colorMatch, that scheme is `SchemeContent(input)` and
-  // the group is read off its *primary* role group, so that `XContainer` lands
-  // on the input's tone.
+  // that override (see `coreRoleGroupSources()` for the colorMatch rule).
   const overrides = {
     secondary: cores.secondary,
     tertiary: cores.tertiary,
     error: cores.error,
   };
   const roleGroupSources = (isDark: boolean) =>
-    colorMatch
-      ? overriddenRoleGroups(
-          overrides,
-          (hex) =>
-            new SchemeContent(Hct.fromInt(argbFromHex(hex)), isDark, contrast),
-          "primary",
-        )
-      : overriddenRoleGroups(overrides, (hex) =>
-          composedScheme(argbFromHex(hex), isDark),
-        );
+    coreRoleGroupSources(overrides, {
+      colorMatch,
+      isDark,
+      contrast,
+      composedScheme: (sourceColorArgb) =>
+        composedScheme(sourceColorArgb, isDark),
+    });
 
   // Scheme-transformed palettes used by toCss() for CSS variables.
   // These match what MTB displays visually (eg SchemeTonalSpot clamps chroma),
@@ -763,7 +759,7 @@ export function builder(
       ? Object.fromEntries(
           definedColors
             .filter((c) => !c.core)
-            .map((c) => [c.name, colorMatchScheme(c, isDark)]),
+            .map((c) => [c.name, inputColorMatchScheme(c, isDark)]),
         )
       : undefined;
 

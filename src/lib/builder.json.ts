@@ -4,13 +4,12 @@ import {
   Hct,
   hexFromArgb,
   MaterialDynamicColors,
-  SchemeContent,
   TonalPalette,
 } from "@material/material-color-utilities";
 
 import type { BuilderContext, TokenName } from "./builder";
 import { DEFAULT_BLEND, schemeToVariant } from "./builder";
-import { overriddenRoleGroups, readRoles } from "./roleGroups";
+import { coreRoleGroupSources, readRoles } from "./roleGroups";
 
 // The 18 baseline tones matching the Material Theme Builder JSON output
 const MTB_TONES = [
@@ -182,25 +181,12 @@ export function buildJson(ctx: BuilderContext) {
       }
 
       // Each overridden core color's role group from the scheme sourced on
-      // that override; every other token from the one sourced on the primary.
-      // Under colorMatch, that scheme is `SchemeContent(input)` and the group
-      // is read off its *primary* role group, so that `XContainer` lands on
-      // the input's tone.
-      const overrides = { secondary, tertiary, error };
-      const roleGroupSources = colorMatch
-        ? overriddenRoleGroups(
-            overrides,
-            (hex) =>
-              new SchemeContent(
-                Hct.fromInt(argbFromHex(hex)),
-                isDark,
-                contrast,
-              ),
-            "primary",
-          )
-        : overriddenRoleGroups(overrides, (hex) =>
-            composedScheme(argbFromHex(hex)),
-          );
+      // that override; every other token from the one sourced on the primary
+      // (see `coreRoleGroupSources()` for the colorMatch rule).
+      const roleGroupSources = coreRoleGroupSources(
+        { secondary, tertiary, error },
+        { colorMatch, isDark, contrast, composedScheme },
+      );
       const colors = readRoles(
         FIXTURE_TOKEN_ORDER,
         composedScheme(effectiveSourceArgb),

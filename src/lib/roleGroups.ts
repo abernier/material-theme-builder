@@ -13,8 +13,11 @@
 // *primary* role group of `SchemeContent(input)`, read with `from: "primary"`.
 
 import {
+  argbFromHex,
   type DynamicScheme,
+  Hct,
   MaterialDynamicColors,
+  SchemeContent,
 } from "@material/material-color-utilities";
 
 import type { TokenName } from "./tokens";
@@ -101,6 +104,51 @@ export function overriddenRoleGroups(
     sources[name] = { scheme: schemeFor(hex), from };
   }
   return sources;
+}
+
+/**
+ * The scheme colorMatch builds on one input color: `SchemeContent(input)`,
+ * whose containers land on that input's tone.
+ */
+export function colorMatchScheme(
+  sourceColorArgb: number,
+  isDark: boolean,
+  contrast: number,
+) {
+  return new SchemeContent(Hct.fromInt(sourceColorArgb), isDark, contrast);
+}
+
+/**
+ * Where each overridden core color's role group is read from.
+ *
+ * Without colorMatch, that is `composedScheme(input)` -- the theme's own
+ * palettes, sourced on the input -- read group for group. Under colorMatch,
+ * it is `SchemeContent(input)`, read off its *primary* role group, so that
+ * `XContainer` lands on the input's tone.
+ *
+ * @param overrides - hex input per core color; `undefined` or blank means no override
+ * @param options.composedScheme - the theme's scheme, sourced on the given input
+ */
+export function coreRoleGroupSources(
+  overrides: Partial<Record<OverridableGroupName, string | undefined>>,
+  options: {
+    colorMatch: boolean;
+    isDark: boolean;
+    contrast: number;
+    composedScheme: (sourceColorArgb: number) => DynamicScheme;
+  },
+) {
+  const { colorMatch, isDark, contrast, composedScheme } = options;
+  if (colorMatch) {
+    return overriddenRoleGroups(
+      overrides,
+      (hex) => colorMatchScheme(argbFromHex(hex), isDark, contrast),
+      "primary",
+    );
+  }
+  return overriddenRoleGroups(overrides, (hex) =>
+    composedScheme(argbFromHex(hex)),
+  );
 }
 
 /**
