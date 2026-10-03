@@ -158,6 +158,14 @@ export type McuConfig = MtbConfig;
 export const DEFAULT_SCHEME = "tonalSpot" satisfies SchemeName;
 /** Default contrast level (standard). */
 export const DEFAULT_CONTRAST = 0;
+/** Default color match (off). */
+export const DEFAULT_COLOR_MATCH = false;
+/**
+ * The scheme variant colorMatch forces, whatever `scheme` says: the official
+ * Material Theme Builder's "Color match" toggle swaps `SchemeTonalSpot` for
+ * `SchemeContent`, whose containers land on their input's tone.
+ */
+export const COLOR_MATCH_SCHEME = "content" satisfies SchemeName;
 /** Default custom colors (none). */
 export const DEFAULT_CUSTOM_COLORS: HexCustomColor[] = [];
 /** Default blend mode — harmonize custom colors with source. */
@@ -283,7 +291,9 @@ export type BuilderContext = {
   // Config inputs
   hexSource: string;
   prefix: string;
+  /** The variant in effect: `COLOR_MATCH_SCHEME` when `colorMatch` is on. */
   scheme: SchemeName;
+  colorMatch: boolean;
   primary?: string;
   secondary?: string;
   tertiary?: string;
@@ -501,7 +511,7 @@ function buildTokenToPaletteMap(
 export function builder(
   hexSource: MtbConfig["source"],
   {
-    scheme = DEFAULT_SCHEME,
+    scheme: requestedScheme = DEFAULT_SCHEME,
     contrast = DEFAULT_CONTRAST,
     primary,
     secondary,
@@ -509,6 +519,7 @@ export function builder(
     neutral,
     neutralVariant,
     error,
+    colorMatch = DEFAULT_COLOR_MATCH,
     customColors: hexCustomColors = DEFAULT_CUSTOM_COLORS,
     prefix = DEFAULT_PREFIX,
   }: Omit<MtbConfig, "source"> = {},
@@ -523,6 +534,9 @@ export function builder(
   };
 
   assertHexInputs(hexSource, cores, hexCustomColors);
+
+  // colorMatch forces its own variant: `scheme` is ignored.
+  const scheme = colorMatch ? COLOR_MATCH_SCHEME : requestedScheme;
 
   const sourceArgb = argbFromHex(hexSource);
   const sourceHct = Hct.fromInt(sourceArgb);
@@ -589,11 +603,33 @@ export function builder(
     (c): c is ColorDefinition & { hex: string } => c.hex !== undefined,
   );
 
+  // Under colorMatch, an overridden core color's palette is the one
+  // `SchemeContent` builds on that input, at the input's own chroma: its
+  // primary palette for primary, secondary, tertiary and error, and `C/8` /
+  // `C/8 + 4` for neutral / neutral variant.
+  function colorMatchPalette(colorDef: ColorDefinition & { hex: string }) {
+    const inputScheme = new SchemeContent(
+      Hct.fromInt(argbFromHex(colorDef.hex)),
+      false,
+      contrast,
+    );
+    if (colorDef.chromaSource === "neutral") return inputScheme.neutralPalette;
+    if (colorDef.chromaSource === "neutralVariant")
+      return inputScheme.neutralVariantPalette;
+    return inputScheme.primaryPalette;
+  }
+
   // Create palettes for all defined colors
   const colorPalettes = Object.fromEntries(
     definedColors.map((colorDef) => [
       colorDef.name,
-      createColorPalette(colorDef, baseScheme, effectiveSourceForHarmonization),
+      colorMatch && colorDef.core
+        ? colorMatchPalette(colorDef)
+        : createColorPalette(
+            colorDef,
+            baseScheme,
+            effectiveSourceForHarmonization,
+          ),
     ]),
   );
 
@@ -631,16 +667,25 @@ export function builder(
   const darkScheme = composedScheme(effectiveSourceArgb, true);
 
   // Each overridden core color's role group, read from the scheme sourced on
-  // that override.
+  // that override. Under colorMatch, that scheme is `SchemeContent(input)` and
+  // the group is read off its *primary* role group, so that `XContainer` lands
+  // on the input's tone.
+  const overrides = {
+    secondary: cores.secondary,
+    tertiary: cores.tertiary,
+    error: cores.error,
+  };
   const roleGroupSources = (isDark: boolean) =>
-    overriddenRoleGroups(
-      {
-        secondary: cores.secondary,
-        tertiary: cores.tertiary,
-        error: cores.error,
-      },
-      (hex) => composedScheme(argbFromHex(hex), isDark),
-    );
+    colorMatch
+      ? overriddenRoleGroups(
+          overrides,
+          (hex) =>
+            new SchemeContent(Hct.fromInt(argbFromHex(hex)), isDark, contrast),
+          "primary",
+        )
+      : overriddenRoleGroups(overrides, (hex) =>
+          composedScheme(argbFromHex(hex), isDark),
+        );
 
   // Scheme-transformed palettes used by toCss() for CSS variables.
   // These match what MTB displays visually (eg SchemeTonalSpot clamps chroma),
@@ -700,6 +745,7 @@ export function builder(
     hexSource,
     prefix,
     scheme,
+    colorMatch,
     primary,
     secondary,
     tertiary,

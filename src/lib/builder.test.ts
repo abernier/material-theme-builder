@@ -1,4 +1,8 @@
-import { argbFromHex, Hct } from "@material/material-color-utilities";
+import {
+  argbFromHex,
+  Hct,
+  hexFromArgb,
+} from "@material/material-color-utilities";
 import { describe, expect, it } from "vitest";
 
 import { builder, isHexColor } from "./builder";
@@ -168,3 +172,98 @@ describe("builder() › role groups", () => {
     },
   );
 });
+
+// colorMatch -- "Color match: stay true to my color inputs" in the official
+// Material Theme Builder, which builds `SchemeContent` instead of
+// `SchemeTonalSpot`, one scheme per input color. Each overridden core color takes
+// the *primary* role group of `SchemeContent(input)`, whose container lands on
+// the input's own tone: at standard contrast, `XContainer` is the input itself.
+// MCU still moves a tone in [50, 60) out of that band, and contrast curves move
+// it away from standard contrast.
+describe("builder() › colorMatch", () => {
+  // The try-02 fixture's primary, the one its official export was captured with
+  const PRIMARY = "#CAB337";
+
+  it.each([
+    // try-02's secondary and tertiary, both clear of [50, 60)
+    ["secondary", "#B03A3A"], // tone 42.1
+    ["tertiary", "#2138D2"], // tone 33.6
+    // try-02's error (#479200) is in the band (below), so M3's baseline error
+    ["error", "#B3261E"], // tone 39.7
+  ] as const)(
+    "should land %sContainer on its input (%s), light and dark",
+    (name, hex) => {
+      const { mergedColorsLight, mergedColorsDark } = builder(PRIMARY, {
+        colorMatch: true,
+        [name]: hex,
+      });
+      const container = `${name}Container` as const;
+      expect(hexOf(mergedColorsLight[container])).toBe(hex);
+      expect(hexOf(mergedColorsDark[container])).toBe(hex);
+    },
+  );
+
+  it("should force the content variant, whatever scheme says", () => {
+    const content = builder(PRIMARY, { scheme: "content" }).toCss();
+    expect(builder(PRIMARY, { colorMatch: true }).toCss()).toBe(content);
+    expect(
+      builder(PRIMARY, { colorMatch: true, scheme: "vibrant" }).toCss(),
+    ).toBe(content);
+  });
+
+  // try-02's neutral (#957FF1, chroma 58.1) and neutral variant (#007EDF,
+  // chroma 60.2), at the chromas `SchemeContent` gives its own neutrals: C/8
+  // and C/8 + 4
+  it("should keep the neutrals' hue, at chroma C/8 and C/8 + 4", () => {
+    const { allPalettes } = builder(PRIMARY, {
+      colorMatch: true,
+      neutral: "#957FF1",
+      neutralVariant: "#007EDF",
+    });
+    expect(allPalettes.neutral.hue).toBeCloseTo(295.0, 1);
+    expect(allPalettes.neutral.chroma).toBeCloseTo(58.1 / 8, 1);
+    expect(allPalettes["neutral-variant"].hue).toBeCloseTo(257.7, 1);
+    expect(allPalettes["neutral-variant"].chroma).toBeCloseTo(60.2 / 8 + 4, 1);
+  });
+
+  // try-02's error, tone 53.9: pushed down to 49 in light, up to 60 in dark
+  it("should still move a container tone out of [50, 60)", () => {
+    const { mergedColorsLight, mergedColorsDark } = builder(PRIMARY, {
+      colorMatch: true,
+      error: "#479200",
+    });
+    expect(tone(mergedColorsLight.errorContainer)).toBeCloseTo(49, 0);
+    expect(tone(mergedColorsDark.errorContainer)).toBeCloseTo(60, 0);
+  });
+
+  // Every core color overridden, as in try-02
+  describe("snapshots", () => {
+    const theme = builder(PRIMARY, {
+      colorMatch: true,
+      primary: PRIMARY,
+      secondary: "#B03A3A",
+      tertiary: "#2138D2",
+      error: "#479200",
+      neutral: "#957FF1",
+      neutralVariant: "#007EDF",
+    });
+
+    it("toCss()", () => {
+      expect(theme.toCss()).toMatchSnapshot();
+    });
+
+    it("toFlutter()", () => {
+      expect(theme.toFlutter()).toMatchSnapshot();
+    });
+  });
+});
+
+function hexOf(argb: number | undefined) {
+  if (argb === undefined) throw new Error("token missing from the theme");
+  return hexFromArgb(argb).toUpperCase();
+}
+
+function tone(argb: number | undefined) {
+  if (argb === undefined) throw new Error("token missing from the theme");
+  return Hct.fromInt(argb).tone;
+}

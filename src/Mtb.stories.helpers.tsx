@@ -10,6 +10,7 @@ import {
 import { Fab } from "./components/m3/Fab";
 import { ExportButton } from "./ExportButton";
 import {
+  DEFAULT_COLOR_MATCH,
   DEFAULT_CONTRAST,
   DEFAULT_PREFIX,
   DEFAULT_SCHEME,
@@ -33,7 +34,12 @@ import type { Mtb } from "./Mtb";
  * is checked against `type`, not against `control`, and what docgen infers for
  * these two -- a type alias, an array of an intersection -- comes out as
  * `other`, which Storybook drops from the URL without a word. The controls
- * worked either way; a shared link with `scheme:vibrant` did not.
+ * worked either way; a shared link with `scheme:vibrant` did not. `colorMatch`
+ * spells its `type` out too, so `colorMatch:!true` is not left to docgen.
+ *
+ * `scheme` is hidden while `colorMatch` is on: colorMatch forces the `content`
+ * variant, and Storybook has no way to grey a control out on another arg's
+ * value -- only to hide it.
  */
 export const mtbArgTypes = {
   source: { control: "color" },
@@ -41,6 +47,12 @@ export const mtbArgTypes = {
     type: { name: "enum", value: [...schemeNames] },
     control: "select",
     options: schemeNames,
+    // colorMatch forces its own variant, so the control would move nothing
+    if: { arg: "colorMatch", truthy: false },
+  },
+  colorMatch: {
+    type: { name: "boolean" },
+    control: "boolean",
   },
   customColors: {
     type: {
@@ -1238,16 +1250,18 @@ function cliFlag(name: string, value?: string | number, fallback?: unknown) {
  * CLI takes it.
  *
  * Only what differs from the defaults is written out, so the command reads as
- * the *changes* made in the controls rather than as a dump of every option. Two
- * of the props have no flag at all: `customColors`, which a registry item
- * cannot carry, and `colorMatch`, which is not a CLI option.
+ * the *changes* made in the controls rather than as a dump of every option.
+ * `customColors` has no flag at all, since a registry item cannot carry one;
+ * and with `--color-match`, `--scheme` is left out, being ignored.
  *
  * @see https://github.com/abernier/material-theme-builder#shadcn-apply
  */
 function shadcnApplyCommand(config: MtbConfig) {
   return [
     `npx material-theme-builder@latest shadcn-apply "${config.source}"`,
-    ...cliFlag("--scheme", config.scheme, DEFAULT_SCHEME),
+    ...((config.colorMatch ?? DEFAULT_COLOR_MATCH)
+      ? ["--color-match"]
+      : cliFlag("--scheme", config.scheme, DEFAULT_SCHEME)),
     ...cliFlag("--contrast", config.contrast, DEFAULT_CONTRAST),
     ...cliFlag("--primary", config.primary),
     ...cliFlag("--secondary", config.secondary),
