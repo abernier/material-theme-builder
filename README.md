@@ -22,7 +22,8 @@ Support for:
   - [x] Harmonization (aka. `blend`) -- with effective color: `source` or
         `primary` if defined
 - [x] Shades (aka. "tonals")
-- [ ] colorMatch
+- [x] colorMatch (aka. "Color match - Stay true to my color inputs") -- see
+      [below](#colormatch)
 
 # Usage
 
@@ -51,6 +52,27 @@ theme.toShadcn();
 theme.toShadcnAliases();
 theme.toShadcnRegistryItem({ fallback: true });
 ```
+
+### colorMatch
+
+`colorMatch: true` mirrors Material Theme Builder's "Color match" toggle:
+
+```ts
+builder("#6750A4", { colorMatch: true, tertiary: "#80CBC4" });
+```
+
+- the `content` variant is forced, and `scheme` is ignored;
+- the primary (or `source`), each overridden core color (secondary, tertiary,
+  error) and each custom color gets its own scheme, so its `*Container` role
+  lands on the input tone --
+  subject to MCU's usual adjustments: tones in [50, 60) get nudged, and contrast
+  curves still apply;
+- neutral / neutralVariant overrides keep their hue, at chroma C/8 and C/8 + 4;
+- custom colors' `blend` is still honoured: harmonized first, then matched;
+- the `palettes` section of `toJson()` is unchanged, as in the official export.
+
+It is also `<Mtb colorMatch>` in [React](#react), and `--color-match` from the
+[CLI](#cli).
 
 ## CLI
 

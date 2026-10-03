@@ -123,12 +123,19 @@ export type MtbConfig = {
   /** Error color - used for error states. Overrides the default palette generation. */
   error?: string;
   /**
-   * Color match mode for core colors.
-   * When true, stays true to input colors without harmonization.
-   * When false (default), colors may be adjusted for better harmonization.
-   * Corresponds to "Color match - Stay true to my color inputs" in Material Theme Builder.
+   * Stay true to the input colors — "Color match - Stay true to my color
+   * inputs" in Material Theme Builder. Default: false.
    *
-   * @deprecated Not yet implemented. This prop is currently ignored.
+   * When true, the `content` variant is forced and `scheme` is ignored. The
+   * primary (or `source`), each overridden core color (secondary, tertiary,
+   * error) and each custom color gets its own `content` scheme, so its
+   * `*Container` role lands on the input tone — subject to MCU's usual
+   * adjustments (tones in [50, 60) are nudged, and contrast curves still
+   * apply). Neutral and neutral-variant overrides keep their hue with chroma
+   * C/8 and C/8 + 4.
+   *
+   * Custom colors' `blend` is still honoured: a blended color is harmonized
+   * first, then matched.
    */
   colorMatch?: boolean;
   /**
