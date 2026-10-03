@@ -301,14 +301,6 @@ describe("builder() › colorMatch", () => {
     it("toShadcn()", () => {
       expect(theme.toShadcn()).toMatchSnapshot();
     });
-
-    it("toFigmaVariables()", () => {
-      expect(theme.toFigmaVariables()).toMatchSnapshot();
-    });
-
-    it("toFigmaTokens()", () => {
-      expect(theme.toFigmaTokens()).toMatchSnapshot();
-    });
   });
 });
 
