@@ -15,7 +15,8 @@ scheme, so its `*Container` role lands on the input tone — subject to MCU's
 usual adjustments: tones in [50, 60) get nudged, and contrast curves still
 apply. Neutral / neutralVariant overrides keep their hue, at chroma C/8 and
 C/8 + 4. A custom color's `blend` is still honoured: harmonized first, then
-matched. `toJson()` matches the official exports 1:1, `palettes` section
+matched; and, as in the official export, its roles are the same at every
+`contrast` level. `toJson()` matches the official exports 1:1, `palettes` section
 included, which Color match leaves unchanged.
 
 It is everywhere the other options are: `<Mtb colorMatch>`, `--color-match` on

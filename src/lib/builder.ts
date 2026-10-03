@@ -136,7 +136,9 @@ export type MtbConfig = {
    * C/8 and C/8 + 4.
    *
    * Custom colors' `blend` is still honoured: a blended color is harmonized
-   * first, then matched.
+   * first, then matched. As in the official export, a custom color's roles do
+   * not depend on `contrast`: they are the standard-contrast ones at every
+   * level.
    */
   colorMatch?: boolean;
   /**
@@ -639,6 +641,11 @@ export function builder(
 
   // Under colorMatch, each input color gets a `SchemeContent` of its own,
   // built on that input -- harmonized first, for a custom color that blends.
+  //
+  // It is always built at standard contrast, whatever `contrast` says: the
+  // official export gives a custom color the same four roles at every
+  // contrast level, and the palettes read from it do not depend on contrast.
+  // The core role groups get `contrast` through `coreRoleGroupSources()`.
   function inputColorMatchScheme(
     colorDef: ColorDefinition & { hex: string },
     isDark: boolean,
@@ -646,7 +653,7 @@ export function builder(
     return colorMatchScheme(
       blendedArgb(colorDef, effectiveSourceForHarmonization),
       isDark,
-      contrast,
+      DEFAULT_CONTRAST,
     );
   }
 
