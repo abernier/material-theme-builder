@@ -4,6 +4,7 @@ import {
   Hct,
   hexFromArgb,
   MaterialDynamicColors,
+  SchemeContent,
   TonalPalette,
 } from "@material/material-color-utilities";
 
@@ -80,6 +81,7 @@ export function buildJson(ctx: BuilderContext) {
     primaryHct,
     SchemeClass,
     scheme,
+    colorMatch,
     primary,
     secondary,
     tertiary,
@@ -134,7 +136,9 @@ export function buildJson(ctx: BuilderContext) {
       return new SchemeClass(Hct.fromInt(argbFromHex(hex)), false, 0)[role];
     }
 
-    // Override palettes (isDark/contrast-invariant)
+    // Override palettes (isDark/contrast-invariant). Under colorMatch,
+    // `SchemeClass` is `SchemeContent`: neutral / neutral variant overrides
+    // then keep chroma `C/8` / `C/8 + 4` of their input.
     const secPalette = resolveOverridePalette(secondary, "primaryPalette");
     const terPalette = resolveOverridePalette(tertiary, "primaryPalette");
     const errPalette = resolveOverridePalette(error, "primaryPalette");
@@ -179,12 +183,28 @@ export function buildJson(ctx: BuilderContext) {
 
       // Each overridden core color's role group from the scheme sourced on
       // that override; every other token from the one sourced on the primary.
+      // Under colorMatch, that scheme is `SchemeContent(input)` and the group
+      // is read off its *primary* role group, so that `XContainer` lands on
+      // the input's tone.
+      const overrides = { secondary, tertiary, error };
+      const roleGroupSources = colorMatch
+        ? overriddenRoleGroups(
+            overrides,
+            (hex) =>
+              new SchemeContent(
+                Hct.fromInt(argbFromHex(hex)),
+                isDark,
+                contrast,
+              ),
+            "primary",
+          )
+        : overriddenRoleGroups(overrides, (hex) =>
+            composedScheme(argbFromHex(hex)),
+          );
       const colors = readRoles(
         FIXTURE_TOKEN_ORDER,
         composedScheme(effectiveSourceArgb),
-        overriddenRoleGroups({ secondary, tertiary, error }, (hex) =>
-          composedScheme(argbFromHex(hex)),
-        ),
+        roleGroupSources,
       );
 
       // background/onBackground always from base scheme (primary-based)
