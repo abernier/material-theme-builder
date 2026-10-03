@@ -259,7 +259,7 @@ describe("cli", () => {
       parsed.parse(["#769CDF", "--", "--scheme", "vibrant"], { from: "user" });
 
       expect(parsed.args.slice(1)).toEqual(["--scheme", "vibrant"]);
-      expect(parsed.opts().scheme).toBe("tonalSpot");
+      expect(parsed.opts().scheme).toBeUndefined();
     },
   );
 });

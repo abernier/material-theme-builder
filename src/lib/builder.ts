@@ -139,6 +139,9 @@ export type MtbConfig = {
    * first, then matched. As in the official export, a custom color's roles do
    * not depend on `contrast`: they are the standard-contrast ones at every
    * level.
+   *
+   * Passing a `scheme` other than `"content"` along with it logs a
+   * `console.warn` that the scheme is ignored, once per scheme value.
    */
   colorMatch?: boolean;
   /**
@@ -180,6 +183,31 @@ export const COLOR_MATCH_SCHEME = "content" satisfies SchemeName;
 export const DEFAULT_CUSTOM_COLORS: HexCustomColor[] = [];
 /** Default blend mode — harmonize custom colors with source. */
 export const DEFAULT_BLEND = true;
+
+// The `scheme` values already warned about. `builder()` runs on every render
+// of `<Mtb>`, so each value is warned about once rather than on every call.
+const warnedIgnoredSchemes = new Set<SchemeName>();
+
+// The variant in effect. colorMatch forces its own, and `scheme` is then
+// ignored: an explicit one other than that gets a warning, once per value.
+function effectiveScheme(
+  colorMatch: boolean,
+  requestedScheme: SchemeName | undefined,
+) {
+  if (!colorMatch) return requestedScheme ?? DEFAULT_SCHEME;
+
+  if (
+    requestedScheme !== undefined &&
+    requestedScheme !== COLOR_MATCH_SCHEME &&
+    !warnedIgnoredSchemes.has(requestedScheme)
+  ) {
+    warnedIgnoredSchemes.add(requestedScheme);
+    console.warn(
+      `material-theme-builder: \`scheme: "${requestedScheme}"\` is ignored with \`colorMatch: true\`, which forces the "${COLOR_MATCH_SCHEME}" variant.`,
+    );
+  }
+  return COLOR_MATCH_SCHEME;
+}
 
 // ─── Hex validation ──────────────────────────────────────────────────────
 //
@@ -547,7 +575,7 @@ function buildTokenToPaletteMap(
 export function builder(
   hexSource: MtbConfig["source"],
   {
-    scheme: requestedScheme = DEFAULT_SCHEME,
+    scheme: requestedScheme,
     contrast = DEFAULT_CONTRAST,
     primary,
     secondary,
@@ -571,8 +599,7 @@ export function builder(
 
   assertHexInputs(hexSource, cores, hexCustomColors);
 
-  // colorMatch forces its own variant: `scheme` is ignored.
-  const scheme = colorMatch ? COLOR_MATCH_SCHEME : requestedScheme;
+  const scheme = effectiveScheme(colorMatch, requestedScheme);
 
   const sourceArgb = argbFromHex(hexSource);
   const sourceHct = Hct.fromInt(sourceArgb);

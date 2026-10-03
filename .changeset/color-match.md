@@ -16,8 +16,13 @@ usual adjustments: tones in [50, 60) get nudged, and contrast curves still
 apply. Neutral / neutralVariant overrides keep their hue, at chroma C/8 and
 C/8 + 4. A custom color's `blend` is still honoured: harmonized first, then
 matched; and, as in the official export, its roles are the same at every
-`contrast` level. `toJson()` matches the official exports 1:1, `palettes` section
-included, which Color match leaves unchanged.
+`contrast` level. `toJson()` matches the official exports 1:1, `palettes`
+section included, which Color match leaves unchanged.
+
+Passing a `scheme` other than `"content"` along with `colorMatch: true` logs a
+`console.warn` that the scheme is ignored, once per scheme value. `<Mtb>` and
+the CLI no longer fill in a default `scheme` themselves, so neither warns
+unless a scheme is actually given.
 
 It is everywhere the other options are: `<Mtb colorMatch>`, `--color-match` on
 the CLI (and in the `shadcn-apply` command Storybook spells out for a theme),

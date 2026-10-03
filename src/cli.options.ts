@@ -89,10 +89,11 @@ export function addThemeOptions(command: Command) {
     .addOption(
       new Option(
         "--scheme <name>",
-        `Color scheme variant (ignored with --color-match, which forces ${COLOR_MATCH_SCHEME})`,
+        `Color scheme variant, ${DEFAULT_SCHEME} by default (ignored with --color-match, which forces ${COLOR_MATCH_SCHEME})`,
       )
-        .choices(schemeNames)
-        .default(DEFAULT_SCHEME),
+        // No commander default: `builder()` has its own, and passing one along
+        // would read as an explicit `scheme`, which `colorMatch` warns about.
+        .choices(schemeNames),
     )
     .option(
       "--color-match",

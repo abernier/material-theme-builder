@@ -6,7 +6,6 @@ import {
   DEFAULT_CONTRAST,
   DEFAULT_CUSTOM_COLORS,
   DEFAULT_PREFIX,
-  DEFAULT_SCHEME,
   type MtbConfig,
 } from "./lib/builder";
 import { MtbProvider } from "./Mtb.context";
@@ -20,7 +19,9 @@ const styleId = "mcu-styles";
  */
 export function Mtb({
   source,
-  scheme = DEFAULT_SCHEME,
+  // No default here: `builder()` has its own, and an explicit one would read
+  // as a `scheme` passed alongside `colorMatch`, which it warns about.
+  scheme,
   contrast = DEFAULT_CONTRAST,
   primary,
   secondary,
