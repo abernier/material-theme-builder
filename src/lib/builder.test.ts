@@ -1,5 +1,6 @@
 import {
   argbFromHex,
+  Blend,
   Hct,
   hexFromArgb,
 } from "@material/material-color-utilities";
@@ -236,7 +237,44 @@ describe("builder() › colorMatch", () => {
     expect(tone(mergedColorsDark.errorContainer)).toBeCloseTo(60, 0);
   });
 
-  // Every core color overridden, as in try-02
+  // A custom color takes the primary role group of `SchemeContent(color)`, as
+  // in the official CSS export: its container is the color itself.
+  describe("custom colors", () => {
+    const BRAND = "#B03A3A"; // tone 42.1, clear of [50, 60)
+
+    // A custom color's roles are keyed by its name, outside the typed core tokens
+    function role(colors: Record<string, number>, name: string) {
+      return colors[name];
+    }
+
+    it("should land <name>Container on its input without blend, light and dark", () => {
+      const { mergedColorsLight, mergedColorsDark } = builder(PRIMARY, {
+        colorMatch: true,
+        customColors: [{ name: "brand", hex: BRAND, blend: false }],
+      });
+      expect(hexOf(role(mergedColorsLight, "brandContainer"))).toBe(BRAND);
+      expect(hexOf(role(mergedColorsDark, "brandContainer"))).toBe(BRAND);
+    });
+
+    // Harmonization stays independent of colorMatch: the color is harmonized
+    // with the primary first, then fed to `SchemeContent`.
+    it("should land <name>Container on the harmonized color with blend, light and dark", () => {
+      const harmonized = hexOf(
+        Blend.harmonize(argbFromHex(BRAND), argbFromHex(PRIMARY)),
+      );
+      expect(harmonized).not.toBe(BRAND);
+
+      const { mergedColorsLight, mergedColorsDark } = builder(PRIMARY, {
+        colorMatch: true,
+        customColors: [{ name: "brand", hex: BRAND, blend: true }],
+      });
+      expect(hexOf(role(mergedColorsLight, "brandContainer"))).toBe(harmonized);
+      expect(hexOf(role(mergedColorsDark, "brandContainer"))).toBe(harmonized);
+    });
+  });
+
+  // Every core color overridden, as in try-02, plus a custom color with and
+  // without blend
   describe("snapshots", () => {
     const theme = builder(PRIMARY, {
       colorMatch: true,
@@ -246,6 +284,10 @@ describe("builder() › colorMatch", () => {
       error: "#479200",
       neutral: "#957FF1",
       neutralVariant: "#007EDF",
+      customColors: [
+        { name: "brand", hex: "#FF5733", blend: true },
+        { name: "accent", hex: "#00A86B", blend: false },
+      ],
     });
 
     it("toCss()", () => {

@@ -359,6 +359,7 @@ function mergeBaseAndCustomColors(
   roleGroupSources: RoleGroupSources,
   customColors: CustomColor[],
   colorPalettes: ColorPalettes,
+  customColorSchemes?: Record<string, DynamicScheme>,
 ) {
   //
   // Base colors (all listed in tokenNames), each overridden core color's role
@@ -383,6 +384,21 @@ function mergeBaseAndCustomColors(
 
   customColors.forEach((color) => {
     const colorname = color.name;
+
+    // Under colorMatch, a custom color's roles are the *primary* role group of
+    // the scheme built on that color, so `<name>Container` lands on its tone.
+    const customColorScheme = customColorSchemes?.[colorname];
+    if (customColorScheme) {
+      customVars[colorname] =
+        MaterialDynamicColors.primary.getArgb(customColorScheme);
+      customVars[`on${upperFirst(colorname)}`] =
+        MaterialDynamicColors.onPrimary.getArgb(customColorScheme);
+      customVars[`${colorname}Container`] =
+        MaterialDynamicColors.primaryContainer.getArgb(customColorScheme);
+      customVars[`on${upperFirst(colorname)}Container`] =
+        MaterialDynamicColors.onPrimaryContainer.getArgb(customColorScheme);
+      return;
+    }
 
     // Helper to get palette for this color
     const getPaletteForColor = () => getPalette(colorPalettes, colorname);
@@ -427,6 +443,19 @@ function mergeBaseAndCustomColors(
 }
 
 //
+// A color's input as ARGB, harmonized with the source first when it blends
+//
+function blendedArgb(
+  colorDef: ColorDefinition & { hex: string },
+  effectiveSourceForHarmonization: number,
+) {
+  const colorArgb = argbFromHex(colorDef.hex);
+  return colorDef.blend
+    ? Blend.harmonize(colorArgb, effectiveSourceForHarmonization)
+    : colorArgb;
+}
+
+//
 // Helper function to create a palette for any color (core or custom)
 // This unifies the logic between core colors and custom colors
 //
@@ -436,12 +465,9 @@ function createColorPalette(
   effectiveSourceForHarmonization: number,
 ) {
   // Get the color value, applying harmonization if needed
-  const colorArgb = argbFromHex(colorDef.hex);
-  const harmonizedArgb = colorDef.blend
-    ? Blend.harmonize(colorArgb, effectiveSourceForHarmonization)
-    : colorArgb;
-
-  const hct = Hct.fromInt(harmonizedArgb);
+  const hct = Hct.fromInt(
+    blendedArgb(colorDef, effectiveSourceForHarmonization),
+  );
 
   // Determine which chroma to use based on color type
   let targetChroma: number;
@@ -603,16 +629,25 @@ export function builder(
     (c): c is ColorDefinition & { hex: string } => c.hex !== undefined,
   );
 
-  // Under colorMatch, an overridden core color's palette is the one
-  // `SchemeContent` builds on that input, at the input's own chroma: its
-  // primary palette for primary, secondary, tertiary and error, and `C/8` /
-  // `C/8 + 4` for neutral / neutral variant.
-  function colorMatchPalette(colorDef: ColorDefinition & { hex: string }) {
-    const inputScheme = new SchemeContent(
-      Hct.fromInt(argbFromHex(colorDef.hex)),
-      false,
+  // Under colorMatch, each input color gets a `SchemeContent` of its own,
+  // built on that input -- harmonized first, for a custom color that blends.
+  function colorMatchScheme(
+    colorDef: ColorDefinition & { hex: string },
+    isDark: boolean,
+  ) {
+    return new SchemeContent(
+      Hct.fromInt(blendedArgb(colorDef, effectiveSourceForHarmonization)),
+      isDark,
       contrast,
     );
+  }
+
+  // Under colorMatch, an overridden core color's or a custom color's palette
+  // is the one `SchemeContent` builds on that input, at the input's own
+  // chroma: its primary palette for primary, secondary, tertiary, error and
+  // custom colors, and `C/8` / `C/8 + 4` for neutral / neutral variant.
+  function colorMatchPalette(colorDef: ColorDefinition & { hex: string }) {
+    const inputScheme = colorMatchScheme(colorDef, false);
     if (colorDef.chromaSource === "neutral") return inputScheme.neutralPalette;
     if (colorDef.chromaSource === "neutralVariant")
       return inputScheme.neutralVariantPalette;
@@ -623,7 +658,7 @@ export function builder(
   const colorPalettes = Object.fromEntries(
     definedColors.map((colorDef) => [
       colorDef.name,
-      colorMatch && colorDef.core
+      colorMatch
         ? colorMatchPalette(colorDef)
         : createColorPalette(
             colorDef,
@@ -714,17 +749,30 @@ export function builder(
       value: argbFromHex(c.hex),
     }));
 
+  // Under colorMatch, each custom color's roles are read from the
+  // `SchemeContent` built on that color, rather than from the base scheme.
+  const customColorSchemes = (isDark: boolean) =>
+    colorMatch
+      ? Object.fromEntries(
+          definedColors
+            .filter((c) => !c.core)
+            .map((c) => [c.name, colorMatchScheme(c, isDark)]),
+        )
+      : undefined;
+
   const mergedColorsLight = mergeBaseAndCustomColors(
     lightScheme,
     roleGroupSources(false),
     customColors,
     colorPalettes,
+    customColorSchemes(false),
   );
   const mergedColorsDark = mergeBaseAndCustomColors(
     darkScheme,
     roleGroupSources(true),
     customColors,
     colorPalettes,
+    customColorSchemes(true),
   );
 
   // ── Shared token→palette mapping ──────────────────────────────────────
