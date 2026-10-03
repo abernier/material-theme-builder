@@ -22,7 +22,11 @@ Support for:
   - [x] Harmonization (aka. `blend`) -- with effective color: `source` or
         `primary` if defined
 - [x] Shades (aka. "tonals")
-- [ ] colorMatch
+- [x] colorMatch (aka. "Color match -- Stay true to my color inputs"): palettes
+      made from an input color -- `source` (or `primary`), the core overrides,
+      the custom colors -- keep that color's own chroma instead of the scheme's,
+      so a near-gray `neutral` stays gray. Off by default; `--color-match` on
+      the CLI
 
 # Usage
 

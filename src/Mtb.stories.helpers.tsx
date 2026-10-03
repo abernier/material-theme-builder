@@ -33,7 +33,9 @@ import type { Mtb } from "./Mtb";
  * is checked against `type`, not against `control`, and what docgen infers for
  * these two -- a type alias, an array of an intersection -- comes out as
  * `other`, which Storybook drops from the URL without a word. The controls
- * worked either way; a shared link with `scheme:vibrant` did not.
+ * worked either way; a shared link with `scheme:vibrant` did not. `colorMatch`
+ * spells its `type` out too, so `colorMatch:!true` reaches it from a link
+ * whatever docgen makes of it.
  */
 export const mtbArgTypes = {
   source: { control: "color" },
@@ -63,6 +65,7 @@ export const mtbArgTypes = {
   error: { control: "color" },
   neutral: { control: "color" },
   neutralVariant: { control: "color" },
+  colorMatch: { type: { name: "boolean" }, control: "boolean" },
   children: {
     table: { disable: true }, // hide
   },
@@ -1220,13 +1223,19 @@ export function SchemeOverlay({
 
 /**
  * `name value`, unless the value is blank or already what the CLI defaults to.
+ * A boolean is a bare switch: `name` when true, nothing otherwise.
  *
  * An empty string counts as blank on purpose: that is what a cleared color
  * picker hands over, and `builder()` reads it as no override rather than as a
  * color.
  */
-function cliFlag(name: string, value?: string | number, fallback?: unknown) {
+function cliFlag(
+  name: string,
+  value?: string | number | boolean,
+  fallback?: unknown,
+) {
   if (value === undefined || value === "" || value === fallback) return [];
+  if (typeof value === "boolean") return value ? [name] : [];
 
   return [
     typeof value === "string" ? `${name} "${value}"` : `${name} ${value}`,
@@ -1238,9 +1247,9 @@ function cliFlag(name: string, value?: string | number, fallback?: unknown) {
  * CLI takes it.
  *
  * Only what differs from the defaults is written out, so the command reads as
- * the *changes* made in the controls rather than as a dump of every option. Two
- * of the props have no flag at all: `customColors`, which a registry item
- * cannot carry, and `colorMatch`, which is not a CLI option.
+ * the *changes* made in the controls rather than as a dump of every option. One
+ * of the props has no flag at all: `customColors`, which a registry item cannot
+ * carry.
  *
  * @see https://github.com/abernier/material-theme-builder#shadcn-apply
  */
@@ -1255,6 +1264,7 @@ function shadcnApplyCommand(config: MtbConfig) {
     ...cliFlag("--error", config.error),
     ...cliFlag("--neutral", config.neutral),
     ...cliFlag("--neutral-variant", config.neutralVariant),
+    ...cliFlag("--color-match", config.colorMatch),
     ...cliFlag("--prefix", config.prefix, DEFAULT_PREFIX),
   ].join(" ");
 }

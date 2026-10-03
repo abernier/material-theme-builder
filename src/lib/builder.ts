@@ -118,12 +118,22 @@ export type MtbConfig = {
   /** Error color - used for error states. Overrides the default palette generation. */
   error?: string;
   /**
-   * Color match mode for core colors.
-   * When true, stays true to input colors without harmonization.
-   * When false (default), colors may be adjusted for better harmonization.
-   * Corresponds to "Color match - Stay true to my color inputs" in Material Theme Builder.
+   * Stay true to the color inputs -- the "Color match" toggle of Material Theme
+   * Builder.
    *
-   * @deprecated Not yet implemented. This prop is currently ignored.
+   * Off (the default), a palette made from an input color keeps only its hue:
+   * its chroma is the scheme's, so a near-gray `neutral` comes out tinted at
+   * the scheme's neutral chroma, and a near-gray custom color at the primary's.
+   *
+   * On, every palette made from an input color keeps that color's own chroma
+   * too: `source` (when no `primary` is given), the six core overrides, and
+   * each custom color. Palettes the scheme derives from the source -- the
+   * secondary, tertiary and neutrals nobody set -- are untouched.
+   *
+   * `blend` still applies first: a blended custom color is harmonized (its hue
+   * rotated toward the effective source) and then keeps its chroma.
+   *
+   * Default: `false`.
    */
   colorMatch?: boolean;
   /**
@@ -157,6 +167,8 @@ export const DEFAULT_CONTRAST = 0;
 export const DEFAULT_CUSTOM_COLORS: HexCustomColor[] = [];
 /** Default blend mode — harmonize custom colors with source. */
 export const DEFAULT_BLEND = true;
+/** Default color match — palettes take the scheme's chroma, not the input's. */
+export const DEFAULT_COLOR_MATCH = false;
 
 // ─── Hex validation ──────────────────────────────────────────────────────
 //
@@ -285,6 +297,7 @@ export type BuilderContext = {
   neutral?: string;
   neutralVariant?: string;
   error?: string;
+  colorMatch: boolean;
   hexCustomColors: HexCustomColor[];
 
   // Derived intermediates
@@ -428,6 +441,7 @@ function createColorPalette(
   colorDef: ColorDefinition & { hex: string },
   baseScheme: DynamicScheme,
   effectiveSourceForHarmonization: number,
+  colorMatch: boolean,
 ) {
   // Get the color value, applying harmonization if needed
   const colorArgb = argbFromHex(colorDef.hex);
@@ -436,6 +450,10 @@ function createColorPalette(
     : colorArgb;
 
   const hct = Hct.fromInt(harmonizedArgb);
+
+  // Color match: the input's own chroma, whatever the scheme would have used.
+  // Harmonization above has already happened -- it moves the hue, not this.
+  if (colorMatch) return TonalPalette.fromHueAndChroma(hct.hue, hct.chroma);
 
   // Determine which chroma to use based on color type
   let targetChroma: number;
@@ -455,6 +473,20 @@ function createColorPalette(
   }
 
   return TonalPalette.fromHueAndChroma(hct.hue, targetChroma);
+}
+
+// The color the primary palette is made from, if any is: the `primary`
+// override, or -- with color match -- the source. Color match makes the source a
+// color input like any other, so without a `primary` to take its place, its
+// palette keeps its chroma; the scheme's own primary palette would not.
+// Otherwise there is none, and the scheme's primary palette stands.
+function primaryInputColor(
+  primary: string | undefined,
+  hexSource: string,
+  colorMatch: boolean,
+) {
+  if (primary) return primary;
+  return colorMatch ? hexSource : undefined;
 }
 
 // Maps each MaterialDynamicColors property to its source palette name
@@ -513,6 +545,7 @@ export function builder(
     neutral,
     neutralVariant,
     error,
+    colorMatch = DEFAULT_COLOR_MATCH,
     customColors: hexCustomColors = DEFAULT_CUSTOM_COLORS,
     prefix = DEFAULT_PREFIX,
   }: Omit<MtbConfig, "source"> = {},
@@ -544,12 +577,14 @@ export function builder(
   const primaryHct = Hct.fromInt(effectiveSourceArgb);
   const baseScheme = new SchemeClass(primaryHct, false, contrast);
 
+  const primaryInput = primaryInputColor(cores.primary, hexSource, colorMatch);
+
   // Unified color processing: Combine core colors and custom colors, filter to only those with hex defined
   const allColors: ColorDefinition[] = [
     // Core colors (hex may be undefined)
     {
       name: "primary",
-      hex: cores.primary,
+      hex: primaryInput,
       core: true,
       chromaSource: "primary",
     },
@@ -597,7 +632,12 @@ export function builder(
   const colorPalettes = Object.fromEntries(
     definedColors.map((colorDef) => [
       colorDef.name,
-      createColorPalette(colorDef, baseScheme, effectiveSourceForHarmonization),
+      createColorPalette(
+        colorDef,
+        baseScheme,
+        effectiveSourceForHarmonization,
+        colorMatch,
+      ),
     ]),
   );
 
@@ -688,6 +728,7 @@ export function builder(
     neutral,
     neutralVariant,
     error,
+    colorMatch,
     hexCustomColors,
     sourceHct,
     effectiveSourceArgb,

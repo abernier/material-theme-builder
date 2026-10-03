@@ -620,25 +620,35 @@ export const PrimarySecondaryTertiaryErrorNeutralNeutralVariantSt: Story = {
 
 //
 
-// export const PrimarySecondaryTertiaryErrorNeutralNeutralVariantColorMatchSt: Story =
-//   {
-//     name: "[primary][secondary][tertiary][error][neutral][neutralVariant][colorMatch]",
-//     args: {
-//       source: "#769CDF", // keep source because required (but primary will be considered effective one)
-//       primary: "#cab337",
-//       secondary: "#b03a3a",
-//       tertiary: "#2138d2",
-//       error: "#479200",
-//       neutral: "#957FF1",
-//       neutralVariant: "#007EDF",
-//       colorMatch: true,
-//     },
-//     render: (args) => (
-//       <Mtb {...args}>
-//         <Bar customColors={args.customColors} />
-//       </Mtb>
-//     ),
-//   };
+export const PrimarySecondaryTertiaryErrorNeutralNeutralVariantColorMatchSt: Story =
+  {
+    name: "[primary][secondary][tertiary][error][neutral][neutralVariant][colorMatch]",
+    args: {
+      ...PrimarySecondaryTertiaryErrorNeutralNeutralVariantSt.args,
+      colorMatch: true,
+    },
+    render: PrimarySecondaryTertiaryErrorNeutralNeutralVariantSt.render,
+  };
+
+// Near-gray inputs, which is where color match matters most: off, the neutral
+// and the two gray custom colors take the scheme's chroma and come out tinted
+// like the source; on, they stay the grays they were picked as.
+export const ColorMatchSt: Story = {
+  name: "[colorMatch]",
+  args: {
+    source: "#CAF543",
+    scheme: "vibrant",
+    neutral: "#36342F",
+    error: "#FF4980",
+    colorMatch: true,
+    customColors: [
+      { name: "neutral-1", hex: "#E6E2DD", blend: false },
+      { name: "neutral-2", hex: "#363532", blend: false },
+      { name: "accent-1", hex: "#D855F9", blend: false },
+    ],
+  },
+  render: St1.render,
+};
 
 //
 //  ██████ ██    ██ ███████ ████████  ██████  ███    ███

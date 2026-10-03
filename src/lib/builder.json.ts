@@ -85,6 +85,7 @@ export function buildJson(ctx: BuilderContext) {
     error,
     neutral,
     neutralVariant,
+    colorMatch,
     hexCustomColors,
   } = ctx;
 
@@ -101,6 +102,23 @@ export function buildJson(ctx: BuilderContext) {
     ? Hct.fromInt(argbFromHex(neutralVariant))
     : sourceHct;
 
+  // A neutral palette from a neutral *input*: with color match, that input's
+  // own chroma -- as everywhere else colorMatch applies. Otherwise, and for a
+  // neutral derived from the source, MTB's capped fraction of it.
+  function rawNeutralPalette(
+    hct: Hct,
+    hex: string | undefined,
+    divisor: number,
+    cap: number,
+  ) {
+    if (colorMatch && hex)
+      return TonalPalette.fromHueAndChroma(hct.hue, hct.chroma);
+    return TonalPalette.fromHueAndChroma(
+      hct.hue,
+      Math.min(hct.chroma / divisor, cap),
+    );
+  }
+
   const rawPalettes = {
     primary: TonalPalette.fromInt(effectiveSourceArgb),
     secondary: secondary
@@ -112,14 +130,8 @@ export function buildJson(ctx: BuilderContext) {
           (sourceHct.hue + 60) % 360,
           sourceHct.chroma / 2,
         ),
-    neutral: TonalPalette.fromHueAndChroma(
-      neuHct.hue,
-      Math.min(neuHct.chroma / 12, 4),
-    ),
-    "neutral-variant": TonalPalette.fromHueAndChroma(
-      nvHct.hue,
-      Math.min(nvHct.chroma / 6, 8),
-    ),
+    neutral: rawNeutralPalette(neuHct, neutral, 12, 4),
+    "neutral-variant": rawNeutralPalette(nvHct, neutralVariant, 6, 8),
   };
 
   function buildJsonSchemes() {
@@ -148,13 +160,23 @@ export function buildJson(ctx: BuilderContext) {
 
     // Resolve an override palette from a hex color string.
     // Returns null when hex is undefined (no override for that role).
+    // With color match, the palette keeps the input's own chroma rather than
+    // the one the scheme would give that role.
     function resolveOverridePalette(
       hex: string | undefined,
       role: "primaryPalette" | "neutralPalette" | "neutralVariantPalette",
     ) {
       if (!hex) return null;
-      return new SchemeClass(Hct.fromInt(argbFromHex(hex)), false, 0)[role];
+      const hct = Hct.fromInt(argbFromHex(hex));
+      if (colorMatch) return TonalPalette.fromHueAndChroma(hct.hue, hct.chroma);
+      return new SchemeClass(hct, false, 0)[role];
     }
+
+    // The primary is a color input too -- `primary`, or else `source` -- so
+    // color match keeps its chroma as well.
+    const matchedPrimaryPalette = colorMatch
+      ? TonalPalette.fromHueAndChroma(primaryHct.hue, primaryHct.chroma)
+      : null;
 
     // Override palettes (isDark/contrast-invariant)
     const secPalette = resolveOverridePalette(secondary, "primaryPalette");
@@ -187,7 +209,7 @@ export function buildJson(ctx: BuilderContext) {
         variant: schemeToVariant[scheme],
         contrastLevel: contrast,
         isDark,
-        primaryPalette: baseScheme.primaryPalette,
+        primaryPalette: matchedPrimaryPalette || baseScheme.primaryPalette,
         secondaryPalette: secPalette || baseScheme.secondaryPalette,
         tertiaryPalette: terPalette || baseScheme.tertiaryPalette,
         neutralPalette: neuPalette || baseScheme.neutralPalette,

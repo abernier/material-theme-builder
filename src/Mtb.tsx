@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import {
+  DEFAULT_COLOR_MATCH,
   DEFAULT_CONTRAST,
   DEFAULT_CUSTOM_COLORS,
   DEFAULT_PREFIX,
@@ -13,7 +14,6 @@ import { MtbProvider } from "./Mtb.context";
 // The DOM id stays `mcu-styles`: it is observable from user CSS/JS, so renaming
 // it would break selectors silently. Only the local binding follows the rename.
 const styleId = "mcu-styles";
-const DEFAULT_COLOR_MATCH = false;
 
 /**
  * Root component that generates and injects a Material You color theme into the page.

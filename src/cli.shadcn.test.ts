@@ -75,6 +75,11 @@ describe("theme options", () => {
     expect(theme.options.prefix).toBe("my");
   });
 
+  it("should default `colorMatch` to false, and turn it on with --color-match", () => {
+    expect(themeFrom(command([])).options.colorMatch).toBe(false);
+    expect(themeFrom(command(["--color-match"])).options.colorMatch).toBe(true);
+  });
+
   it("should default `fallback` to true, being declared as a negation", () => {
     expect(themeFrom(command([])).fallback).toBe(true);
     expect(themeFrom(command(["--no-fallback"])).fallback).toBe(false);

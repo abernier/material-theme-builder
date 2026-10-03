@@ -20,6 +20,7 @@ import {
 } from "commander";
 
 import {
+  DEFAULT_COLOR_MATCH,
   DEFAULT_CONTRAST,
   DEFAULT_PREFIX,
   DEFAULT_SCHEME,
@@ -106,6 +107,11 @@ export function addThemeOptions(command: Command) {
       parseHexColor,
     )
     .option(
+      "--color-match",
+      "Stay true to the color inputs: palettes made from the source, the overrides and the custom colors keep each color's own chroma",
+      DEFAULT_COLOR_MATCH,
+    )
+    .option(
       "--no-fallback",
       "Omit this theme's colors as the var() fallbacks in the registry item, so it renders nothing without an <Mtb> above it",
     )
@@ -133,6 +139,7 @@ export function builderOptions(opts: OptionValues): ThemeOptions {
     error: opts.error,
     neutral: opts.neutral,
     neutralVariant: opts.neutralVariant,
+    colorMatch: opts.colorMatch,
     prefix: opts.prefix,
   };
 }

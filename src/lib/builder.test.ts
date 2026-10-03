@@ -1,6 +1,12 @@
+import {
+  argbFromHex,
+  Blend,
+  Hct,
+  hexFromArgb,
+} from "@material/material-color-utilities";
 import { describe, expect, it } from "vitest";
 
-import { builder, isHexColor } from "./builder";
+import { builder, isHexColor, type MtbConfig } from "./builder";
 
 const SOURCE = "#6750A4";
 
@@ -119,4 +125,146 @@ describe("isHexColor()", () => {
       expect(isHexColor(value)).toBe(false);
     },
   );
+});
+
+// The real case that motivated colorMatch: a brand with a lime source, a
+// near-black warm gray as its neutral, and two near-gray custom colors next to
+// a saturated one. Off, every one of those grays came out yellow.
+describe("builder() › colorMatch", () => {
+  const BRAND = "#CAF543";
+  const config = {
+    scheme: "vibrant",
+    neutral: "#36342F", // HCT chroma 3.3
+    error: "#FF4980",
+    customColors: [
+      { name: "neutral-1", hex: "#E6E2DD", blend: false }, // chroma 2.2
+      { name: "neutral-2", hex: "#363532", blend: false }, // chroma 2.1
+      { name: "accent-1", hex: "#D855F9", blend: false }, // chroma 83.3
+    ],
+  } satisfies Omit<MtbConfig, "source">;
+
+  const chromaOf = (hex: string) => Hct.fromInt(argbFromHex(hex)).chroma;
+  const chromaOfArgb = (argb: number) => Hct.fromInt(argb).chroma;
+
+  // A record entry the test relies on: fails loudly rather than reading on
+  // with `undefined`.
+  function at<T>(record: Record<string, T>, key: string) {
+    const value = record[key];
+    if (value === undefined) throw new Error(`missing '${key}'`);
+    return value;
+  }
+
+  const off = builder(BRAND, config);
+  const on = builder(BRAND, { ...config, colorMatch: true });
+
+  it("should keep a neutral override's own chroma", () => {
+    expect(on.allPalettes.neutral.chroma).toBeCloseTo(chromaOf("#36342F"), 5);
+    // ...where the scheme would have tinted it at its neutral chroma
+    expect(off.allPalettes.neutral.chroma).toBe(
+      builder(BRAND, { scheme: "vibrant" }).allPalettes.neutral.chroma,
+    );
+    expect(off.allPalettes.neutral.chroma).toBeGreaterThan(5);
+  });
+
+  it("should leave the surfaces near gray", () => {
+    for (const merged of [on.mergedColorsLight, on.mergedColorsDark])
+      for (const token of ["background", "surface", "onSurface"])
+        expect(chromaOfArgb(at(merged, token))).toBeLessThan(4);
+  });
+
+  it.each([
+    ["neutral-1", "#E6E2DD"],
+    ["neutral-2", "#363532"],
+  ])("should keep the near-gray custom color %s near gray", (name, hex) => {
+    expect(at(on.allPalettes, name).chroma).toBeCloseTo(chromaOf(hex), 5);
+
+    for (const merged of [on.mergedColorsLight, on.mergedColorsDark])
+      for (const role of [name, `${name}Container`])
+        expect(chromaOfArgb(at(merged, role))).toBeLessThan(4);
+
+    // Off, it inherits the primary's chroma and turns yellow.
+    expect(chromaOfArgb(at(off.mergedColorsDark, name))).toBeGreaterThan(30);
+  });
+
+  it("should keep a saturated custom color's own chroma", () => {
+    expect(at(on.allPalettes, "accent-1").chroma).toBeCloseTo(
+      chromaOf("#D855F9"),
+      5,
+    );
+  });
+
+  it("should keep the source's chroma for the primary palette", () => {
+    expect(on.allPalettes.primary.chroma).toBeCloseTo(chromaOf(BRAND), 5);
+    expect(on.allPalettes.primary.hue).toBeCloseTo(
+      Hct.fromInt(argbFromHex(BRAND)).hue,
+      5,
+    );
+  });
+
+  it("should keep a primary override's chroma, rather than the source's", () => {
+    const theme = builder(BRAND, { primary: "#6750A4", colorMatch: true });
+    expect(theme.allPalettes.primary.chroma).toBeCloseTo(
+      chromaOf("#6750A4"),
+      5,
+    );
+  });
+
+  it("should leave the palettes nobody set to the scheme", () => {
+    for (const name of ["secondary", "tertiary", "neutral-variant"] as const) {
+      expect(on.allPalettes[name].hue).toBe(off.allPalettes[name].hue);
+      expect(on.allPalettes[name].chroma).toBe(off.allPalettes[name].chroma);
+    }
+  });
+
+  // Harmonization moves the hue toward the effective source; color match then
+  // keeps the chroma -- of the harmonized color, which is what the palette is
+  // drawn from.
+  it("should harmonize a blended custom color first, then keep its chroma", () => {
+    const hex = "#D855F9";
+    const theme = builder(BRAND, {
+      customColors: [{ name: "accent", hex, blend: true }],
+      colorMatch: true,
+    });
+    const harmonized = Hct.fromInt(
+      Blend.harmonize(argbFromHex(hex), argbFromHex(BRAND)),
+    );
+    const palette = at(theme.allPalettes, "accent");
+
+    expect(palette.hue).toBeCloseTo(harmonized.hue, 5);
+    expect(palette.chroma).toBeCloseTo(harmonized.chroma, 5);
+    expect(palette.hue).not.toBeCloseTo(Hct.fromInt(argbFromHex(hex)).hue, 0);
+  });
+
+  it("should carry into the JSON export", () => {
+    const json = on.toJson();
+    const dark = at(json.schemes, "dark");
+
+    expect(chromaOf(at(at(json.palettes, "neutral"), "50"))).toBeLessThan(4);
+    expect(chromaOf(at(dark, "surface"))).toBeLessThan(4);
+    expect(chromaOf(at(at(json.schemes, "light"), "surface"))).toBeLessThan(4);
+    // and changes it, so this is not a pass by default
+    expect(at(dark, "surface")).not.toBe(
+      at(at(off.toJson().schemes, "dark"), "surface"),
+    );
+  });
+
+  // Off is the default, and the default has to stay what it was -- every
+  // exporter, to the byte.
+  it("should change nothing when false", () => {
+    const explicit = builder(BRAND, { ...config, colorMatch: false });
+
+    expect(explicit.toCss()).toBe(off.toCss());
+    expect(explicit.toJson()).toEqual(off.toJson());
+    expect(explicit.toFigmaTokens()).toEqual(off.toFigmaTokens());
+    expect(explicit.toFigmaVariables()).toEqual(off.toFigmaVariables());
+    expect(explicit.toTailwind()).toBe(off.toTailwind());
+    expect(explicit.toShadcn()).toEqual(off.toShadcn());
+    expect(explicit.toFlutter()).toBe(off.toFlutter());
+  });
+
+  it("should change the theme when true", () => {
+    expect(hexFromArgb(at(on.mergedColorsDark, "background"))).not.toBe(
+      hexFromArgb(at(off.mergedColorsDark, "background")),
+    );
+  });
 });
