@@ -1,4 +1,9 @@
 import { describe, expect, it } from "vitest";
+import colorMatch1 from "../fixtures/material-theme-builder/color-match-01.json";
+import colorMatch2 from "../fixtures/material-theme-builder/color-match-02.json";
+import colorMatch3 from "../fixtures/material-theme-builder/color-match-03.json";
+import colorMatch4 from "../fixtures/material-theme-builder/color-match-04.json";
+import colorMatch5 from "../fixtures/material-theme-builder/color-match-05.json";
 import fixture from "../fixtures/material-theme-builder/try-01.json";
 import fixture2 from "../fixtures/material-theme-builder/try-02.json";
 import fixture3 from "../fixtures/material-theme-builder/try-03.json";
@@ -69,5 +74,76 @@ describe("builder › toJson()", () => {
       ],
     }).toJson();
     expect(result).toEqual(stripDescription(fixture5));
+  });
+});
+
+// The same, with "Color match -- Stay true to my color inputs" on. These came
+// out of MTB's own code rather than its export button -- see
+// scripts/mtb-export.mjs and the fixtures' README.
+describe("builder › toJson() › colorMatch", () => {
+  it("should match material theme builder: source only", () => {
+    const result = builder("#769CDF", { colorMatch: true }).toJson();
+    expect(result).toEqual(stripDescription(colorMatch1));
+  });
+
+  it("should match material theme builder: every core color", () => {
+    const result = builder("#CAB337", {
+      primary: "#CAB337",
+      secondary: "#B03A3A",
+      tertiary: "#2138D2",
+      error: "#479200",
+      neutral: "#957FF1",
+      neutralVariant: "#007EDF",
+      colorMatch: true,
+      customColors: [
+        { name: "Custom Color 1", hex: "#00D68A", blend: true },
+        { name: "Custom Color 2", hex: "#FFE16B", blend: true },
+      ],
+    }).toJson();
+    expect(result).toEqual(stripDescription(colorMatch2));
+  });
+
+  it("should match material theme builder: tertiary and neutral variant", () => {
+    const result = builder("#B33B15", {
+      primary: "#B33B15",
+      tertiary: "#009EBE",
+      neutralVariant: "#C2C200",
+      colorMatch: true,
+      customColors: [
+        { name: "Custom Color 1", hex: "#A4D386", blend: false },
+        { name: "Custom Color 2", hex: "#FD0FB6", blend: false },
+      ],
+    }).toJson();
+    expect(result).toEqual(stripDescription(colorMatch3));
+  });
+
+  it("should match material theme builder: a near-gray neutral", () => {
+    const result = builder("#CAF543", {
+      primary: "#CAF543",
+      error: "#FF4980",
+      neutral: "#36342F",
+      colorMatch: true,
+      customColors: [
+        { name: "neutral-1", hex: "#E6E2DD", blend: false },
+        { name: "neutral-2", hex: "#363532", blend: false },
+        { name: "accent-1", hex: "#D855F9", blend: false },
+      ],
+    }).toJson();
+    expect(result).toEqual(stripDescription(colorMatch4));
+  });
+
+  it("should match material theme builder: tertiary, error and neutral variant", () => {
+    const result = builder("#F766FF", {
+      primary: "#F766FF",
+      tertiary: "#7BF600",
+      error: "#311E00",
+      neutralVariant: "#002726",
+      colorMatch: true,
+      customColors: [
+        { name: "Custom Color 1", hex: "#F69C83", blend: true },
+        { name: "Custom Color 2", hex: "#8DCCF8", blend: false },
+      ],
+    }).toJson();
+    expect(result).toEqual(stripDescription(colorMatch5));
   });
 });

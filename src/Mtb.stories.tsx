@@ -630,14 +630,14 @@ export const PrimarySecondaryTertiaryErrorNeutralNeutralVariantColorMatchSt: Sto
     render: PrimarySecondaryTertiaryErrorNeutralNeutralVariantSt.render,
   };
 
-// Near-gray inputs, which is where color match matters most: off, the neutral
-// and the two gray custom colors take the scheme's chroma and come out tinted
-// like the source; on, they stay the grays they were picked as.
+// Near-gray inputs, which is where color match shows most: off, the neutral and
+// the two gray custom colors take the scheme's chroma and come out tinted like
+// the source; on, they stay the grays they were picked as -- and, as in MTB,
+// `background` stays the source's.
 export const ColorMatchSt: Story = {
   name: "[colorMatch]",
   args: {
     source: "#CAF543",
-    scheme: "vibrant",
     neutral: "#36342F",
     error: "#FF4980",
     colorMatch: true,

@@ -9,6 +9,7 @@ import {
 
 import type { BuilderContext, TokenName } from "./builder";
 import { DEFAULT_BLEND, schemeToVariant } from "./builder";
+import { matchedSchemeColors } from "./builder.colorMatch";
 
 // The 18 baseline tones matching the Material Theme Builder JSON output
 const MTB_TONES = [
@@ -102,23 +103,6 @@ export function buildJson(ctx: BuilderContext) {
     ? Hct.fromInt(argbFromHex(neutralVariant))
     : sourceHct;
 
-  // A neutral palette from a neutral *input*: with color match, that input's
-  // own chroma -- as everywhere else colorMatch applies. Otherwise, and for a
-  // neutral derived from the source, MTB's capped fraction of it.
-  function rawNeutralPalette(
-    hct: Hct,
-    hex: string | undefined,
-    divisor: number,
-    cap: number,
-  ) {
-    if (colorMatch && hex)
-      return TonalPalette.fromHueAndChroma(hct.hue, hct.chroma);
-    return TonalPalette.fromHueAndChroma(
-      hct.hue,
-      Math.min(hct.chroma / divisor, cap),
-    );
-  }
-
   const rawPalettes = {
     primary: TonalPalette.fromInt(effectiveSourceArgb),
     secondary: secondary
@@ -130,8 +114,14 @@ export function buildJson(ctx: BuilderContext) {
           (sourceHct.hue + 60) % 360,
           sourceHct.chroma / 2,
         ),
-    neutral: rawNeutralPalette(neuHct, neutral, 12, 4),
-    "neutral-variant": rawNeutralPalette(nvHct, neutralVariant, 6, 8),
+    neutral: TonalPalette.fromHueAndChroma(
+      neuHct.hue,
+      Math.min(neuHct.chroma / 12, 4),
+    ),
+    "neutral-variant": TonalPalette.fromHueAndChroma(
+      nvHct.hue,
+      Math.min(nvHct.chroma / 6, 8),
+    ),
   };
 
   function buildJsonSchemes() {
@@ -160,23 +150,13 @@ export function buildJson(ctx: BuilderContext) {
 
     // Resolve an override palette from a hex color string.
     // Returns null when hex is undefined (no override for that role).
-    // With color match, the palette keeps the input's own chroma rather than
-    // the one the scheme would give that role.
     function resolveOverridePalette(
       hex: string | undefined,
       role: "primaryPalette" | "neutralPalette" | "neutralVariantPalette",
     ) {
       if (!hex) return null;
-      const hct = Hct.fromInt(argbFromHex(hex));
-      if (colorMatch) return TonalPalette.fromHueAndChroma(hct.hue, hct.chroma);
-      return new SchemeClass(hct, false, 0)[role];
+      return new SchemeClass(Hct.fromInt(argbFromHex(hex)), false, 0)[role];
     }
-
-    // The primary is a color input too -- `primary`, or else `source` -- so
-    // color match keeps its chroma as well.
-    const matchedPrimaryPalette = colorMatch
-      ? TonalPalette.fromHueAndChroma(primaryHct.hue, primaryHct.chroma)
-      : null;
 
     // Override palettes (isDark/contrast-invariant)
     const secPalette = resolveOverridePalette(secondary, "primaryPalette");
@@ -199,6 +179,32 @@ export function buildJson(ctx: BuilderContext) {
       { name: "dark-high-contrast", isDark: true, contrast: 1.0 },
     ] as const;
 
+    // With color match, MTB's own composition: one `content` scheme per
+    // color. Its tonal palettes, below, do not depend on color match.
+    if (colorMatch) {
+      const argbOf = (hex?: string) => (hex ? argbFromHex(hex) : undefined);
+      const inputs = {
+        primary: effectiveSourceArgb,
+        secondary: argbOf(secondary),
+        tertiary: argbOf(tertiary),
+        error: argbOf(error),
+        neutral: argbOf(neutral),
+        neutralVariant: argbOf(neutralVariant),
+      };
+
+      for (const { name, isDark, contrast } of jsonContrastLevels) {
+        const colors = matchedSchemeColors(inputs, isDark, contrast);
+        jsonSchemes[name] = Object.fromEntries(
+          FIXTURE_TOKEN_ORDER.map((token) => [
+            token,
+            hexFromArgb(colors[token]).toUpperCase(),
+          ]),
+        );
+      }
+
+      return jsonSchemes;
+    }
+
     for (const { name, isDark, contrast } of jsonContrastLevels) {
       // Base scheme from primary — provides default palettes for all roles
       const baseScheme = new SchemeClass(primaryHct, isDark, contrast);
@@ -209,7 +215,7 @@ export function buildJson(ctx: BuilderContext) {
         variant: schemeToVariant[scheme],
         contrastLevel: contrast,
         isDark,
-        primaryPalette: matchedPrimaryPalette || baseScheme.primaryPalette,
+        primaryPalette: baseScheme.primaryPalette,
         secondaryPalette: secPalette || baseScheme.secondaryPalette,
         tertiaryPalette: terPalette || baseScheme.tertiaryPalette,
         neutralPalette: neuPalette || baseScheme.neutralPalette,

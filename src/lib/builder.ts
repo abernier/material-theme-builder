@@ -17,6 +17,11 @@ import {
 } from "@material/material-color-utilities";
 import { kebabCase, upperFirst } from "lodash-es";
 
+import {
+  matchedCustomColors,
+  matchedPaletteScheme,
+  matchedSchemeColors,
+} from "./builder.colorMatch";
 import { buildCss } from "./builder.css";
 import { buildFigmaTokens, buildFigmaVariables } from "./builder.figma";
 import { buildFlutter } from "./builder.flutter";
@@ -118,20 +123,19 @@ export type MtbConfig = {
   /** Error color - used for error states. Overrides the default palette generation. */
   error?: string;
   /**
-   * Stay true to the color inputs -- the "Color match" toggle of Material Theme
-   * Builder.
+   * "Color match -- Stay true to my color inputs", exactly as Material Theme
+   * Builder does it.
    *
-   * Off (the default), a palette made from an input color keeps only its hue:
-   * its chroma is the scheme's, so a near-gray `neutral` comes out tinted at
-   * the scheme's neutral chroma, and a near-gray custom color at the primary's.
+   * MTB builds every scheme as `tonalSpot`, or with color match on, as
+   * `content`: palettes made from a color keep that color's own chroma, and
+   * its containers take the color's own tone -- `primaryContainer` is the
+   * primary as picked. Each core color gets a scheme of its own; the source
+   * (or `primary`) also supplies `background` and `onBackground`, even when a
+   * `neutral` is given, as in MTB.
    *
-   * On, every palette made from an input color keeps that color's own chroma
-   * too: `source` (when no `primary` is given), the six core overrides, and
-   * each custom color. Palettes the scheme derives from the source -- the
-   * secondary, tertiary and neutrals nobody set -- are untouched.
-   *
-   * `blend` still applies first: a blended custom color is harmonized (its hue
-   * rotated toward the effective source) and then keeps its chroma.
+   * On, it takes the place of `scheme`: MTB has no other variant to combine
+   * it with. Custom colors are harmonized first when `blend` is set, then
+   * read as the primary of their own `content` scheme.
    *
    * Default: `false`.
    */
@@ -167,7 +171,7 @@ export const DEFAULT_CONTRAST = 0;
 export const DEFAULT_CUSTOM_COLORS: HexCustomColor[] = [];
 /** Default blend mode — harmonize custom colors with source. */
 export const DEFAULT_BLEND = true;
-/** Default color match — palettes take the scheme's chroma, not the input's. */
+/** Default color match — off, as in Material Theme Builder. */
 export const DEFAULT_COLOR_MATCH = false;
 
 // ─── Hex validation ──────────────────────────────────────────────────────
@@ -441,7 +445,6 @@ function createColorPalette(
   colorDef: ColorDefinition & { hex: string },
   baseScheme: DynamicScheme,
   effectiveSourceForHarmonization: number,
-  colorMatch: boolean,
 ) {
   // Get the color value, applying harmonization if needed
   const colorArgb = argbFromHex(colorDef.hex);
@@ -450,10 +453,6 @@ function createColorPalette(
     : colorArgb;
 
   const hct = Hct.fromInt(harmonizedArgb);
-
-  // Color match: the input's own chroma, whatever the scheme would have used.
-  // Harmonization above has already happened -- it moves the hue, not this.
-  if (colorMatch) return TonalPalette.fromHueAndChroma(hct.hue, hct.chroma);
 
   // Determine which chroma to use based on color type
   let targetChroma: number;
@@ -473,20 +472,6 @@ function createColorPalette(
   }
 
   return TonalPalette.fromHueAndChroma(hct.hue, targetChroma);
-}
-
-// The color the primary palette is made from, if any is: the `primary`
-// override, or -- with color match -- the source. Color match makes the source a
-// color input like any other, so without a `primary` to take its place, its
-// palette keeps its chroma; the scheme's own primary palette would not.
-// Otherwise there is none, and the scheme's primary palette stands.
-function primaryInputColor(
-  primary: string | undefined,
-  hexSource: string,
-  colorMatch: boolean,
-) {
-  if (primary) return primary;
-  return colorMatch ? hexSource : undefined;
 }
 
 // Maps each MaterialDynamicColors property to its source palette name
@@ -511,6 +496,207 @@ function buildTokenToPaletteMap(
     }
   }
   return result;
+}
+
+type CoreHexes = {
+  primary?: string;
+  secondary?: string;
+  tertiary?: string;
+  error?: string;
+  neutral?: string;
+  neutralVariant?: string;
+};
+
+/** What `builder()` reads its palettes and scheme colors from. */
+type ThemeColors = {
+  /** Holds the six core palettes, and maps tokens to them. */
+  lightScheme: DynamicScheme;
+  customPalettes: Record<string, TonalPalette>;
+  mergedColorsLight: Record<string, number>;
+  mergedColorsDark: Record<string, number>;
+};
+
+//
+// Without color match: one scheme of the chosen variant, with each override's
+// palette swapped in -- its hue, at the scheme's chroma.
+//
+function standardTheme({
+  cores,
+  hexCustomColors,
+  SchemeClass,
+  primaryHct,
+  scheme,
+  contrast,
+  effectiveSourceArgb,
+  effectiveSourceForHarmonization,
+}: {
+  cores: CoreHexes;
+  hexCustomColors: HexCustomColor[];
+  SchemeClass: SchemeConstructor;
+  primaryHct: Hct;
+  scheme: SchemeName;
+  contrast: number;
+  effectiveSourceArgb: number;
+  effectiveSourceForHarmonization: number;
+}): ThemeColors {
+  // Create a base scheme to get the standard chroma values
+  const baseScheme = new SchemeClass(primaryHct, false, contrast);
+
+  // Unified color processing: Combine core colors and custom colors, filter to only those with hex defined
+  const allColors: ColorDefinition[] = [
+    // Core colors (hex may be undefined)
+    {
+      name: "primary",
+      hex: cores.primary,
+      core: true,
+      chromaSource: "primary",
+    },
+    {
+      name: "secondary",
+      hex: cores.secondary,
+      core: true,
+      chromaSource: "primary",
+    },
+    {
+      name: "tertiary",
+      hex: cores.tertiary,
+      core: true,
+      chromaSource: "primary",
+    },
+    { name: "error", hex: cores.error, core: true, chromaSource: "primary" },
+    {
+      name: "neutral",
+      hex: cores.neutral,
+      core: true,
+      chromaSource: "neutral",
+    },
+    {
+      name: "neutralVariant",
+      hex: cores.neutralVariant,
+      core: true,
+      chromaSource: "neutralVariant",
+    },
+    //
+    // Custom colors
+    //
+    ...hexCustomColors.map((c) => ({
+      name: c.name,
+      hex: c.hex,
+      blend: c.blend,
+      core: false,
+    })),
+  ];
+
+  const definedColors = allColors.filter(
+    (c): c is ColorDefinition & { hex: string } => c.hex !== undefined,
+  );
+
+  // Create palettes for all defined colors
+  const colorPalettes = Object.fromEntries(
+    definedColors.map((colorDef) => [
+      colorDef.name,
+      createColorPalette(colorDef, baseScheme, effectiveSourceForHarmonization),
+    ]),
+  );
+
+  // Create schemes with core color palettes (or defaults from baseScheme)
+  // Since source is always required, we always have a base to work from
+  const variant = schemeToVariant[scheme];
+  const schemeConfig = {
+    sourceColorArgb: effectiveSourceArgb,
+    variant,
+    contrastLevel: contrast,
+    primaryPalette: colorPalettes["primary"] || baseScheme.primaryPalette,
+    secondaryPalette: colorPalettes["secondary"] || baseScheme.secondaryPalette,
+    tertiaryPalette: colorPalettes["tertiary"] || baseScheme.tertiaryPalette,
+    neutralPalette: colorPalettes["neutral"] || baseScheme.neutralPalette,
+    neutralVariantPalette:
+      colorPalettes["neutralVariant"] || baseScheme.neutralVariantPalette,
+  };
+  const lightScheme = new DynamicScheme({ ...schemeConfig, isDark: false });
+  const darkScheme = new DynamicScheme({ ...schemeConfig, isDark: true });
+
+  // Note: DynamicScheme constructor doesn't accept errorPalette as parameter
+  // We need to set it after creation
+  const errorPalette = colorPalettes["error"];
+  if (errorPalette) {
+    lightScheme.errorPalette = errorPalette;
+    darkScheme.errorPalette = errorPalette;
+  }
+
+  // Extract custom colors (non-core) for merging
+  const customColors = definedColors
+    .filter((c) => !c.core)
+    .map((c) => ({
+      name: c.name,
+      blend: c.blend ?? DEFAULT_BLEND,
+      value: argbFromHex(c.hex),
+    }));
+
+  const mergedColorsLight = mergeBaseAndCustomColors(
+    lightScheme,
+    customColors,
+    colorPalettes,
+  );
+  const mergedColorsDark = mergeBaseAndCustomColors(
+    darkScheme,
+    customColors,
+    colorPalettes,
+  );
+
+  const customPalettes = Object.fromEntries(
+    definedColors
+      .filter((c) => !c.core)
+      .map((colorDef) => [
+        colorDef.name,
+        getPalette(colorPalettes, colorDef.name),
+      ]),
+  );
+
+  return { lightScheme, customPalettes, mergedColorsLight, mergedColorsDark };
+}
+
+//
+// With color match: Material Theme Builder's own composition, one `content`
+// scheme per color -- see ./builder.colorMatch.
+//
+function matchedTheme(
+  cores: CoreHexes,
+  hexCustomColors: HexCustomColor[],
+  effectiveSourceArgb: number,
+  contrast: number,
+): ThemeColors {
+  const argbOf = (hex?: string) =>
+    hex === undefined ? undefined : argbFromHex(hex);
+  const inputs = {
+    primary: effectiveSourceArgb,
+    secondary: argbOf(cores.secondary),
+    tertiary: argbOf(cores.tertiary),
+    error: argbOf(cores.error),
+    neutral: argbOf(cores.neutral),
+    neutralVariant: argbOf(cores.neutralVariant),
+  };
+  const custom = matchedCustomColors(
+    hexCustomColors.map((c) => ({
+      name: c.name,
+      value: argbFromHex(c.hex),
+      blend: Boolean(c.blend),
+    })),
+    effectiveSourceArgb,
+  );
+
+  return {
+    lightScheme: matchedPaletteScheme(inputs),
+    customPalettes: custom.palettes,
+    mergedColorsLight: {
+      ...matchedSchemeColors(inputs, false, contrast),
+      ...custom.light,
+    },
+    mergedColorsDark: {
+      ...matchedSchemeColors(inputs, true, contrast),
+      ...custom.dark,
+    },
+  };
 }
 
 //
@@ -572,99 +758,22 @@ export function builder(
     ? argbFromHex(cores.primary)
     : sourceArgb;
 
-  // Create a base scheme to get the standard chroma values
   const SchemeClass = schemesMap[scheme];
   const primaryHct = Hct.fromInt(effectiveSourceArgb);
-  const baseScheme = new SchemeClass(primaryHct, false, contrast);
 
-  const primaryInput = primaryInputColor(cores.primary, hexSource, colorMatch);
-
-  // Unified color processing: Combine core colors and custom colors, filter to only those with hex defined
-  const allColors: ColorDefinition[] = [
-    // Core colors (hex may be undefined)
-    {
-      name: "primary",
-      hex: primaryInput,
-      core: true,
-      chromaSource: "primary",
-    },
-    {
-      name: "secondary",
-      hex: cores.secondary,
-      core: true,
-      chromaSource: "primary",
-    },
-    {
-      name: "tertiary",
-      hex: cores.tertiary,
-      core: true,
-      chromaSource: "primary",
-    },
-    { name: "error", hex: cores.error, core: true, chromaSource: "primary" },
-    {
-      name: "neutral",
-      hex: cores.neutral,
-      core: true,
-      chromaSource: "neutral",
-    },
-    {
-      name: "neutralVariant",
-      hex: cores.neutralVariant,
-      core: true,
-      chromaSource: "neutralVariant",
-    },
-    //
-    // Custom colors
-    //
-    ...hexCustomColors.map((c) => ({
-      name: c.name,
-      hex: c.hex,
-      blend: c.blend,
-      core: false,
-    })),
-  ];
-
-  const definedColors = allColors.filter(
-    (c): c is ColorDefinition & { hex: string } => c.hex !== undefined,
-  );
-
-  // Create palettes for all defined colors
-  const colorPalettes = Object.fromEntries(
-    definedColors.map((colorDef) => [
-      colorDef.name,
-      createColorPalette(
-        colorDef,
-        baseScheme,
-        effectiveSourceForHarmonization,
-        colorMatch,
-      ),
-    ]),
-  );
-
-  // Create schemes with core color palettes (or defaults from baseScheme)
-  // Since source is always required, we always have a base to work from
-  const variant = schemeToVariant[scheme];
-  const schemeConfig = {
-    sourceColorArgb: effectiveSourceArgb,
-    variant,
-    contrastLevel: contrast,
-    primaryPalette: colorPalettes["primary"] || baseScheme.primaryPalette,
-    secondaryPalette: colorPalettes["secondary"] || baseScheme.secondaryPalette,
-    tertiaryPalette: colorPalettes["tertiary"] || baseScheme.tertiaryPalette,
-    neutralPalette: colorPalettes["neutral"] || baseScheme.neutralPalette,
-    neutralVariantPalette:
-      colorPalettes["neutralVariant"] || baseScheme.neutralVariantPalette,
-  };
-  const lightScheme = new DynamicScheme({ ...schemeConfig, isDark: false });
-  const darkScheme = new DynamicScheme({ ...schemeConfig, isDark: true });
-
-  // Note: DynamicScheme constructor doesn't accept errorPalette as parameter
-  // We need to set it after creation
-  const errorPalette = colorPalettes["error"];
-  if (errorPalette) {
-    lightScheme.errorPalette = errorPalette;
-    darkScheme.errorPalette = errorPalette;
-  }
+  const { lightScheme, customPalettes, mergedColorsLight, mergedColorsDark } =
+    colorMatch
+      ? matchedTheme(cores, hexCustomColors, effectiveSourceArgb, contrast)
+      : standardTheme({
+          cores,
+          hexCustomColors,
+          SchemeClass,
+          primaryHct,
+          scheme,
+          contrast,
+          effectiveSourceArgb,
+          effectiveSourceForHarmonization,
+        });
 
   // Scheme-transformed palettes used by toCss() for CSS variables.
   // These match what MTB displays visually (eg SchemeTonalSpot clamps chroma),
@@ -677,32 +786,8 @@ export function builder(
     neutral: lightScheme.neutralPalette,
     "neutral-variant": lightScheme.neutralVariantPalette,
     // Add custom color palettes
-    ...Object.fromEntries(
-      definedColors
-        .filter((c) => !c.core)
-        .map((colorDef) => [colorDef.name, colorPalettes[colorDef.name]]),
-    ),
+    ...customPalettes,
   };
-
-  // Extract custom colors (non-core) for merging
-  const customColors = definedColors
-    .filter((c) => !c.core)
-    .map((c) => ({
-      name: c.name,
-      blend: c.blend ?? DEFAULT_BLEND,
-      value: argbFromHex(c.hex),
-    }));
-
-  const mergedColorsLight = mergeBaseAndCustomColors(
-    lightScheme,
-    customColors,
-    colorPalettes,
-  );
-  const mergedColorsDark = mergeBaseAndCustomColors(
-    darkScheme,
-    customColors,
-    colorPalettes,
-  );
 
   // ── Shared token→palette mapping ──────────────────────────────────────
   const schemePalettes: [string, TonalPalette][] = [

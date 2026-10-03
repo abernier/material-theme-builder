@@ -1,0 +1,44 @@
+{
+  "neutral-1": {
+    "light": {
+      "color": "#605e5a",
+      "onColor": "#ffffff",
+      "colorContainer": "#e6e2dd",
+      "onColorContainer": "#666460"
+    },
+    "dark": {
+      "color": "#ffffff",
+      "onColor": "#31302d",
+      "colorContainer": "#e6e2dd",
+      "onColorContainer": "#666460"
+    }
+  },
+  "neutral-2": {
+    "light": {
+      "color": "#21201d",
+      "onColor": "#ffffff",
+      "colorContainer": "#363532",
+      "onColorContainer": "#a09d99"
+    },
+    "dark": {
+      "color": "#c9c6c1",
+      "onColor": "#31302d",
+      "colorContainer": "#363532",
+      "onColorContainer": "#a09d99"
+    }
+  },
+  "accent-1": {
+    "light": {
+      "color": "#9b00be",
+      "onColor": "#ffffff",
+      "colorContainer": "#b833da",
+      "onColorContainer": "#fffbff"
+    },
+    "dark": {
+      "color": "#f4aeff",
+      "onColor": "#55006a",
+      "colorContainer": "#d956f9",
+      "onColorContainer": "#4a005c"
+    }
+  }
+}

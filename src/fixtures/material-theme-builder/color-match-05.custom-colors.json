@@ -1,0 +1,30 @@
+{
+  "Custom Color 1": {
+    "light": {
+      "color": "#924849",
+      "onColor": "#ffffff",
+      "colorContainer": "#f69a99",
+      "onColorContainer": "#733031"
+    },
+    "dark": {
+      "color": "#ffbebd",
+      "onColor": "#581c1e",
+      "colorContainer": "#f69a99",
+      "onColorContainer": "#733031"
+    }
+  },
+  "Custom Color 2": {
+    "light": {
+      "color": "#19648b",
+      "onColor": "#ffffff",
+      "colorContainer": "#8dccf8",
+      "onColorContainer": "#00577d"
+    },
+    "dark": {
+      "color": "#c4e5ff",
+      "onColor": "#00344d",
+      "colorContainer": "#8dccf8",
+      "onColorContainer": "#00577d"
+    }
+  }
+}

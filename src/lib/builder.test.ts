@@ -1,11 +1,8 @@
-import {
-  argbFromHex,
-  Blend,
-  Hct,
-  hexFromArgb,
-} from "@material/material-color-utilities";
+import { Hct, hexFromArgb } from "@material/material-color-utilities";
 import { describe, expect, it } from "vitest";
 
+import customColorsFixture from "../fixtures/material-theme-builder/color-match-04.custom-colors.json";
+import customColorsFixture5 from "../fixtures/material-theme-builder/color-match-05.custom-colors.json";
 import { builder, isHexColor, type MtbConfig } from "./builder";
 
 const SOURCE = "#6750A4";
@@ -127,24 +124,25 @@ describe("isHexColor()", () => {
   );
 });
 
-// The real case that motivated colorMatch: a brand with a lime source, a
-// near-black warm gray as its neutral, and two near-gray custom colors next to
-// a saturated one. Off, every one of those grays came out yellow.
+// Color match is MTB's, so the JSON export is held to MTB's own output
+// (builder.json.test.ts). What is checked here is that every other output
+// follows it -- the scheme colors the CSS, Figma, Tailwind, shadcn and Flutter
+// outputs are built from -- and that custom colors match MTB's.
 describe("builder() › colorMatch", () => {
   const BRAND = "#CAF543";
+  const customColors = [
+    { name: "neutral-1", hex: "#E6E2DD", blend: false },
+    { name: "neutral-2", hex: "#363532", blend: false },
+    { name: "accent-1", hex: "#D855F9", blend: false },
+  ];
   const config = {
-    scheme: "vibrant",
-    neutral: "#36342F", // HCT chroma 3.3
+    neutral: "#36342F",
     error: "#FF4980",
-    customColors: [
-      { name: "neutral-1", hex: "#E6E2DD", blend: false }, // chroma 2.2
-      { name: "neutral-2", hex: "#363532", blend: false }, // chroma 2.1
-      { name: "accent-1", hex: "#D855F9", blend: false }, // chroma 83.3
-    ],
+    customColors,
   } satisfies Omit<MtbConfig, "source">;
 
-  const chromaOf = (hex: string) => Hct.fromInt(argbFromHex(hex)).chroma;
   const chromaOfArgb = (argb: number) => Hct.fromInt(argb).chroma;
+  const hex = (argb: number) => hexFromArgb(argb).toUpperCase();
 
   // A record entry the test relies on: fails loudly rather than reading on
   // with `undefined`.
@@ -157,95 +155,100 @@ describe("builder() › colorMatch", () => {
   const off = builder(BRAND, config);
   const on = builder(BRAND, { ...config, colorMatch: true });
 
-  it("should keep a neutral override's own chroma", () => {
-    expect(on.allPalettes.neutral.chroma).toBeCloseTo(chromaOf("#36342F"), 5);
-    // ...where the scheme would have tinted it at its neutral chroma
-    expect(off.allPalettes.neutral.chroma).toBe(
-      builder(BRAND, { scheme: "vibrant" }).allPalettes.neutral.chroma,
-    );
-    expect(off.allPalettes.neutral.chroma).toBeGreaterThan(5);
-  });
+  it.each([
+    ["light", 0, "light"],
+    ["dark", 0, "dark"],
+    ["light", 0.5, "light-medium-contrast"],
+    ["dark", 1, "dark-high-contrast"],
+  ] as const)(
+    "should give the %s scheme at contrast %s the colors of the JSON export's %s",
+    (mode, contrast, jsonScheme) => {
+      const theme = builder(BRAND, {
+        ...config,
+        secondary: "#B03A3A",
+        tertiary: "#2138D2",
+        neutralVariant: "#007EDF",
+        contrast,
+        colorMatch: true,
+      });
+      const merged =
+        mode === "light" ? theme.mergedColorsLight : theme.mergedColorsDark;
+      const json = at(theme.toJson().schemes, jsonScheme);
 
-  it("should leave the surfaces near gray", () => {
-    for (const merged of [on.mergedColorsLight, on.mergedColorsDark])
-      for (const token of ["background", "surface", "onSurface"])
-        expect(chromaOfArgb(at(merged, token))).toBeLessThan(4);
-  });
+      for (const [token, value] of Object.entries(json))
+        expect([token, hex(at(merged, token))]).toEqual([token, value]);
+    },
+  );
+
+  // The four roles of a custom color, named as MTB's export names them.
+  function customRoles(merged: Record<string, number>, name: string) {
+    const cap = name.charAt(0).toUpperCase() + name.slice(1);
+    return {
+      color: hexFromArgb(at(merged, name)),
+      onColor: hexFromArgb(at(merged, `on${cap}`)),
+      colorContainer: hexFromArgb(at(merged, `${name}Container`)),
+      onColorContainer: hexFromArgb(at(merged, `on${cap}Container`)),
+    };
+  }
 
   it.each([
-    ["neutral-1", "#E6E2DD"],
-    ["neutral-2", "#363532"],
-  ])("should keep the near-gray custom color %s near gray", (name, hex) => {
-    expect(at(on.allPalettes, name).chroma).toBeCloseTo(chromaOf(hex), 5);
-
-    for (const merged of [on.mergedColorsLight, on.mergedColorsDark])
-      for (const role of [name, `${name}Container`])
-        expect(chromaOfArgb(at(merged, role))).toBeLessThan(4);
-
-    // Off, it inherits the primary's chroma and turns yellow.
-    expect(chromaOfArgb(at(off.mergedColorsDark, name))).toBeGreaterThan(30);
-  });
-
-  it("should keep a saturated custom color's own chroma", () => {
-    expect(at(on.allPalettes, "accent-1").chroma).toBeCloseTo(
-      chromaOf("#D855F9"),
-      5,
-    );
-  });
-
-  it("should keep the source's chroma for the primary palette", () => {
-    expect(on.allPalettes.primary.chroma).toBeCloseTo(chromaOf(BRAND), 5);
-    expect(on.allPalettes.primary.hue).toBeCloseTo(
-      Hct.fromInt(argbFromHex(BRAND)).hue,
-      5,
-    );
-  });
-
-  it("should keep a primary override's chroma, rather than the source's", () => {
-    const theme = builder(BRAND, { primary: "#6750A4", colorMatch: true });
-    expect(theme.allPalettes.primary.chroma).toBeCloseTo(
-      chromaOf("#6750A4"),
-      5,
-    );
-  });
-
-  it("should leave the palettes nobody set to the scheme", () => {
-    for (const name of ["secondary", "tertiary", "neutral-variant"] as const) {
-      expect(on.allPalettes[name].hue).toBe(off.allPalettes[name].hue);
-      expect(on.allPalettes[name].chroma).toBe(off.allPalettes[name].chroma);
+    ["as picked", on, customColorsFixture],
+    [
+      "harmonized or not",
+      builder("#F766FF", {
+        tertiary: "#7BF600",
+        error: "#311E00",
+        neutralVariant: "#002726",
+        colorMatch: true,
+        customColors: [
+          { name: "Custom Color 1", hex: "#F69C83", blend: true },
+          { name: "Custom Color 2", hex: "#8DCCF8", blend: false },
+        ],
+      }),
+      customColorsFixture5,
+    ],
+  ])("should match MTB's custom colors, %s", (_, theme, fixture) => {
+    for (const [name, want] of Object.entries(fixture)) {
+      expect(customRoles(theme.mergedColorsLight, name)).toEqual(want.light);
+      expect(customRoles(theme.mergedColorsDark, name)).toEqual(want.dark);
     }
   });
 
-  // Harmonization moves the hue toward the effective source; color match then
-  // keeps the chroma -- of the harmonized color, which is what the palette is
-  // drawn from.
-  it("should harmonize a blended custom color first, then keep its chroma", () => {
-    const hex = "#D855F9";
-    const theme = builder(BRAND, {
-      customColors: [{ name: "accent", hex, blend: true }],
-      colorMatch: true,
-    });
-    const harmonized = Hct.fromInt(
-      Blend.harmonize(argbFromHex(hex), argbFromHex(BRAND)),
+  it("should keep the near-gray inputs near gray", () => {
+    for (const merged of [on.mergedColorsLight, on.mergedColorsDark]) {
+      for (const token of ["surface", "onSurface", "surfaceContainer"])
+        expect(chromaOfArgb(at(merged, token))).toBeLessThan(4);
+      for (const token of ["neutral-1", "neutral-1Container", "neutral-2"])
+        expect(chromaOfArgb(at(merged, token))).toBeLessThan(4);
+    }
+    // ...where without it, they turn the source's yellow-green
+    expect(chromaOfArgb(at(off.mergedColorsDark, "neutral-1"))).toBeGreaterThan(
+      30,
     );
-    const palette = at(theme.allPalettes, "accent");
-
-    expect(palette.hue).toBeCloseTo(harmonized.hue, 5);
-    expect(palette.chroma).toBeCloseTo(harmonized.chroma, 5);
-    expect(palette.hue).not.toBeCloseTo(Hct.fromInt(argbFromHex(hex)).hue, 0);
   });
 
-  it("should carry into the JSON export", () => {
-    const json = on.toJson();
-    const dark = at(json.schemes, "dark");
-
-    expect(chromaOf(at(at(json.palettes, "neutral"), "50"))).toBeLessThan(4);
-    expect(chromaOf(at(dark, "surface"))).toBeLessThan(4);
-    expect(chromaOf(at(at(json.schemes, "light"), "surface"))).toBeLessThan(4);
-    // and changes it, so this is not a pass by default
-    expect(at(dark, "surface")).not.toBe(
-      at(at(off.toJson().schemes, "dark"), "surface"),
+  // MTB's own quirk, reproduced: the neutral gives the surfaces, but
+  // `background` and `onBackground` stay the source's.
+  it("should take background from the source, even with a neutral", () => {
+    const sourceOnly = builder(BRAND, { colorMatch: true });
+    for (const token of ["background", "onBackground"]) {
+      expect(at(on.mergedColorsDark, token)).toBe(
+        at(sourceOnly.mergedColorsDark, token),
+      );
+    }
+    expect(at(on.mergedColorsDark, "surface")).not.toBe(
+      at(sourceOnly.mergedColorsDark, "surface"),
     );
+  });
+
+  it("should take the place of `scheme`, which MTB does not have", () => {
+    expect(
+      builder(BRAND, {
+        ...config,
+        scheme: "vibrant",
+        colorMatch: true,
+      }).toCss(),
+    ).toBe(on.toCss());
   });
 
   // Off is the default, and the default has to stay what it was -- every
@@ -260,11 +263,5 @@ describe("builder() › colorMatch", () => {
     expect(explicit.toTailwind()).toBe(off.toTailwind());
     expect(explicit.toShadcn()).toEqual(off.toShadcn());
     expect(explicit.toFlutter()).toBe(off.toFlutter());
-  });
-
-  it("should change the theme when true", () => {
-    expect(hexFromArgb(at(on.mergedColorsDark, "background"))).not.toBe(
-      hexFromArgb(at(off.mergedColorsDark, "background")),
-    );
   });
 });

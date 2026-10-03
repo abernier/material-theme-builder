@@ -108,7 +108,7 @@ export function addThemeOptions(command: Command) {
     )
     .option(
       "--color-match",
-      "Stay true to the color inputs: palettes made from the source, the overrides and the custom colors keep each color's own chroma",
+      'Material Theme Builder\'s "Color match - Stay true to my color inputs": every scheme built as `content`, one per input color (replaces --scheme)',
       DEFAULT_COLOR_MATCH,
     )
     .option(
