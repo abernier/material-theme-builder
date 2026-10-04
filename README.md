@@ -2,7 +2,7 @@
 [![](https://img.shields.io/badge/chromatic-171c23.svg?logo=chromatic)](https://www.chromatic.com/library?appId=695eb517cb602e59b4cc045c&branch=main)
 [![](https://img.shields.io/badge/storybook-171c23.svg?logo=storybook)](https://main--695eb517cb602e59b4cc045c.chromatic.com)
 
-Outputs [m3 colors](https://m3.material.io/styles/color/system/overview) `--md-sys-color-*` and `--md-ref-palette-*`, 1:1 with [Material Theme Builder](https://material-foundation.github.io/material-theme-builder/), either:
+Outputs [m3 colors](https://m3.material.io/styles/color/system/overview) `--md-sys-color-*`, 1:1 with [Material Theme Builder](https://material-foundation.github.io/material-theme-builder/), and the `--md-ref-palette-*` tonal palettes they are drawn from, either:
 
 - [programmatically](#programmatic-api)
 - from [CLI](#cli)
@@ -51,6 +51,18 @@ theme.toShadcn();
 theme.toShadcnAliases();
 theme.toShadcnRegistryItem({ fallback: true });
 ```
+
+> [!NOTE]
+>
+> `toJson()` is shaped like Material Theme Builder's JSON export, and its
+> `schemes` match it. Its `palettes`, though, are the reference palettes: the
+> palettes the system colors are drawn from, the same ones, tones and values as
+> the `--md-ref-palette-*` of `toCss()` (`error` and custom colors included, 28
+> tones). Material Theme Builder's own export holds other palettes -- five, at
+> 18 tones, which ignore the scheme variant and are not the palettes its
+> `schemes` come from. They are not reproduced: Material Theme Builder's
+> maintainers say they are only there as reference. See [ADR 0001](docs/adr/0001-reference-palettes-are-the-scheme-palettes.md)
+> for why.
 
 ## CLI
 

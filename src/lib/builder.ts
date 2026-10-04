@@ -271,6 +271,12 @@ type ColorDefinition = {
 
 type ColorPalettes = Record<string, TonalPalette>;
 
+/**
+ * The reference palettes, keyed by kebab-case palette name: each one's colors
+ * at every `STANDARD_TONES` tone, in that order.
+ */
+export type RefPalettes = Record<string, { tone: number; argb: number }[]>;
+
 // ─── Builder context ─────────────────────────────────────────────────────
 
 /** Shared state produced by builder() and consumed by output functions. */
@@ -288,13 +294,13 @@ export type BuilderContext = {
   hexCustomColors: HexCustomColor[];
 
   // Derived intermediates
-  sourceHct: Hct;
   effectiveSourceArgb: number;
   primaryHct: Hct;
   SchemeClass: SchemeConstructor;
 
   // Computed outputs (shared across toCss, toJson, toFigma)
   allPalettes: Record<string, TonalPalette>;
+  refPalettes: RefPalettes;
   mergedColorsLight: Record<string, number>;
   mergedColorsDark: Record<string, number>;
   tokenToPalette: Record<string, string>;
@@ -341,6 +347,50 @@ function getPalette(palettes: ColorPalettes, colorName: string) {
 }
 
 //
+// The roles of one custom color, as DynamicColor objects exactly like core
+// colors:
+// 1. <colorname>
+// 2. on<Colorname>
+// 3. <colorname>Container
+// 4. on<Colorname>Container
+//
+// Based on Material Design 3 spec: https://m3.material.io/styles/color/roles
+//
+// returns: { customColor1: DynamicColor, onCustomColor1: DynamicColor, ... }
+//
+
+function buildCustomColorRoles(colorname: string, palette: TonalPalette) {
+  const getPaletteForColor = () => palette;
+
+  return {
+    [colorname]: new DynamicColor(
+      colorname,
+      getPaletteForColor,
+      (s) => (s.isDark ? 80 : 40), // Main color: lighter in dark mode, darker in light mode
+      true, // background
+    ),
+    [`on${upperFirst(colorname)}`]: new DynamicColor(
+      `on${upperFirst(colorname)}`,
+      getPaletteForColor,
+      (s) => (s.isDark ? 20 : 100), // Text on main color: high contrast (dark on light, light on dark)
+      false,
+    ),
+    [`${colorname}Container`]: new DynamicColor(
+      `${colorname}Container`,
+      getPaletteForColor,
+      (s) => (s.isDark ? 30 : 90), // Container: subtle variant (darker in dark mode, lighter in light mode)
+      true, // background
+    ),
+    [`on${upperFirst(colorname)}Container`]: new DynamicColor(
+      `on${upperFirst(colorname)}Container`,
+      getPaletteForColor,
+      (s) => (s.isDark ? 90 : 30), // Text on container: high contrast against container background
+      false,
+    ),
+  };
+}
+
+//
 // Merge the base Material Dynamic Colors with custom colors
 //
 // returns: { primary: 0xFF6200EE, onPrimary: 0xFFFFFFFF, ..., customColor1: 0xFF6200EF, customColor2: 0x00FF00, ... }
@@ -348,8 +398,7 @@ function getPalette(palettes: ColorPalettes, colorName: string) {
 
 function mergeBaseAndCustomColors(
   scheme: DynamicScheme,
-  customColors: CustomColor[],
-  colorPalettes: ColorPalettes,
+  customColorRoles: Record<string, Record<string, DynamicColor>>,
 ) {
   //
   // Base colors (all listed in tokenNames)
@@ -363,58 +412,15 @@ function mergeBaseAndCustomColors(
   });
 
   //
-  // Custom colors - using MaterialDynamicColors-like approach
-  //
-  // For each custom color, generate DynamicColor objects exactly like core colors:
-  // 1. <colorname>
-  // 2. on-<colorname>
-  // 3. <colorname>-container
-  // 4. on-<colorname>-container
-  //
-  // Based on Material Design 3 spec: https://m3.material.io/styles/color/roles
+  // Custom colors: get the ARGB values using the scheme - exactly like core
+  // colors do
   //
   const customVars: Record<string, number> = {};
-
-  customColors.forEach((color) => {
-    const colorname = color.name;
-
-    // Helper to get palette for this color
-    const getPaletteForColor = () => getPalette(colorPalettes, colorname);
-
-    // Create DynamicColor objects for all 4 color roles
-    const colorDynamicColor = new DynamicColor(
-      colorname,
-      getPaletteForColor,
-      (s) => (s.isDark ? 80 : 40), // Main color: lighter in dark mode, darker in light mode
-      true, // background
-    );
-    const onColorDynamicColor = new DynamicColor(
-      `on${upperFirst(colorname)}`,
-      getPaletteForColor,
-      (s) => (s.isDark ? 20 : 100), // Text on main color: high contrast (dark on light, light on dark)
-      false,
-    );
-    const containerDynamicColor = new DynamicColor(
-      `${colorname}Container`,
-      getPaletteForColor,
-      (s) => (s.isDark ? 30 : 90), // Container: subtle variant (darker in dark mode, lighter in light mode)
-      true, // background
-    );
-    const onContainerDynamicColor = new DynamicColor(
-      `on${upperFirst(colorname)}Container`,
-      getPaletteForColor,
-      (s) => (s.isDark ? 90 : 30), // Text on container: high contrast against container background
-      false,
-    );
-
-    // Get the ARGB values using the scheme - exactly like core colors do
-    customVars[colorname] = colorDynamicColor.getArgb(scheme);
-    customVars[`on${upperFirst(colorname)}`] =
-      onColorDynamicColor.getArgb(scheme);
-    customVars[`${colorname}Container`] = containerDynamicColor.getArgb(scheme);
-    customVars[`on${upperFirst(colorname)}Container`] =
-      onContainerDynamicColor.getArgb(scheme);
-  });
+  for (const roles of Object.values(customColorRoles)) {
+    for (const [tokenName, dynamicColor] of Object.entries(roles)) {
+      customVars[tokenName] = dynamicColor.getArgb(scheme);
+    }
+  }
 
   // Merge both
   return { ...baseVars, ...customVars };
@@ -455,6 +461,21 @@ function createColorPalette(
   }
 
   return TonalPalette.fromHueAndChroma(hct.hue, targetChroma);
+}
+
+// The reference palettes are, by definition, the palettes the system roles are
+// drawn from (see docs/adr/0001-reference-palettes-are-the-scheme-palettes.md).
+// Both `--{prefix}-ref-palette-*` in toCss() and `palettes` in toJson() are
+// read from here, so the two outputs cannot disagree (#175).
+function buildRefPalettes(allPalettes: Record<string, TonalPalette>) {
+  const refPalettes: RefPalettes = {};
+  for (const [name, palette] of Object.entries(allPalettes)) {
+    refPalettes[kebabCase(name)] = STANDARD_TONES.map((tone) => ({
+      tone,
+      argb: palette.tone(tone),
+    }));
+  }
+  return refPalettes;
 }
 
 // Maps each MaterialDynamicColors property to its source palette name
@@ -529,7 +550,6 @@ export function builder(
   assertHexInputs(hexSource, cores, hexCustomColors);
 
   const sourceArgb = argbFromHex(hexSource);
-  const sourceHct = Hct.fromInt(sourceArgb);
 
   // Determine the effective source for harmonization
   // When primary is defined, it becomes the effective source
@@ -626,9 +646,10 @@ export function builder(
     darkScheme.errorPalette = errorPalette;
   }
 
-  // Scheme-transformed palettes used by toCss() for CSS variables.
-  // These match what MTB displays visually (eg SchemeTonalSpot clamps chroma),
-  // NOT what it exports in JSON (see rawPalettes inside toJson()).
+  // The palettes the system roles are drawn from: the reference palettes of
+  // toCss() and toJson(). They follow the scheme variant (eg SchemeTonalSpot
+  // clamps chroma), which MTB's own JSON export palettes do not (see
+  // docs/adr/0001-reference-palettes-are-the-scheme-palettes.md).
   const allPalettes = {
     primary: lightScheme.primaryPalette,
     secondary: lightScheme.secondaryPalette,
@@ -653,15 +674,22 @@ export function builder(
       value: argbFromHex(c.hex),
     }));
 
+  // The roles of each custom color, keyed by custom color name, then by token
+  // name -- the custom-color counterpart of MaterialDynamicColors
+  const customColorRoles = Object.fromEntries(
+    customColors.map((color) => [
+      color.name,
+      buildCustomColorRoles(color.name, getPalette(colorPalettes, color.name)),
+    ]),
+  );
+
   const mergedColorsLight = mergeBaseAndCustomColors(
     lightScheme,
-    customColors,
-    colorPalettes,
+    customColorRoles,
   );
   const mergedColorsDark = mergeBaseAndCustomColors(
     darkScheme,
-    customColors,
-    colorPalettes,
+    customColorRoles,
   );
 
   // ── Shared token→palette mapping ──────────────────────────────────────
@@ -674,6 +702,8 @@ export function builder(
     ["neutral-variant", lightScheme.neutralVariantPalette],
   ];
   const tokenToPalette = buildTokenToPaletteMap(schemePalettes, lightScheme);
+
+  const refPalettes = buildRefPalettes(allPalettes);
 
   const allPaletteNamesKebab = new Set(Object.keys(allPalettes).map(kebabCase));
 
@@ -689,11 +719,11 @@ export function builder(
     neutralVariant,
     error,
     hexCustomColors,
-    sourceHct,
     effectiveSourceArgb,
     primaryHct,
     SchemeClass,
     allPalettes,
+    refPalettes,
     mergedColorsLight,
     mergedColorsDark,
     tokenToPalette,
@@ -714,5 +744,6 @@ export function builder(
     mergedColorsLight,
     mergedColorsDark,
     allPalettes,
+    customColorRoles,
   };
 }
