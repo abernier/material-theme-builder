@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { builder, isHexColor } from "./builder";
+import { builder, DEFAULT_BLEND, isHexColor } from "./builder";
 
 const SOURCE = "#6750A4";
 
@@ -119,4 +119,43 @@ describe("isHexColor()", () => {
       expect(isHexColor(value)).toBe(false);
     },
   );
+});
+
+// A custom color given without `blend` takes DEFAULT_BLEND, and it has to reach
+// the palette, not only the metadata: it used to be reported as harmonized
+// (`toJson().extendedColors[].harmonized`) while being rendered unharmonized.
+describe("builder() › customColors[].blend", () => {
+  const brand = { name: "brand", hex: "#FF5733" };
+
+  it("should harmonize by default", () => {
+    expect(DEFAULT_BLEND).toBe(true);
+  });
+
+  it("should render an omitted blend exactly like the default", () => {
+    expect(builder(SOURCE, { customColors: [brand] }).toCss()).toEqual(
+      builder(SOURCE, {
+        customColors: [{ ...brand, blend: DEFAULT_BLEND }],
+      }).toCss(),
+    );
+  });
+
+  // Guards the test above: were `blend` to change nothing, an omitted blend
+  // would render like the default whatever the default.
+  it("should render blend: true and blend: false differently", () => {
+    expect(
+      builder(SOURCE, {
+        customColors: [{ ...brand, blend: true }],
+      }).toCss(),
+    ).not.toEqual(
+      builder(SOURCE, {
+        customColors: [{ ...brand, blend: false }],
+      }).toCss(),
+    );
+  });
+
+  it("should report an omitted blend as the default", () => {
+    expect(
+      builder(SOURCE, { customColors: [brand] }).toJson().extendedColors,
+    ).toEqual([expect.objectContaining({ harmonized: DEFAULT_BLEND })]);
+  });
 });

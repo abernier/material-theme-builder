@@ -65,8 +65,13 @@ export type {
 // ─── Public types ────────────────────────────────────────────────────────
 
 /** A custom color defined with a hex string instead of an ARGB integer. */
-export type HexCustomColor = Omit<CustomColor, "value"> & {
+export type HexCustomColor = Omit<CustomColor, "value" | "blend"> & {
   hex: string;
+  /**
+   * Harmonize the color with the source (or `primary`, when given) -- "Harmonize"
+   * in Material Theme Builder. Default: `DEFAULT_BLEND` (true).
+   */
+  blend?: boolean;
 };
 
 type SchemeConstructor = new (
@@ -291,7 +296,8 @@ export type BuilderContext = {
   neutral?: string;
   neutralVariant?: string;
   error?: string;
-  hexCustomColors: HexCustomColor[];
+  /** The custom colors, each with its `blend` default applied. */
+  hexCustomColors: Required<HexCustomColor>[];
 
   // Derived intermediates
   effectiveSourceArgb: number;
@@ -534,7 +540,7 @@ export function builder(
     neutral,
     neutralVariant,
     error,
-    customColors: hexCustomColors = DEFAULT_CUSTOM_COLORS,
+    customColors: customColorInputs = DEFAULT_CUSTOM_COLORS,
     prefix = DEFAULT_PREFIX,
   }: Omit<MtbConfig, "source"> = {},
 ) {
@@ -547,7 +553,16 @@ export function builder(
     neutralVariant: optionalHex(neutralVariant),
   };
 
-  assertHexInputs(hexSource, cores, hexCustomColors);
+  assertHexInputs(hexSource, cores, customColorInputs);
+
+  // `blend` may be omitted. Its default is applied here, once, so that the
+  // palette, the roles and every exporter's metadata read the same value: the
+  // palette used to read the raw `blend` (an omitted one meaning "don't
+  // harmonize") while toJson() reported `blend ?? DEFAULT_BLEND`.
+  const hexCustomColors = customColorInputs.map((c) => ({
+    ...c,
+    blend: c.blend ?? DEFAULT_BLEND,
+  }));
 
   const sourceArgb = argbFromHex(hexSource);
 
@@ -670,7 +685,6 @@ export function builder(
     .filter((c) => !c.core)
     .map((c) => ({
       name: c.name,
-      blend: c.blend ?? DEFAULT_BLEND,
       value: argbFromHex(c.hex),
     }));
 
