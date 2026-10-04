@@ -1,7 +1,7 @@
 import type { Meta } from "@storybook/react-vite";
 import { useState, type ComponentProps } from "react";
 import { Fab } from "./components/m3/Fab";
-import { Scheme, Shades, SwatchLabel } from "./components/m3/scheme";
+import { Scheme, Shades, SwatchLabel } from "./components/mtb/scheme";
 import { ExportButton } from "./ExportButton";
 import {
   DEFAULT_CONTRAST,

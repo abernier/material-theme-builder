@@ -9,7 +9,7 @@ npx shadcn@latest add abernier/material-theme-builder/scheme
 ```
 
 ```tsx
-import { Scheme, Shades } from "@/components/m3/scheme";
+import { Scheme, Shades } from "@/components/mtb/scheme";
 import { Mtb } from "material-theme-builder/react";
 
 <Mtb

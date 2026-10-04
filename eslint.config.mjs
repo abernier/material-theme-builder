@@ -10,8 +10,9 @@ const SOURCE_FILES = ["src/**/*.{ts,tsx}", ".storybook/**/*.{ts,tsx}"];
 // places -- the `components`, `ui` and `hooks` aliases -- and `shadcn add`
 // rewrites them wholesale, so the repo's *conventions* (JSDoc on every export,
 // complexity ceilings) can only ever be satisfied by editing files the next
-// `add` overwrites. Vendored, not authored: exempt. `src/components/m3/` is
-// ours and stays in, as does everything at the `src/` root.
+// `add` overwrites. Vendored, not authored: exempt. `src/components/m3/` and
+// `src/components/mtb/` are ours and stay in, as does everything at the
+// `src/` root.
 //
 // Correctness rules -- typescript-eslint strict, react-hooks -- deliberately
 // still apply: nothing there asks for an edit that a regeneration undoes.

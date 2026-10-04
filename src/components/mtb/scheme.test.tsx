@@ -366,7 +366,7 @@ describe("the `scheme` registry item", () => {
 
     expect(files).toHaveLength(1);
     expect(files[0]).toMatchObject({
-      path: "src/components/m3/scheme.tsx",
+      path: "src/components/mtb/scheme.tsx",
       type: "registry:component",
       content: fs.readFileSync(path.join(here, "scheme.tsx"), "utf8"),
     });

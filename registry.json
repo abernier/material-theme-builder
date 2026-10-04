@@ -12,7 +12,7 @@
       "devDependencies": ["@types/lodash-es"],
       "files": [
         {
-          "path": "src/components/m3/scheme.tsx",
+          "path": "src/components/mtb/scheme.tsx",
           "type": "registry:component"
         }
       ]

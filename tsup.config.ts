@@ -32,7 +32,7 @@ export default defineConfig([
     // `dist/shadcn.css` and `dist/registry-item.json` are generated from the
     // exporters this entry is what builds -- so they regenerate here, off the
     // bundle they need. `dist/r/scheme.json` rides along: it needs no bundle,
-    // only `src/components/m3/scheme.tsx`.
+    // only `src/components/mtb/scheme.tsx`.
     onSuccess: "node scripts/generate.mjs",
   },
   {
