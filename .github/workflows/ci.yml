@@ -95,13 +95,21 @@ jobs:
           echo "Released version: $VERSION"
 
   #
-  # Figma plugin publish — only on version bump (release merge)
+  # Figma plugin -- only on version bump (release merge)
+  #
+  # Built and attached to the GitHub Release as a zip, then published by hand
+  # from the Figma desktop app (Plugins > Manage plugins > Publish new version).
+  # Figma's public REST API has no endpoint for publishing a plugin version:
+  # the `POST /v1/plugins/{id}/versions` this job used to call answered 404.
   #
 
   figma-plugin:
     needs: ci
     if: needs.ci.outputs.changed == 'true'
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
 
     steps:
       - uses: actions/checkout@v6
@@ -115,44 +123,23 @@ jobs:
       - name: Build Figma plugin
         run: pnpm run build-figma
 
-      - name: Publish Figma plugin
+      # The release itself is created by `changesets/action` in the `ci` job,
+      # which this one waits on.
+      - name: Attach Figma plugin to the GitHub Release
         env:
-          FIGMA_ACCESS_TOKEN: ${{ secrets.FIGMA_ACCESS_TOKEN }}
-          FIGMA_PLUGIN_ID: ${{ vars.FIGMA_PLUGIN_ID }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
 
-          VERSION="${{ needs.ci.outputs.version }}"
-          PLUGIN_DIR="figma-plugin"
-
-          echo "Publishing Figma plugin v${VERSION} (plugin id: ${FIGMA_PLUGIN_ID})"
+          TAG="v${{ needs.ci.outputs.version }}"
+          ZIP="figma-plugin-${TAG}.zip"
 
           # Read file paths from manifest.json so CI stays in sync automatically
-          MANIFEST="${PLUGIN_DIR}/manifest.json"
-          MAIN=$(jq -r '.main' "$MANIFEST")
-          UI=$(jq -r '.ui' "$MANIFEST")
+          cd figma-plugin
+          MAIN=$(jq -r '.main' manifest.json)
+          UI=$(jq -r '.ui' manifest.json)
+          zip "../${ZIP}" manifest.json "$MAIN" "$UI"
+          cd ..
 
-          FORM_ARGS=(
-            -F "manifest=@${MANIFEST};type=application/json"
-            -F "${MAIN}=@${PLUGIN_DIR}/${MAIN};type=application/javascript"
-            -F "${UI}=@${PLUGIN_DIR}/${UI};type=text/html"
-          )
-
-          RESPONSE=$(curl -s -w "\n%{http_code}" \
-            -X POST \
-            -H "Authorization: Bearer ${FIGMA_ACCESS_TOKEN}" \
-            "${FORM_ARGS[@]}" \
-            "https://api.figma.com/v1/plugins/${FIGMA_PLUGIN_ID}/versions")
-
-          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
-          BODY=$(echo "$RESPONSE" | sed '$d')
-
-          echo "Response (HTTP ${HTTP_CODE}):"
-          echo "$BODY" | jq . 2>/dev/null || echo "$BODY"
-
-          if [[ "$HTTP_CODE" -lt 200 || "$HTTP_CODE" -ge 300 ]]; then
-            echo "::error::Figma API returned HTTP ${HTTP_CODE}"
-            exit 1
-          fi
-
-          echo "Figma plugin v${VERSION} published successfully"
+          gh release upload "$TAG" "$ZIP" --clobber --repo "$GITHUB_REPOSITORY"
+          echo "Attached ${ZIP} to ${TAG}"
