@@ -347,6 +347,50 @@ function getPalette(palettes: ColorPalettes, colorName: string) {
 }
 
 //
+// The roles of one custom color, as DynamicColor objects exactly like core
+// colors:
+// 1. <colorname>
+// 2. on<Colorname>
+// 3. <colorname>Container
+// 4. on<Colorname>Container
+//
+// Based on Material Design 3 spec: https://m3.material.io/styles/color/roles
+//
+// returns: { customColor1: DynamicColor, onCustomColor1: DynamicColor, ... }
+//
+
+function buildCustomColorRoles(colorname: string, palette: TonalPalette) {
+  const getPaletteForColor = () => palette;
+
+  return {
+    [colorname]: new DynamicColor(
+      colorname,
+      getPaletteForColor,
+      (s) => (s.isDark ? 80 : 40), // Main color: lighter in dark mode, darker in light mode
+      true, // background
+    ),
+    [`on${upperFirst(colorname)}`]: new DynamicColor(
+      `on${upperFirst(colorname)}`,
+      getPaletteForColor,
+      (s) => (s.isDark ? 20 : 100), // Text on main color: high contrast (dark on light, light on dark)
+      false,
+    ),
+    [`${colorname}Container`]: new DynamicColor(
+      `${colorname}Container`,
+      getPaletteForColor,
+      (s) => (s.isDark ? 30 : 90), // Container: subtle variant (darker in dark mode, lighter in light mode)
+      true, // background
+    ),
+    [`on${upperFirst(colorname)}Container`]: new DynamicColor(
+      `on${upperFirst(colorname)}Container`,
+      getPaletteForColor,
+      (s) => (s.isDark ? 90 : 30), // Text on container: high contrast against container background
+      false,
+    ),
+  };
+}
+
+//
 // Merge the base Material Dynamic Colors with custom colors
 //
 // returns: { primary: 0xFF6200EE, onPrimary: 0xFFFFFFFF, ..., customColor1: 0xFF6200EF, customColor2: 0x00FF00, ... }
@@ -354,8 +398,7 @@ function getPalette(palettes: ColorPalettes, colorName: string) {
 
 function mergeBaseAndCustomColors(
   scheme: DynamicScheme,
-  customColors: CustomColor[],
-  colorPalettes: ColorPalettes,
+  customColorRoles: Record<string, Record<string, DynamicColor>>,
 ) {
   //
   // Base colors (all listed in tokenNames)
@@ -369,58 +412,15 @@ function mergeBaseAndCustomColors(
   });
 
   //
-  // Custom colors - using MaterialDynamicColors-like approach
-  //
-  // For each custom color, generate DynamicColor objects exactly like core colors:
-  // 1. <colorname>
-  // 2. on-<colorname>
-  // 3. <colorname>-container
-  // 4. on-<colorname>-container
-  //
-  // Based on Material Design 3 spec: https://m3.material.io/styles/color/roles
+  // Custom colors: get the ARGB values using the scheme - exactly like core
+  // colors do
   //
   const customVars: Record<string, number> = {};
-
-  customColors.forEach((color) => {
-    const colorname = color.name;
-
-    // Helper to get palette for this color
-    const getPaletteForColor = () => getPalette(colorPalettes, colorname);
-
-    // Create DynamicColor objects for all 4 color roles
-    const colorDynamicColor = new DynamicColor(
-      colorname,
-      getPaletteForColor,
-      (s) => (s.isDark ? 80 : 40), // Main color: lighter in dark mode, darker in light mode
-      true, // background
-    );
-    const onColorDynamicColor = new DynamicColor(
-      `on${upperFirst(colorname)}`,
-      getPaletteForColor,
-      (s) => (s.isDark ? 20 : 100), // Text on main color: high contrast (dark on light, light on dark)
-      false,
-    );
-    const containerDynamicColor = new DynamicColor(
-      `${colorname}Container`,
-      getPaletteForColor,
-      (s) => (s.isDark ? 30 : 90), // Container: subtle variant (darker in dark mode, lighter in light mode)
-      true, // background
-    );
-    const onContainerDynamicColor = new DynamicColor(
-      `on${upperFirst(colorname)}Container`,
-      getPaletteForColor,
-      (s) => (s.isDark ? 90 : 30), // Text on container: high contrast against container background
-      false,
-    );
-
-    // Get the ARGB values using the scheme - exactly like core colors do
-    customVars[colorname] = colorDynamicColor.getArgb(scheme);
-    customVars[`on${upperFirst(colorname)}`] =
-      onColorDynamicColor.getArgb(scheme);
-    customVars[`${colorname}Container`] = containerDynamicColor.getArgb(scheme);
-    customVars[`on${upperFirst(colorname)}Container`] =
-      onContainerDynamicColor.getArgb(scheme);
-  });
+  for (const roles of Object.values(customColorRoles)) {
+    for (const [tokenName, dynamicColor] of Object.entries(roles)) {
+      customVars[tokenName] = dynamicColor.getArgb(scheme);
+    }
+  }
 
   // Merge both
   return { ...baseVars, ...customVars };
@@ -674,15 +674,22 @@ export function builder(
       value: argbFromHex(c.hex),
     }));
 
+  // The roles of each custom color, keyed by custom color name, then by token
+  // name -- the custom-color counterpart of MaterialDynamicColors
+  const customColorRoles = Object.fromEntries(
+    customColors.map((color) => [
+      color.name,
+      buildCustomColorRoles(color.name, getPalette(colorPalettes, color.name)),
+    ]),
+  );
+
   const mergedColorsLight = mergeBaseAndCustomColors(
     lightScheme,
-    customColors,
-    colorPalettes,
+    customColorRoles,
   );
   const mergedColorsDark = mergeBaseAndCustomColors(
     darkScheme,
-    customColors,
-    colorPalettes,
+    customColorRoles,
   );
 
   // ── Shared token→palette mapping ──────────────────────────────────────
@@ -737,5 +744,6 @@ export function builder(
     mergedColorsLight,
     mergedColorsDark,
     allPalettes,
+    customColorRoles,
   };
 }

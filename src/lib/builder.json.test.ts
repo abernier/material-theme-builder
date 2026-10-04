@@ -282,4 +282,73 @@ describe("builder › toJson().palettes", () => {
       }
     });
   }
+
+  for (const input of inputs) {
+    it(`should hold the palette every custom-color role is a tone of (${input.label})`, () => {
+      const theme = builder(input.source, input.options);
+      const { palettes } = theme.toJson();
+
+      const customColorNames = (input.options?.customColors ?? []).map(
+        (color) => color.name,
+      );
+      expect(Object.keys(theme.customColorRoles)).toEqual(customColorNames);
+
+      // Every rendered color that is not a core role is a custom-color role
+      const customTokenNames = Object.values(theme.customColorRoles).flatMap(
+        (roles) => Object.keys(roles),
+      );
+      for (const rendered of [
+        theme.mergedColorsLight,
+        theme.mergedColorsDark,
+      ]) {
+        expect(
+          Object.keys(rendered).filter(
+            (tokenName) =>
+              !(tokenNames as readonly string[]).includes(tokenName),
+          ),
+        ).toEqual(customTokenNames);
+      }
+
+      for (const isDark of [false, true]) {
+        const scheme = renderedScheme(input, theme.allPalettes, isDark);
+        const rendered = isDark
+          ? theme.mergedColorsDark
+          : theme.mergedColorsLight;
+
+        for (const [customColorName, roles] of Object.entries(
+          theme.customColorRoles,
+        )) {
+          for (const [tokenName, role] of Object.entries(roles)) {
+            const roleHex = hex(role.getArgb(scheme));
+
+            // The role is the color builder() renders for it
+            expect(roleHex, tokenName).toBe(hex(rendered[tokenName] ?? 0));
+
+            // The role is a tone of its palette -- at whatever tone it
+            // landed on, not necessarily an exported one
+            const palette = role.palette(scheme);
+            expect(roleHex, tokenName).toBe(
+              hex(palette.tone(role.getTone(scheme))),
+            );
+
+            // ...and that palette is the one exported under its custom
+            // color's key
+            const [name] =
+              Object.entries(theme.allPalettes).find(
+                ([, exported]) => exported === palette,
+              ) ?? [];
+            expect(name, tokenName).toBe(customColorName);
+            expect(palettes[kebabCase(customColorName)], tokenName).toEqual(
+              Object.fromEntries(
+                STANDARD_TONES.map((tone) => [
+                  tone.toString(),
+                  hex(palette.tone(tone)),
+                ]),
+              ),
+            );
+          }
+        }
+      }
+    });
+  }
 });
