@@ -7,7 +7,7 @@ import {
 } from "@material/material-color-utilities";
 
 import type { BuilderContext, TokenName } from "./builder";
-import { DEFAULT_BLEND, schemeToVariant } from "./builder";
+import { schemeToVariant } from "./builder";
 
 // Token order matching Material Theme Builder export format
 const FIXTURE_TOKEN_ORDER = [
@@ -215,7 +215,7 @@ export function buildJson(ctx: BuilderContext) {
     name: c.name,
     color: c.hex.toUpperCase(),
     description: "",
-    harmonized: c.blend ?? DEFAULT_BLEND,
+    harmonized: c.blend,
   }));
 
   return {

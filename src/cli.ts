@@ -23,12 +23,7 @@ import {
   builderOptions,
 } from "./cli.options";
 import { DEFAULT_SHADCN, runApply } from "./cli.shadcn";
-import {
-  builder,
-  DEFAULT_BLEND,
-  isHexColor,
-  type HexCustomColor,
-} from "./lib/builder";
+import { builder, isHexColor, type HexCustomColor } from "./lib/builder";
 
 // `hex` is refined rather than left a bare string, so that a bad color inside the
 // JSON is reported as a bad color and not as valid JSON that happens to theme
@@ -43,7 +38,8 @@ const customColorSchema = z.array(
         isHexColor,
         "must be a hex color — 3, 6 or 8 hex digits, with or without '#' (e.g. #FF5733)",
       ),
-    blend: z.boolean().default(DEFAULT_BLEND),
+    // left to builder(), which applies DEFAULT_BLEND to an omitted `blend`
+    blend: z.boolean().optional(),
   }),
 ) satisfies z.ZodType<HexCustomColor[]>;
 

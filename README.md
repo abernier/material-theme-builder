@@ -19,8 +19,8 @@ Support for:
 - [x] core-colors overrides: primary, secondary, tertiary, error, neutral,
       neutralVariant
 - [x] custom-colors (aka. "Extended colors")
-  - [x] Harmonization (aka. `blend`) -- with effective color: `source` or
-        `primary` if defined
+  - [x] Harmonization (aka. `blend`, on by default) -- with effective color:
+        `source` or `primary` if defined
 - [x] Shades (aka. "tonals")
 - [ ] colorMatch
 
