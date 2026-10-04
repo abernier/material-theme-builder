@@ -1,5 +1,45 @@
 # material-theme-builder
 
+## 5.1.0
+
+### Minor Changes
+
+- e9b8d19: `toJson().palettes` now holds the palettes the system colors are drawn from — the
+  same palettes, tones and values as the `--md-ref-palette-*` of `toCss()` (#175).
+
+  The values change for the same input. `palettes` used to reproduce Material Theme
+  Builder's JSON export, whose palettes ignore the scheme variant and are not the
+  ones its own `schemes` come from, so `palettes.primary["40"]` could differ from
+  `schemes.light.primary` and from `--md-ref-palette-primary-40`. They are now the
+  rendered `DynamicScheme` palettes, so they follow the scheme variant. `palettes`
+  also gains the `error` palette, the custom-color palettes, and the in-between
+  tones `toCss()` already emitted (4, 6, 12, 17, 22, 24, 87, 92, 94, 96): 28 tones
+  per palette instead of 18.
+
+  Material Theme Builder's exported palettes are no longer reproduced: its
+  maintainers say they are only there as reference, and they are not the palettes
+  its own schemes are drawn from.
+
+  `schemes`, `coreColors` and `extendedColors` are unchanged.
+
+### Patch Changes
+
+- 1eef6d3: A custom color given without `blend` is now harmonized with the source color, as
+  `DEFAULT_BLEND` (true) always documented. It used to be rendered unharmonized
+  while `toJson().extendedColors[].harmonized` reported it as harmonized.
+
+  Rendered colors change for custom colors given without `blend`: their
+  `--md-ref-palette-*` and `--md-sys-color-*` values (and every other output) now
+  match those of `blend: true`. Custom colors with an explicit `blend` are
+  unchanged. `HexCustomColor.blend` is now optional in the types, to match.
+
+- dea6bb1: `toJson().schemes.*.background` and `onBackground` now come from the rendered
+  scheme, like `toCss()`. When the `neutral` core color is overridden, they used to
+  reproduce Material Theme Builder's export, which takes them from the scheme of
+  `primary` alone; they now equal `surface` and `onSurface` (at standard contrast
+  for `onBackground`), as in `toCss()`. Without a `neutral` override, nothing
+  changes.
+
 ## 5.0.0
 
 ### Major Changes
