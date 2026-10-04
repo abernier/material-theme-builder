@@ -4,10 +4,10 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { renderToStaticMarkup } from "react-dom/server";
-import { registryItemSchema } from "shadcn/schema";
+import { registryItemSchema, registrySchema } from "shadcn/schema";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { outputFrom, SCHEME_SOURCE } from "../../../scripts/generate.mjs";
+import { outputFrom } from "../../../scripts/generate.mjs";
 import { STANDARD_TONES } from "../../lib/builder";
 import { CORE_PALETTES, tokenNames } from "../../lib/tokens";
 import { Mtb } from "../../Mtb";
@@ -366,7 +366,7 @@ describe("the `scheme` registry item", () => {
 
     expect(files).toHaveLength(1);
     expect(files[0]).toMatchObject({
-      path: SCHEME_SOURCE,
+      path: "src/components/m3/scheme.tsx",
       type: "registry:component",
       content: fs.readFileSync(path.join(here, "scheme.tsx"), "utf8"),
     });
@@ -392,6 +392,33 @@ describe("the `scheme` registry item", () => {
 
     expect(imported).toContain("material-theme-builder/react");
     expect([...new Set(packages)].sort()).toEqual([...dependencies].sort());
+  });
+
+  it("is the item the root registry.json declares, source inlined", async () => {
+    // `shadcn add abernier/material-theme-builder/scheme` reads registry.json
+    // off GitHub; the package ships the built copy. One declaration behind
+    // both, so the two installs cannot drift apart.
+    const root = path.join(here, "../../..");
+    const registry = registrySchema.parse(
+      JSON.parse(fs.readFileSync(path.join(root, "registry.json"), "utf8")),
+    );
+    const item = await read();
+    const files = item.files ?? [];
+
+    // What the CLI refuses a GitHub registry for lacking.
+    expect(registry.name).toBe("material-theme-builder");
+    expect(registry.homepage).toBe(
+      "https://github.com/abernier/material-theme-builder",
+    );
+
+    expect(registry.items).toHaveLength(1);
+    expect({ $schema: item.$schema, ...registry.items[0] }).toEqual({
+      ...item,
+      files: files.map((file) => ({ path: file.path, type: file.type })),
+    });
+    for (const file of files) {
+      expect(fs.existsSync(path.join(root, file.path))).toBe(true);
+    }
   });
 
   it("is exported from the package", () => {

@@ -5,7 +5,7 @@
 Publish `<Scheme>` and `<Shades>` — the color-role poster and the tonal palettes that Storybook has been drawing all along — as a shadcn registry item, so a docs or demo page can show a theme without re-drawing it:
 
 ```sh
-npx shadcn@latest add https://unpkg.com/material-theme-builder/r/scheme.json
+npx shadcn@latest add abernier/material-theme-builder/scheme
 ```
 
 ```tsx
@@ -23,6 +23,8 @@ import { Mtb } from "material-theme-builder/react";
 ```
 
 A registry item rather than an export: the source is copied into your project, every part (`SchemeRoot`, `SchemeRoles`, `SchemeAccents`, `Swatch`, `Palette`…) is exported and takes a `className` merged through `cn`. The colors still come from the `--md-*` CSS variables, so nothing drifts for being copied.
+
+The item is declared in a `registry.json` at the root of the repository, which is what that command reads off GitHub; the package also ships it built, as `material-theme-builder/r/scheme.json`.
 
 To support it, the package now also exports:
 

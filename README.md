@@ -464,8 +464,13 @@ Not an import: a [shadcn registry item](https://ui.shadcn.com/docs/registry),
 so the source lands in your project and is yours to restyle.
 
 ```sh
-$ npx shadcn@latest add https://unpkg.com/material-theme-builder/r/scheme.json
+$ npx shadcn@latest add abernier/material-theme-builder/scheme
 ```
+
+That reads [`registry.json`](registry.json) straight off this repository. To
+pin it, add a ref (`…/scheme#v5.1.0`), or install the copy a given release of
+the package ships:
+`https://unpkg.com/material-theme-builder@5.1.0/r/scheme.json`.
 
 That writes `components/m3/scheme.tsx` and installs what it imports —
 `material-theme-builder` and `lodash-es`. It is styled with Tailwind utilities,

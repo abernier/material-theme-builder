@@ -1,0 +1,21 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry.json",
+  "name": "material-theme-builder",
+  "homepage": "https://github.com/abernier/material-theme-builder",
+  "items": [
+    {
+      "name": "scheme",
+      "type": "registry:component",
+      "title": "Scheme",
+      "description": "The Material Theme Builder poster: every M3 color role on the official grid (`<Scheme>`) and the tonal palettes behind them (`<Shades>`), painted from the CSS variables `<Mtb>` emits.",
+      "dependencies": ["material-theme-builder", "lodash-es"],
+      "devDependencies": ["@types/lodash-es"],
+      "files": [
+        {
+          "path": "src/components/m3/scheme.tsx",
+          "type": "registry:component"
+        }
+      ]
+    }
+  ]
+}

@@ -21,9 +21,9 @@ import {
 // The poster: `<Scheme>` and `<Shades>`, the two views of a generated theme
 // that Material Theme Builder itself draws -- and the parts they are made of.
 //
-// Distributed as a shadcn registry item (`scripts/generate.mjs` embeds this
-// very file), not exported from the npm package: whoever installs it owns the
-// source. Hence the shape -- Tailwind utilities merged through `cn`, every
+// Distributed as a shadcn registry item (the root `registry.json` points at
+// this very file), not exported from the npm package: whoever installs it owns
+// the source. Hence the shape -- Tailwind utilities merged through `cn`, every
 // part exported and taking `className`, a `data-slot` on each -- and hence the
 // imports, which are spelled the way a *consumer* resolves them:
 // `material-theme-builder`, not `../../lib/builder`. In this repo `tsconfig`

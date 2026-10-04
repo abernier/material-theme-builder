@@ -17,12 +17,15 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 // CLI, which is given a real source.
 const SOURCE = "#6750A4";
 
-/** The component the `scheme` registry item installs, relative to `src/`. */
-export const SCHEME_SOURCE = "components/m3/scheme.tsx";
-
 /**
  * The `scheme` registry item: `<Scheme>`, `<Shades>` and their parts, as
  * source for `shadcn add` to copy into a project.
+ *
+ * Declared once, in the `registry.json` at the repo root -- the file
+ * `shadcn add abernier/material-theme-builder/scheme` reads straight off
+ * GitHub. What is built here is the same item with the component's source
+ * inlined, exactly what `shadcn build` makes of it, for the package to ship:
+ * a copy that is pinned to the version it was published with.
  *
  * The component is embedded as it stands in `src/` -- the file Storybook
  * draws with -- so what gets installed is what the stories show. Its imports
@@ -40,22 +43,18 @@ export const SCHEME_SOURCE = "components/m3/scheme.tsx";
  * which `local-release` runs *before* `changeset version`.
  */
 function schemeRegistryItem() {
+  const { items } = JSON.parse(
+    readFileSync(join(root, "registry.json"), "utf8"),
+  );
+  const item = items.find(({ name }) => name === "scheme");
+
   return {
     $schema: "https://ui.shadcn.com/schema/registry-item.json",
-    name: "scheme",
-    type: "registry:component",
-    title: "Scheme",
-    description:
-      "The Material Theme Builder poster: every M3 color role on the official grid (`<Scheme>`) and the tonal palettes behind them (`<Shades>`), painted from the CSS variables `<Mtb>` emits.",
-    dependencies: ["material-theme-builder", "lodash-es"],
-    devDependencies: ["@types/lodash-es"],
-    files: [
-      {
-        path: SCHEME_SOURCE,
-        type: "registry:component",
-        content: readFileSync(join(root, "src", SCHEME_SOURCE), "utf8"),
-      },
-    ],
+    ...item,
+    files: item.files.map((file) => ({
+      ...file,
+      content: readFileSync(join(root, file.path), "utf8"),
+    })),
   };
 }
 
