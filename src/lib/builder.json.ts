@@ -87,22 +87,13 @@ export function buildJson(ctx: BuilderContext) {
 
   function buildJsonSchemes() {
     // Extract scheme colors in fixture token order
-    function extractSchemeColors(
-      scheme: DynamicScheme,
-      backgroundScheme?: DynamicScheme,
-    ) {
+    function extractSchemeColors(scheme: DynamicScheme) {
       const colors: Record<string, string> = {};
 
       for (const tokenName of FIXTURE_TOKEN_ORDER) {
         const dynamicColor = MaterialDynamicColors[tokenName];
-        const useScheme =
-          backgroundScheme &&
-          (tokenName === "background" || tokenName === "onBackground")
-            ? backgroundScheme
-            : scheme;
-
         colors[tokenName] = hexFromArgb(
-          dynamicColor.getArgb(useScheme),
+          dynamicColor.getArgb(scheme),
         ).toUpperCase();
       }
 
@@ -159,8 +150,11 @@ export function buildJson(ctx: BuilderContext) {
 
       if (errPalette) composedScheme.errorPalette = errPalette;
 
-      // background/onBackground always from base scheme (primary-based)
-      jsonSchemes[name] = extractSchemeColors(composedScheme, baseScheme);
+      // Every role, background/onBackground included, comes from the composed
+      // scheme. MTB's export takes background/onBackground from the base
+      // scheme instead; we do not reproduce that (see
+      // docs/adr/0002-json-background-follows-the-rendered-scheme.md).
+      jsonSchemes[name] = extractSchemeColors(composedScheme);
     }
 
     return jsonSchemes;
