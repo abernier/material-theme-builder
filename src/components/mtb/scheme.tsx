@@ -25,10 +25,7 @@ import {
 // this very file), not exported from the npm package: whoever installs it owns
 // the source. Hence the shape -- Tailwind utilities merged through `cn`, every
 // part exported and taking `className`, a `data-slot` on each -- and hence the
-// imports, which are spelled the way a *consumer* resolves them:
-// `material-theme-builder`, not `../../lib/builder`. In this repo `tsconfig`
-// points those two specifiers back at `src/`, so Storybook draws with the same
-// bytes that get installed.
+// imports, which are spelled the way a *consumer* resolves them.
 //
 // Nothing drifts for being copied: the colors are not in here. Every cell
 // paints from a CSS variable the theme declares, and the vocabulary -- token
@@ -55,8 +52,7 @@ type SchemeConfig = {
    * without recomposing it.
    *
    * A `bg-*` utility in there replaces the swatch's own color, `cn` seeing to
-   * the conflict. This repo's Tailwind story hands over `bg-primary` & co. that
-   * way, to prove the plugin's utilities resolve.
+   * the conflict.
    */
   swatchClassNames?: { [token in TokenName]?: string } & {
     [custom: string]: string | undefined;
@@ -114,7 +110,7 @@ export function SwatchLabel({ className, ...props }: ComponentProps<"p">) {
     <p
       data-slot="swatch-label"
       className={cn(
-        "m-[.35rem] truncate font-[sans-serif] text-[.8rem] text-white mix-blend-difference max-md:text-[0px]",
+        "m-[.35rem] truncate font-[family-name:sans-serif] text-[.8rem] text-white mix-blend-difference max-md:text-[0px]",
         className,
       )}
       {...props}
@@ -245,7 +241,6 @@ export function SchemeRoot({
     <SchemeContext.Provider value={config}>
       <div
         data-slot="scheme"
-        data-theme={theme}
         className={cn(
           "flex flex-col gap-4",
           theme && "p-2 md:p-4",

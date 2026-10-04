@@ -467,15 +467,14 @@ so the source lands in your project and is yours to restyle.
 $ npx shadcn@latest add abernier/material-theme-builder/scheme
 ```
 
-That reads [`registry.json`](registry.json) straight off this repository. To
-pin it, add a ref (`…/scheme#v5.1.0`), or install the copy a given release of
-the package ships:
-`https://unpkg.com/material-theme-builder@5.1.0/r/scheme.json`.
+That reads [`registry.json`](registry.json) straight off this repository; add a
+ref to pin it (`…/scheme#v5.1.0`).
 
-That writes `components/mtb/scheme.tsx` and installs what it imports —
-`material-theme-builder` and `lodash-es`. It is styled with Tailwind utilities,
-none of which need the [plugin](#tailwind): the colors come from the
-`--md-sys-color-*` / `--md-ref-palette-*` variables directly.
+It writes `components/mtb/scheme.tsx` and installs what it imports —
+`material-theme-builder` (5.1.0 or later, the first to export what the file
+reads) and `lodash-es`. It is styled with Tailwind v4 utilities, none of which
+need the [plugin](#tailwind): the colors come from the `--md-sys-color-*` /
+`--md-ref-palette-*` variables directly.
 
 ```tsx
 import { Scheme, Shades } from "@/components/mtb/scheme";
@@ -620,9 +619,9 @@ Storybook `@import`s, and in Storybook a Vite plugin (`.storybook/main.ts`)
 rewrites it at server start and again on every edit under `src/lib/`, so the
 stories never show a stale vocabulary.
 
-`r/scheme.json` is generated there too, from a single file:
-`src/components/mtb/scheme.tsx`, embedded as it stands. Storybook draws with that
-same file, so the stories _are_ the registry item — which is why it imports the
+The `scheme` registry item is not generated: the root `registry.json` points at
+`src/components/mtb/scheme.tsx` as it stands. Storybook draws with that same
+file, so the stories _are_ the registry item — which is why it imports the
 package by name (`material-theme-builder`, mapped back onto `src/` by
 `tsconfig.json`) and `cn` through the `@/lib/utils` alias, the way it will once
 copied into another project.

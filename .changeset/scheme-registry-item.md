@@ -24,7 +24,7 @@ import { Mtb } from "material-theme-builder/react";
 
 A registry item rather than an export: the source is copied into your project, every part (`SchemeRoot`, `SchemeRoles`, `SchemeAccents`, `Swatch`, `Palette`…) is exported and takes a `className` merged through `cn`. The colors still come from the `--md-*` CSS variables, so nothing drifts for being copied.
 
-The item is declared in a `registry.json` at the root of the repository, which is what that command reads off GitHub; the package also ships it built, as `material-theme-builder/r/scheme.json`.
+The item is declared in a `registry.json` at the root of the repository, which is what that command reads off GitHub. It needs Tailwind v4 and this release of the package.
 
 To support it, the package now also exports:
 

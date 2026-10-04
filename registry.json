@@ -8,7 +8,7 @@
       "type": "registry:component",
       "title": "Scheme",
       "description": "The Material Theme Builder poster: every M3 color role on the official grid (`<Scheme>`) and the tonal palettes behind them (`<Shades>`), painted from the CSS variables `<Mtb>` emits.",
-      "dependencies": ["material-theme-builder", "lodash-es"],
+      "dependencies": ["material-theme-builder@^5.1.0", "lodash-es"],
       "devDependencies": ["@types/lodash-es"],
       "files": [
         {

@@ -4,10 +4,9 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { renderToStaticMarkup } from "react-dom/server";
-import { registryItemSchema, registrySchema } from "shadcn/schema";
+import { registrySchema } from "shadcn/schema";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { outputFrom } from "../../../scripts/generate.mjs";
 import { STANDARD_TONES } from "../../lib/builder";
 import { CORE_PALETTES, tokenNames } from "../../lib/tokens";
 import { Mtb } from "../../Mtb";
@@ -131,7 +130,6 @@ describe("Scheme", () => {
     const dark = render(<Scheme theme="dark" title="Dark scheme" />);
     const card = slot(dark.container, "scheme");
     expect(card?.classList.contains("dark")).toBe(true);
-    expect(card?.getAttribute("data-theme")).toBe("dark");
     expect(slot(dark.container, "scheme-title")?.textContent).toBe(
       "Dark scheme",
     );
@@ -344,39 +342,37 @@ describe("Shades", () => {
 });
 
 describe("the `scheme` registry item", () => {
-  const read = async () =>
-    registryItemSchema.parse(JSON.parse(await outputFrom("r/scheme.json")));
+  // The root registry.json is the item: `shadcn add
+  // abernier/material-theme-builder/scheme` reads it off GitHub, and the
+  // component from the path it gives.
+  const root = path.join(here, "../../..");
+  const registry = registrySchema.parse(
+    JSON.parse(fs.readFileSync(path.join(root, "registry.json"), "utf8")),
+  );
+  const item = registry.items.find(({ name }) => name === "scheme");
 
-  it("is a valid registry:component item", async () => {
-    // Parsed by the schema `shadcn add` itself runs an item through, off the
-    // devDependency -- the published JSON Schema says the same and needs the
-    // network.
-    const item = await read();
-
-    expect(item.$schema).toBe(
-      "https://ui.shadcn.com/schema/registry-item.json",
+  it("is declared by a registry the CLI accepts from GitHub", () => {
+    // Parsed above by the schema `shadcn add` itself applies. A root registry
+    // lacking either of these two is refused.
+    expect(registry.name).toBe("material-theme-builder");
+    expect(registry.homepage).toBe(
+      "https://github.com/abernier/material-theme-builder",
     );
-    expect(item.name).toBe("scheme");
-    expect(item.type).toBe("registry:component");
+    expect(item?.type).toBe("registry:component");
   });
 
-  it("carries the component as it stands in src/", async () => {
-    // One implementation: what Storybook draws with is what gets installed.
-    const { files = [] } = await read();
-
-    expect(files).toHaveLength(1);
-    expect(files[0]).toMatchObject({
-      path: "src/components/mtb/scheme.tsx",
-      type: "registry:component",
-      content: fs.readFileSync(path.join(here, "scheme.tsx"), "utf8"),
-    });
+  it("points at the component Storybook draws with", () => {
+    // One implementation: what the stories show is what gets installed.
+    expect(item?.files).toEqual([
+      { path: "src/components/mtb/scheme.tsx", type: "registry:component" },
+    ]);
+    expect(fs.existsSync(path.join(here, "scheme.tsx"))).toBe(true);
   });
 
-  it("declares every package the component imports", async () => {
+  it("declares every package the component imports", () => {
     // The file lands in someone else's project: an import that only resolves
     // here -- a relative one, a devDependency of ours -- is a broken install.
-    const { files = [], dependencies = [] } = await read();
-    const content = files[0]?.content ?? "";
+    const content = fs.readFileSync(path.join(here, "scheme.tsx"), "utf8");
 
     const imported = Array.from(
       content.matchAll(/^} from "([^"]+)";$|^import .* from "([^"]+)";$/gm),
@@ -389,43 +385,17 @@ describe("the `scheme` registry item", () => {
     const packages = imported
       .filter((specifier) => !given.includes(specifier))
       .map((specifier) => specifier.split("/")[0]);
+    const declared = (item?.dependencies ?? []).map(
+      (dependency) => dependency.split("@")[0],
+    );
 
     expect(imported).toContain("material-theme-builder/react");
-    expect([...new Set(packages)].sort()).toEqual([...dependencies].sort());
+    expect([...new Set(packages)].sort()).toEqual(declared.sort());
   });
 
-  it("is the item the root registry.json declares, source inlined", async () => {
-    // `shadcn add abernier/material-theme-builder/scheme` reads registry.json
-    // off GitHub; the package ships the built copy. One declaration behind
-    // both, so the two installs cannot drift apart.
-    const root = path.join(here, "../../..");
-    const registry = registrySchema.parse(
-      JSON.parse(fs.readFileSync(path.join(root, "registry.json"), "utf8")),
-    );
-    const item = await read();
-    const files = item.files ?? [];
-
-    // What the CLI refuses a GitHub registry for lacking.
-    expect(registry.name).toBe("material-theme-builder");
-    expect(registry.homepage).toBe(
-      "https://github.com/abernier/material-theme-builder",
-    );
-
-    expect(registry.items).toHaveLength(1);
-    expect({ $schema: item.$schema, ...registry.items[0] }).toEqual({
-      ...item,
-      files: files.map((file) => ({ path: file.path, type: file.type })),
-    });
-    for (const file of files) {
-      expect(fs.existsSync(path.join(root, file.path))).toBe(true);
-    }
-  });
-
-  it("is exported from the package", () => {
-    const { exports } = JSON.parse(
-      fs.readFileSync(path.join(here, "../../../package.json"), "utf8"),
-    );
-
-    expect(exports["./r/scheme.json"]).toBe("./dist/r/scheme.json");
+  it("asks for a version of the package that exports what it imports", () => {
+    // Unversioned, a project already on 5.0.0 would keep it -- pnpm does not
+    // upgrade an in-range install -- and the copied file would not compile.
+    expect(item?.dependencies).toContain("material-theme-builder@^5.1.0");
   });
 });
