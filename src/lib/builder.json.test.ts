@@ -1,8 +1,10 @@
 import {
   argbFromHex,
   DynamicScheme,
+  Hct,
   hexFromArgb,
   MaterialDynamicColors,
+  SchemeTonalSpot,
   type TonalPalette,
 } from "@material/material-color-utilities";
 import { kebabCase, omit } from "lodash-es";
@@ -349,6 +351,81 @@ describe("builder › toJson().palettes", () => {
           }
         }
       }
+    });
+  }
+});
+
+// ─── background / onBackground ───────────────────────────────────────────
+//
+// With a `neutral` override, MTB's JSON export takes `background` and
+// `onBackground` from the scheme of `primary` alone, so they are not tones of
+// the neutral palette, and differ from `surface`/`onSurface`. `schemes` keeps
+// that quirk; toCss() keeps `background`/`onBackground` the aliases of
+// `surface`/`onSurface` that Material Color Utilities defines (see
+// docs/adr/0002-json-background-follows-mtb.md).
+
+const jsonSchemeLevels = [
+  { name: "light", isDark: false, contrast: 0 },
+  { name: "light-medium-contrast", isDark: false, contrast: 0.5 },
+  { name: "light-high-contrast", isDark: false, contrast: 1.0 },
+  { name: "dark", isDark: true, contrast: 0 },
+  { name: "dark-medium-contrast", isDark: true, contrast: 0.5 },
+  { name: "dark-high-contrast", isDark: true, contrast: 1.0 },
+] as const;
+
+describe("builder › background and onBackground", () => {
+  const neutralOverrides = inputs.filter((input) => input.options?.neutral);
+
+  it("should cover the MTB fixtures that override neutral", () => {
+    expect(neutralOverrides.map(({ label }) => label)).toEqual([
+      "fixture 2",
+      "fixture 4",
+    ]);
+  });
+
+  for (const input of neutralOverrides) {
+    it(`should come from the primary-only scheme in toJson().schemes, as in MTB's export (${input.label})`, () => {
+      const theme = builder(input.source, input.options);
+      const { schemes, palettes } = theme.toJson();
+      const neutralTones = Object.values(palettes.neutral ?? {});
+
+      for (const { name, isDark, contrast } of jsonSchemeLevels) {
+        const primaryOnly = new SchemeTonalSpot(
+          Hct.fromInt(argbFromHex(input.options?.primary ?? input.source)),
+          isDark,
+          contrast,
+        );
+        const colors = schemes[name] ?? {};
+
+        expect(colors.background, name).toBe(
+          hex(MaterialDynamicColors.background.getArgb(primaryOnly)),
+        );
+        expect(colors.onBackground, name).toBe(
+          hex(MaterialDynamicColors.onBackground.getArgb(primaryOnly)),
+        );
+        expect(colors.background, name).not.toBe(colors.surface);
+        expect(neutralTones, name).not.toContain(colors.background);
+      }
+    });
+
+    it(`should be surface and onSurface in toCss() (${input.label})`, () => {
+      const theme = builder(input.source, input.options);
+      const neutral = theme.allPalettes.neutral;
+      if (!neutral) throw new Error("No 'neutral' palette");
+
+      for (const rendered of [
+        theme.mergedColorsLight,
+        theme.mergedColorsDark,
+      ]) {
+        expect(rendered.background).toBe(rendered.surface);
+        expect(rendered.onBackground).toBe(rendered.onSurface);
+      }
+      expect(hex(theme.mergedColorsLight.background ?? 0)).toBe(
+        hex(neutral.tone(98)),
+      );
+      expect(hex(theme.mergedColorsDark.background ?? 0)).toBe(
+        hex(neutral.tone(6)),
+      );
     });
   }
 });

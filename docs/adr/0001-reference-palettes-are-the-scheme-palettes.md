@@ -61,7 +61,8 @@ scheme palettes at `STANDARD_TONES`). Full research:
   `schemes.light.primary` for a tonal-spot scheme at standard contrast). One MTB
   quirk `schemes` keeps: with a `neutral` override, `background` and
   `onBackground` still come from the neutral palette of `primary` (or the
-  source) alone, which is not exported.
+  source) alone, which is not exported (see
+  [ADR 0002](./0002-json-background-follows-mtb.md)).
 - `toJson().palettes` gains the `error` palette, the custom-color palettes, and the
   10 tones `toCss()` already had (4, 6, 12, 17, 22, 24, 87, 92, 94, 96): 28 tones.
 - MTB's exported palettes are no longer reproduced, not even as an option: its
