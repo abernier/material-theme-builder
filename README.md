@@ -454,6 +454,115 @@ see:
 
 </details>
 
+## `<Scheme>` and `<Shades>`
+
+The poster Material Theme Builder draws — every color role on the official
+grid, and the tonal palettes behind them — for a docs or demo page to show a
+theme without re-drawing it.
+
+Not an import: a [shadcn registry item](https://ui.shadcn.com/docs/registry),
+so the source lands in your project and is yours to restyle.
+
+```sh
+$ npx shadcn@latest add https://unpkg.com/material-theme-builder/r/scheme.json
+```
+
+That writes `components/m3/scheme.tsx` and installs what it imports —
+`material-theme-builder` and `lodash-es`. It is styled with Tailwind utilities,
+none of which need the [plugin](#tailwind): the colors come from the
+`--md-sys-color-*` / `--md-ref-palette-*` variables directly.
+
+```tsx
+import { Scheme, Shades } from "@/components/m3/scheme";
+import { Mtb } from "material-theme-builder/react";
+
+<Mtb
+  source="#769CDF"
+  customColors={[
+    { name: "teal", hex: "#00A39B", blend: true },
+    { name: "purple", hex: "#9B5DE5", blend: true },
+  ]}
+>
+  <Scheme theme="light" title="Light scheme" />
+  <Scheme theme="dark" title="Dark scheme" />
+  <Shades />
+</Mtb>;
+```
+
+Inside an `<Mtb>` they pick up its `customColors` and `prefix`. They only read
+CSS variables, so they also work with no `<Mtb>` around — next to a
+server-rendered `toCss()` for instance — in which case you pass those two
+yourself.
+
+| `<Scheme>` prop    | Default      |                                                                                 |
+| ------------------ | ------------ | ------------------------------------------------------------------------------- |
+| `theme`            | –            | `"light"` or `"dark"`: draw on a card of its own. Left out, it follows the page |
+| `title`            | –            | Heading above the grid                                                          |
+| `customColors`     | from `<Mtb>` | Custom colors to draw; `[]` for none                                            |
+| `prefix`           | from `<Mtb>` | CSS variable prefix the theme was generated with                                |
+| `fixedAccents`     | `true`       | The 12 `*-fixed*` add-on roles. `false` matches the official poster exactly     |
+| `surfaceTint`      | `false`      | Also draw `surface-tint`                                                        |
+| `background`       | `false`      | Also draw `background` / `on-background`                                        |
+| `surfaceVariant`   | `false`      | Also draw `surface-variant`                                                     |
+| `swatchClassNames` | –            | Extra classes per token, e.g. `{ primary: "bg-primary" }`                       |
+
+`<Shades>` takes `customColors`, `prefix` and `noTitle`. `<Scheme>` renders its
+`children` under the grid — `<Shades noTitle />` fits there.
+
+Both are assembled from parts, each exported, each taking `className` (merged
+with `cn`, so a conflicting utility replaces the default) and carrying a
+`data-slot`:
+
+```tsx
+import {
+  Palette,
+  SchemeAccents,
+  SchemeCustomColors,
+  SchemeRoles,
+  SchemeRoot,
+  SchemeSurfaces,
+  SchemeTitle,
+  ShadesRoot,
+  Swatch,
+} from "@/components/m3/scheme";
+
+<SchemeRoot theme="dark" className="rounded-xl md:p-8">
+  <SchemeTitle className="text-2xl">Brand</SchemeTitle>
+
+  {/* one column instead of the poster's two */}
+  <SchemeRoles className="grid-cols-1">
+    <SchemeAccents />
+    <SchemeSurfaces />
+  </SchemeRoles>
+  <SchemeCustomColors className="gap-2" />
+
+  <Swatch token="primaryContainer" className="h-32 rounded-lg" />
+
+  <ShadesRoot>
+    <Palette name="primary" title="Primary" />
+  </ShadesRoot>
+</SchemeRoot>;
+```
+
+The full set: `Scheme`, `SchemeRoot`, `SchemeTitle`, `SchemeRoles`,
+`SchemeAccents`, `SchemeErrors`, `SchemeFixedAccents`, `SchemeSurfaces`,
+`SchemeInverse`, `SchemeCustomColors`, `Swatch`, `SwatchLabel`, `Shades`,
+`ShadesRoot`, `Palette`, `PaletteTitle`, `PaletteTone`.
+
+To reach a part of the pre-composed poster without recomposing it, target its
+slot from the root:
+
+```tsx
+// no labels: colors only
+<Scheme className="**:data-[slot=swatch-label]:text-[0px]" />
+```
+
+> [!NOTE]
+>
+> `theme="light"` cannot undo a dark page: the light values are declared on
+> `:root` and the dark ones on `.dark`, so under a `.dark` ancestor a light card
+> still reads the dark values.
+
 # Dev
 
 ## INSTALL
@@ -506,7 +615,14 @@ Storybook `@import`s, and in Storybook a Vite plugin (`.storybook/main.ts`)
 rewrites it at server start and again on every edit under `src/lib/`, so the
 stories never show a stale vocabulary.
 
-`generate.mjs` builds the registry item without `{ fallback: true }`, which is
+`r/scheme.json` is generated there too, from a single file:
+`src/components/m3/scheme.tsx`, embedded as it stands. Storybook draws with that
+same file, so the stories _are_ the registry item — which is why it imports the
+package by name (`material-theme-builder`, mapped back onto `src/` by
+`tsconfig.json`) and `cn` through the `@/lib/utils` alias, the way it will once
+copied into another project.
+
+`generate.mjs` builds the theme registry item without `{ fallback: true }`, which is
 what keeps every one of those outputs a function of the _mapping_ rather than of
 a color: `SOURCE` there is arbitrary, and has to stay able to be. The fallback
 variant belongs to whoever knows a real source color — the CLI's

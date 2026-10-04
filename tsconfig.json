@@ -3,7 +3,13 @@
     /* Path aliases (shadcn) */
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      /* The package's own name, back onto its sources: the `scheme` registry
+         item imports it the way the projects it is copied into do. Without
+         these it would resolve to `dist/` -- a second `MtbContext`, which the
+         `<Mtb>` of a story or a test never provides. */
+      "material-theme-builder": ["./src/index.ts"],
+      "material-theme-builder/react": ["./src/react.ts"]
     },
     /* Base Options: */
     "esModuleInterop": true,

@@ -5,4 +5,7 @@
 
 export { ExportButton } from "./ExportButton";
 export { Mcu, Mtb } from "./Mtb";
-export { useMcu, useMtb } from "./Mtb.context";
+// `MtbContext` itself, for what must render with or without an `<Mtb>` above
+// it: `useMtb` throws outside a provider, `useContext(MtbContext)` is `null`
+// there. The `scheme` registry item reads its defaults that way.
+export { MtbContext, useMcu, useMtb } from "./Mtb.context";

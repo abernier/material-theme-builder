@@ -1,5 +1,6 @@
-// Generates the exporter-derived files the package ships. Each has one
-// mapping behind it, so a hand-maintained copy could drift from it -- and did.
+// Generates the derived files the package ships. Each has one source behind
+// it -- an exporter's mapping, or a component's own file -- so a
+// hand-maintained copy could drift from it -- and did.
 //
 // Run from `tsup`'s `onSuccess`. Every copy is gitignored build output: `dist/`
 // ships, `src/` is what Storybook `@import`s.
@@ -16,7 +17,49 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 // CLI, which is given a real source.
 const SOURCE = "#6750A4";
 
-/** Which exporter fills each file, under which banner, into which directories. */
+/** The component the `scheme` registry item installs, relative to `src/`. */
+export const SCHEME_SOURCE = "components/m3/scheme.tsx";
+
+/**
+ * The `scheme` registry item: `<Scheme>`, `<Shades>` and their parts, as
+ * source for `shadcn add` to copy into a project.
+ *
+ * The component is embedded as it stands in `src/` -- the file Storybook
+ * draws with -- so what gets installed is what the stories show. Its imports
+ * need no rewriting: `@/lib/utils` is the alias shadcn itself rewrites to the
+ * project's own, and the package is imported by name there (see `paths` in
+ * `tsconfig.json` for how that resolves here).
+ *
+ * No `registryDependencies` on the theme item next to it. That one remaps
+ * *shadcn's* variables onto the M3 ones; the poster reads the M3 ones
+ * directly, and installing it has no business rewriting anyone's `:root`.
+ *
+ * `material-theme-builder` is left unversioned, which package managers read
+ * as "latest" -- hence new enough to export what the component imports. A
+ * range computed here would be the version of whichever build ran last,
+ * which `local-release` runs *before* `changeset version`.
+ */
+function schemeRegistryItem() {
+  return {
+    $schema: "https://ui.shadcn.com/schema/registry-item.json",
+    name: "scheme",
+    type: "registry:component",
+    title: "Scheme",
+    description:
+      "The Material Theme Builder poster: every M3 color role on the official grid (`<Scheme>`) and the tonal palettes behind them (`<Shades>`), painted from the CSS variables `<Mtb>` emits.",
+    dependencies: ["material-theme-builder", "lodash-es"],
+    devDependencies: ["@types/lodash-es"],
+    files: [
+      {
+        path: SCHEME_SOURCE,
+        type: "registry:component",
+        content: readFileSync(join(root, "src", SCHEME_SOURCE), "utf8"),
+      },
+    ],
+  };
+}
+
+/** What fills each file, under which banner, into which directories. */
 const FILES = {
   "shadcn.css": {
     parser: "css",
@@ -38,6 +81,13 @@ const FILES = {
     dirs: ["dist"],
     from: (builder) =>
       JSON.stringify(builder(SOURCE).toShadcnRegistryItem(), null, 2),
+  },
+  // Under `r/`, where a shadcn registry keeps its items -- and out of the way
+  // of `registry-item.json`, whose name already claims to be *the* item.
+  "r/scheme.json": {
+    parser: "json",
+    dirs: ["dist"],
+    from: () => JSON.stringify(schemeRegistryItem(), null, 2),
   },
 };
 
@@ -69,8 +119,11 @@ export async function formatOutput(name, body) {
  * A file's contents, from whichever `builder` the caller can reach -- this
  * module can only reach `dist/`, Storybook loads `src/` through Vite.
  *
+ * `r/scheme.json` is the one file no exporter fills, and so the one that can
+ * be asked for without a `builder`.
+ *
  * @param {keyof FILES} name which file, e.g. `shadcn.css`
- * @param {(source: string) => Record<string, () => never>} builder
+ * @param {(source: string) => Record<string, () => never>} [builder]
  * @returns {Promise<string>}
  */
 export const outputFrom = (name, builder) =>

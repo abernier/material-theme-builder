@@ -22,7 +22,8 @@
       "default": "./dist/tailwind-plugin.js"
     },
     "./shadcn.css": "./dist/shadcn.css",
-    "./registry-item.json": "./dist/registry-item.json"
+    "./registry-item.json": "./dist/registry-item.json",
+    "./r/scheme.json": "./dist/r/scheme.json"
   },
   "homepage": "https://github.com/abernier/material-theme-builder",
   "bugs": {

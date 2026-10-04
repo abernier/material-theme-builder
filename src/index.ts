@@ -16,3 +16,11 @@ export type {
   ShadcnTheme,
   ShadcnVarName,
 } from "./lib/builder";
+
+// The vocabulary, for code that draws a theme rather than builds one -- the
+// `scheme` registry item (src/components/m3/scheme.tsx) is copied into other
+// projects, and would otherwise carry its own lists of palettes and tones, free
+// to drift from these. Constants and a type: still nothing that reaches React.
+export { STANDARD_TONES } from "./lib/builder";
+export { CORE_PALETTES, DEFAULT_PREFIX } from "./lib/tokens";
+export type { TokenName } from "./lib/tokens";
