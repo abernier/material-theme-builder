@@ -64,9 +64,10 @@ scheme palettes at `STANDARD_TONES`). Full research:
   source) alone, which is not exported.
 - `toJson().palettes` gains the `error` palette, the custom-color palettes, and the
   10 tones `toCss()` already had (4, 6, 12, 17, 22, 24, 87, 92, 94, 96): 28 tones.
-- MTB-export conformance becomes opt-in: `toJson({ palettes: "mtb" })` returns the
-  previous palettes, value for value. The MTB fixture tests use it; `schemes` stays
-  MTB-identical by default.
+- MTB's exported palettes are no longer reproduced, not even as an option: its
+  maintainers say they are only there as reference, and they are not the palettes
+  its own schemes are drawn from. The MTB fixture tests compare everything but
+  `palettes`; `schemes` stays MTB-identical.
 - A role is always a tone of its palette, but not always of an exported tone:
   contrast curves, tone-delta pairs and fidelity can land it in between. So the
   `--md-sys-color-*` to `var(--md-ref-palette-*)` aliasing in `toCss()` must keep its

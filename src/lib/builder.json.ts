@@ -4,16 +4,10 @@ import {
   Hct,
   hexFromArgb,
   MaterialDynamicColors,
-  TonalPalette,
 } from "@material/material-color-utilities";
 
 import type { BuilderContext, TokenName } from "./builder";
 import { DEFAULT_BLEND, schemeToVariant } from "./builder";
-
-// The 18 tones of the Material Theme Builder JSON export's `palettes`
-const MTB_TONES = [
-  0, 5, 10, 15, 20, 25, 30, 35, 40, 50, 60, 70, 80, 90, 95, 98, 99, 100,
-] as const;
 
 // Token order matching Material Theme Builder export format
 const FIXTURE_TOKEN_ORDER = [
@@ -68,36 +62,15 @@ const FIXTURE_TOKEN_ORDER = [
   "surfaceContainerHighest",
 ] as const satisfies readonly TokenName[];
 
-/** Options for the JSON exporter. */
-export type JsonOptions = {
-  /**
-   * Which tonal palettes `palettes` holds.
-   *
-   * - `"scheme"`: the palettes the system roles are drawn from -- the same
-   *   palettes, tones and values as `--{prefix}-ref-palette-*` in `toCss()`.
-   * - `"mtb"`: the palettes the official Material Theme Builder JSON export
-   *   holds, value for value: five palettes (no `error`), 18 tones, built from
-   *   the input colors whatever the scheme variant. These are not the palettes
-   *   the roles in `schemes` are drawn from.
-   *
-   * @default "scheme"
-   */
-  palettes?: "scheme" | "mtb";
-};
-
 /**
  * Generate a JSON object in the Material Theme Builder export format.
  *
  * `schemes` matches MTB's export. `palettes` holds the reference palettes
- * `toCss()` emits, unless `options.palettes` is `"mtb"`.
+ * `toCss()` emits.
  */
-export function buildJson(
-  ctx: BuilderContext,
-  { palettes = "scheme" }: JsonOptions = {},
-) {
+export function buildJson(ctx: BuilderContext) {
   const {
     hexSource,
-    sourceHct,
     effectiveSourceArgb,
     primaryHct,
     SchemeClass,
@@ -210,54 +183,6 @@ export function buildJson(
     return jsonPalettes;
   }
 
-  // The palettes of the official MTB JSON export, reproduced value for value.
-  // They use each input color's own hue/chroma (TonalPalette.fromInt), with
-  // the legacy content CorePalette formulas for the rest -- NOT the palettes
-  // the roles are drawn from (allPalettes), which follow the scheme variant
-  // (e.g. SchemeTonalSpot clamps secondary chroma). So `palettes.secondary.40`
-  // here can differ from `schemes.light.secondary`. MTB's maintainers call
-  // these palettes "only there as reference"; see
-  // docs/adr/0001-reference-palettes-are-the-scheme-palettes.md.
-  function mtbPalettesToJson() {
-    const neuHct = neutral ? Hct.fromInt(argbFromHex(neutral)) : sourceHct;
-    const nvHct = neutralVariant
-      ? Hct.fromInt(argbFromHex(neutralVariant))
-      : sourceHct;
-
-    const mtbPalettes = {
-      primary: TonalPalette.fromInt(effectiveSourceArgb),
-      secondary: secondary
-        ? TonalPalette.fromInt(argbFromHex(secondary))
-        : TonalPalette.fromHueAndChroma(sourceHct.hue, sourceHct.chroma / 3),
-      tertiary: tertiary
-        ? TonalPalette.fromInt(argbFromHex(tertiary))
-        : TonalPalette.fromHueAndChroma(
-            (sourceHct.hue + 60) % 360,
-            sourceHct.chroma / 2,
-          ),
-      neutral: TonalPalette.fromHueAndChroma(
-        neuHct.hue,
-        Math.min(neuHct.chroma / 12, 4),
-      ),
-      "neutral-variant": TonalPalette.fromHueAndChroma(
-        nvHct.hue,
-        Math.min(nvHct.chroma / 6, 8),
-      ),
-    };
-
-    const jsonPalettes: Record<string, Record<string, string>> = {};
-
-    for (const [name, palette] of Object.entries(mtbPalettes)) {
-      const tones: Record<string, string> = {};
-      for (const tone of MTB_TONES) {
-        tones[tone.toString()] = hexFromArgb(palette.tone(tone)).toUpperCase();
-      }
-      jsonPalettes[name] = tones;
-    }
-
-    return jsonPalettes;
-  }
-
   function buildCoreColors(opts: {
     primary: string;
     secondary?: string;
@@ -298,6 +223,6 @@ export function buildJson(
     coreColors,
     extendedColors,
     schemes: buildJsonSchemes(),
-    palettes: palettes === "mtb" ? mtbPalettesToJson() : refPalettesToJson(),
+    palettes: refPalettesToJson(),
   };
 }

@@ -14,11 +14,8 @@ also gains the `error` palette, the custom-color palettes, and the in-between
 tones `toCss()` already emitted (4, 6, 12, 17, 22, 24, 87, 92, 94, 96): 28 tones
 per palette instead of 18.
 
-The previous palettes, value for value with Material Theme Builder's export, are
-one option away:
-
-```ts
-builder("#6750A4").toJson({ palettes: "mtb" });
-```
+Material Theme Builder's exported palettes are no longer reproduced: its
+maintainers say they are only there as reference, and they are not the palettes
+its own schemes are drawn from.
 
 `schemes`, `coreColors` and `extendedColors` are unchanged.

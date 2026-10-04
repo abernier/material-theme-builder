@@ -60,13 +60,8 @@ theme.toShadcnRegistryItem({ fallback: true });
 > the `--md-ref-palette-*` of `toCss()` (`error` and custom colors included, 28
 > tones). Material Theme Builder's own export holds other palettes -- five, at
 > 18 tones, which ignore the scheme variant and are not the palettes its
-> `schemes` come from. To get those instead, value for value:
->
-> ```ts
-> theme.toJson({ palettes: "mtb" });
-> ```
->
-> See [ADR 0001](docs/adr/0001-reference-palettes-are-the-scheme-palettes.md)
+> `schemes` come from. They are not reproduced: Material Theme Builder's
+> maintainers say they are only there as reference. See [ADR 0001](docs/adr/0001-reference-palettes-are-the-scheme-palettes.md)
 > for why.
 
 ## CLI

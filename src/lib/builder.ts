@@ -20,7 +20,7 @@ import { kebabCase, upperFirst } from "lodash-es";
 import { buildCss } from "./builder.css";
 import { buildFigmaTokens, buildFigmaVariables } from "./builder.figma";
 import { buildFlutter } from "./builder.flutter";
-import { buildJson, type JsonOptions } from "./builder.json";
+import { buildJson } from "./builder.json";
 import {
   buildShadcn,
   buildShadcnAliases,
@@ -32,7 +32,6 @@ import { DEFAULT_PREFIX, tokenNames } from "./tokens";
 
 // ─── Re-exports (types defined alongside their exporter) ─────────────────
 
-export type { JsonOptions } from "./builder.json";
 export type {
   ShadcnRegistryItem,
   ShadcnRegistryItemOptions,
@@ -295,7 +294,6 @@ export type BuilderContext = {
   hexCustomColors: HexCustomColor[];
 
   // Derived intermediates
-  sourceHct: Hct;
   effectiveSourceArgb: number;
   primaryHct: Hct;
   SchemeClass: SchemeConstructor;
@@ -552,7 +550,6 @@ export function builder(
   assertHexInputs(hexSource, cores, hexCustomColors);
 
   const sourceArgb = argbFromHex(hexSource);
-  const sourceHct = Hct.fromInt(sourceArgb);
 
   // Determine the effective source for harmonization
   // When primary is defined, it becomes the effective source
@@ -651,8 +648,8 @@ export function builder(
 
   // The palettes the system roles are drawn from: the reference palettes of
   // toCss() and toJson(). They follow the scheme variant (eg SchemeTonalSpot
-  // clamps chroma), which MTB's own JSON export does not -- see
-  // `toJson({ palettes: "mtb" })` for that.
+  // clamps chroma), which MTB's own JSON export palettes do not (see
+  // docs/adr/0001-reference-palettes-are-the-scheme-palettes.md).
   const allPalettes = {
     primary: lightScheme.primaryPalette,
     secondary: lightScheme.secondaryPalette,
@@ -715,7 +712,6 @@ export function builder(
     neutralVariant,
     error,
     hexCustomColors,
-    sourceHct,
     effectiveSourceArgb,
     primaryHct,
     SchemeClass,
@@ -729,7 +725,7 @@ export function builder(
 
   return {
     toCss: () => buildCss(ctx),
-    toJson: (options?: JsonOptions) => buildJson(ctx, options),
+    toJson: () => buildJson(ctx),
     toFigmaVariables: () => buildFigmaVariables(ctx),
     toFigmaTokens: () => buildFigmaTokens(ctx),
     toTailwind: (options?: TailwindOptions) => buildTailwind(ctx, options),
