@@ -1,11 +1,8 @@
-import {
-  hexFromArgb,
-  type TonalPalette,
-} from "@material/material-color-utilities";
+import { hexFromArgb } from "@material/material-color-utilities";
 import { kebabCase } from "lodash-es";
 
-import type { BuilderContext } from "./builder";
-import { deriveCustomPaletteName, STANDARD_TONES } from "./builder";
+import type { BuilderContext, RefPalettes } from "./builder";
+import { deriveCustomPaletteName } from "./builder";
 
 /**
  * Generate CSS custom properties (light + dark) from the builder context.
@@ -13,7 +10,7 @@ import { deriveCustomPaletteName, STANDARD_TONES } from "./builder";
 export function buildCss(ctx: BuilderContext) {
   const {
     prefix,
-    allPalettes,
+    refPalettes,
     mergedColorsLight,
     mergedColorsDark,
     tokenToPalette,
@@ -21,14 +18,13 @@ export function buildCss(ctx: BuilderContext) {
   } = ctx;
 
   // Build a lookup: hex → array of {paletteName, tone}
-  // Uses the same tone computation as generateTonalPaletteVars so that
-  // var() references resolve to the correct palette variable in each CSS rule.
+  // Reads the same refPalettes as generateTonalVars so that var() references
+  // resolve to the correct palette variable in each CSS rule.
   function buildRefPaletteLookup() {
     const lookup: Record<string, { paletteName: string; tone: number }[]> = {};
-    for (const [name, palette] of Object.entries(allPalettes)) {
-      const paletteName = kebabCase(name);
-      for (const tone of STANDARD_TONES) {
-        const hex = hexFromArgb(palette.tone(tone));
+    for (const [paletteName, tones] of Object.entries(refPalettes)) {
+      for (const { tone, argb } of tones) {
+        const hex = hexFromArgb(argb);
         if (!lookup[hex]) lookup[hex] = [];
         lookup[hex].push({ paletteName, tone });
       }
@@ -88,19 +84,18 @@ export function buildCss(ctx: BuilderContext) {
 
   function generateTonalPaletteVars(
     paletteName: string,
-    palette: TonalPalette,
+    tones: RefPalettes[string],
   ) {
-    return STANDARD_TONES.map((tone) => {
-      const color = palette.tone(tone);
-      return refPaletteVar(paletteName, tone, color);
-    }).join(" ");
+    return tones
+      .map(({ tone, argb }) => refPaletteVar(paletteName, tone, argb))
+      .join(" ");
   }
 
   // Generate tonal palette CSS variables for all colors (core + custom)
   function generateTonalVars() {
-    return Object.entries(allPalettes)
-      .map(([name, palette]) =>
-        generateTonalPaletteVars(kebabCase(name), palette),
+    return Object.entries(refPalettes)
+      .map(([paletteName, tones]) =>
+        generateTonalPaletteVars(paletteName, tones),
       )
       .join(" ");
   }

@@ -20,7 +20,7 @@ import { kebabCase, upperFirst } from "lodash-es";
 import { buildCss } from "./builder.css";
 import { buildFigmaTokens, buildFigmaVariables } from "./builder.figma";
 import { buildFlutter } from "./builder.flutter";
-import { buildJson } from "./builder.json";
+import { buildJson, type JsonOptions } from "./builder.json";
 import {
   buildShadcn,
   buildShadcnAliases,
@@ -32,6 +32,7 @@ import { DEFAULT_PREFIX, tokenNames } from "./tokens";
 
 // ─── Re-exports (types defined alongside their exporter) ─────────────────
 
+export type { JsonOptions } from "./builder.json";
 export type {
   ShadcnRegistryItem,
   ShadcnRegistryItemOptions,
@@ -271,6 +272,12 @@ type ColorDefinition = {
 
 type ColorPalettes = Record<string, TonalPalette>;
 
+/**
+ * The reference palettes, keyed by kebab-case palette name: each one's colors
+ * at every `STANDARD_TONES` tone, in that order.
+ */
+export type RefPalettes = Record<string, { tone: number; argb: number }[]>;
+
 // ─── Builder context ─────────────────────────────────────────────────────
 
 /** Shared state produced by builder() and consumed by output functions. */
@@ -295,6 +302,7 @@ export type BuilderContext = {
 
   // Computed outputs (shared across toCss, toJson, toFigma)
   allPalettes: Record<string, TonalPalette>;
+  refPalettes: RefPalettes;
   mergedColorsLight: Record<string, number>;
   mergedColorsDark: Record<string, number>;
   tokenToPalette: Record<string, string>;
@@ -455,6 +463,21 @@ function createColorPalette(
   }
 
   return TonalPalette.fromHueAndChroma(hct.hue, targetChroma);
+}
+
+// The reference palettes are, by definition, the palettes the system roles are
+// drawn from (see docs/adr/0001-reference-palettes-are-the-scheme-palettes.md).
+// Both `--{prefix}-ref-palette-*` in toCss() and `palettes` in toJson() are
+// read from here, so the two outputs cannot disagree (#175).
+function buildRefPalettes(allPalettes: Record<string, TonalPalette>) {
+  const refPalettes: RefPalettes = {};
+  for (const [name, palette] of Object.entries(allPalettes)) {
+    refPalettes[kebabCase(name)] = STANDARD_TONES.map((tone) => ({
+      tone,
+      argb: palette.tone(tone),
+    }));
+  }
+  return refPalettes;
 }
 
 // Maps each MaterialDynamicColors property to its source palette name
@@ -626,9 +649,10 @@ export function builder(
     darkScheme.errorPalette = errorPalette;
   }
 
-  // Scheme-transformed palettes used by toCss() for CSS variables.
-  // These match what MTB displays visually (eg SchemeTonalSpot clamps chroma),
-  // NOT what it exports in JSON (see rawPalettes inside toJson()).
+  // The palettes the system roles are drawn from: the reference palettes of
+  // toCss() and toJson(). They follow the scheme variant (eg SchemeTonalSpot
+  // clamps chroma), which MTB's own JSON export does not -- see
+  // `toJson({ palettes: "mtb" })` for that.
   const allPalettes = {
     primary: lightScheme.primaryPalette,
     secondary: lightScheme.secondaryPalette,
@@ -675,6 +699,8 @@ export function builder(
   ];
   const tokenToPalette = buildTokenToPaletteMap(schemePalettes, lightScheme);
 
+  const refPalettes = buildRefPalettes(allPalettes);
+
   const allPaletteNamesKebab = new Set(Object.keys(allPalettes).map(kebabCase));
 
   // ── Build context ─────────────────────────────────────────────────────
@@ -694,6 +720,7 @@ export function builder(
     primaryHct,
     SchemeClass,
     allPalettes,
+    refPalettes,
     mergedColorsLight,
     mergedColorsDark,
     tokenToPalette,
@@ -702,7 +729,7 @@ export function builder(
 
   return {
     toCss: () => buildCss(ctx),
-    toJson: () => buildJson(ctx),
+    toJson: (options?: JsonOptions) => buildJson(ctx, options),
     toFigmaVariables: () => buildFigmaVariables(ctx),
     toFigmaTokens: () => buildFigmaTokens(ctx),
     toTailwind: (options?: TailwindOptions) => buildTailwind(ctx, options),
