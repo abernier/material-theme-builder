@@ -1,0 +1,32 @@
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Pattern with colored shapes -->
+    <pattern id="pattern1" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+      <rect width="10" height="10" fill="#FF6B6B" />
+      <rect x="10" y="0" width="10" height="10" fill="#4ECDC4" />
+      <rect x="0" y="10" width="10" height="10" fill="#4ECDC4" />
+      <rect x="10" y="10" width="10" height="10" fill="#FFE66D" />
+    </pattern>
+    
+    <!-- Pattern with circles and strokes -->
+    <pattern id="pattern2" x="0" y="0" width="30" height="30" patternUnits="userSpaceOnUse">
+      <circle cx="15" cy="15" r="10" fill="#6750A4" stroke="#D0BCFF" stroke-width="2" />
+    </pattern>
+    
+    <!-- Pattern referencing a gradient -->
+    <linearGradient id="patternGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF6B6B" />
+      <stop offset="100%" stop-color="#4ECDC4" />
+    </linearGradient>
+    
+    <pattern id="pattern3" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+      <rect width="40" height="40" fill="url(#patternGrad)" />
+      <circle cx="20" cy="20" r="5" fill="#FFE66D" />
+    </pattern>
+  </defs>
+  
+  <!-- Shapes using patterns -->
+  <rect x="10" y="10" width="80" height="80" fill="url(#pattern1)" />
+  <circle cx="140" cy="50" r="40" fill="url(#pattern2)" />
+  <rect x="10" y="110" width="180" height="80" fill="url(#pattern3)" stroke="#6750A4" stroke-width="3" />
+</svg>

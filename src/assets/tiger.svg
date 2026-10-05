@@ -1,0 +1,332 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 900">
+  <defs>
+    <!-- Gradients pour le corps principal -->
+    <radialGradient id="tigerBody1" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#FFB366" />
+      <stop offset="50%" stop-color="#FF8C42" />
+      <stop offset="100%" stop-color="#E67E22" />
+    </radialGradient>
+    
+    <radialGradient id="tigerBody2" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FFA858" />
+      <stop offset="100%" stop-color="#D2691E" />
+    </radialGradient>
+    
+    <linearGradient id="tigerBelly" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFEFD5" />
+      <stop offset="50%" stop-color="#FFE4B5" />
+      <stop offset="100%" stop-color="#FFDAB9" />
+    </linearGradient>
+    
+    <!-- Gradients pour les rayures -->
+    <linearGradient id="stripe1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2C1810" />
+      <stop offset="50%" stop-color="#1A0F08" />
+      <stop offset="100%" stop-color="#000000" />
+    </linearGradient>
+    
+    <radialGradient id="stripe2" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#3D2817" />
+      <stop offset="100%" stop-color="#1A0F08" />
+    </radialGradient>
+    
+    <!-- Pattern de rayures complexe -->
+    <pattern id="stripePattern" x="0" y="0" width="40" height="50" patternUnits="userSpaceOnUse" patternTransform="rotate(15)">
+      <rect width="40" height="50" fill="url(#tigerBody1)" />
+      <path d="M 5,0 Q 8,12 7,25 Q 6,37 9,50" stroke="url(#stripe1)" stroke-width="6" fill="none" stroke-linecap="round" />
+      <path d="M 18,0 Q 21,15 19,30 Q 17,42 20,50" stroke="url(#stripe2)" stroke-width="7" fill="none" stroke-linecap="round" />
+      <path d="M 30,5 Q 32,20 31,35 Q 30,45 32,50" stroke="#000000" stroke-width="5" fill="none" stroke-linecap="round" />
+    </pattern>
+    
+    <!-- Gradients pour les yeux -->
+    <radialGradient id="eyeWhite" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="80%" stop-color="#F0F0F0" />
+      <stop offset="100%" stop-color="#E0E0E0" />
+    </radialGradient>
+    
+    <radialGradient id="eyeGreen" cx="40%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#ADFF2F" />
+      <stop offset="30%" stop-color="#90EE90" />
+      <stop offset="70%" stop-color="#32CD32" />
+      <stop offset="100%" stop-color="#228B22" />
+    </radialGradient>
+    
+    <radialGradient id="pupil" cx="30%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#4A4A4A" />
+      <stop offset="50%" stop-color="#2A2A2A" />
+      <stop offset="100%" stop-color="#000000" />
+    </radialGradient>
+    
+    <!-- Gradients pour le nez -->
+    <radialGradient id="nose" cx="40%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#FFB6C1" />
+      <stop offset="50%" stop-color="#FF69B4" />
+      <stop offset="100%" stop-color="#C71585" />
+    </radialGradient>
+    
+    <!-- Pattern pour la texture de fourrure -->
+    <pattern id="furTexture" x="0" y="0" width="8" height="8" patternUnits="userSpaceOnUse">
+      <rect width="8" height="8" fill="url(#tigerBody2)" />
+      <circle cx="2" cy="2" r="1" fill="#D2691E" opacity="0.4" />
+      <circle cx="6" cy="6" r="1" fill="#CD853F" opacity="0.3" />
+    </pattern>
+    
+    <!-- Gradients pour les oreilles -->
+    <linearGradient id="earOuter" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#CD853F" />
+      <stop offset="50%" stop-color="#D2691E" />
+      <stop offset="100%" stop-color="#8B4513" />
+    </linearGradient>
+    
+    <radialGradient id="earInner" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FFEFD5" />
+      <stop offset="50%" stop-color="#FFE4E1" />
+      <stop offset="100%" stop-color="#FFB6C1" />
+    </radialGradient>
+    
+    <!-- Gradient pour l'ombre -->
+    <radialGradient id="shadow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#000000" stop-opacity="0.4" />
+      <stop offset="50%" stop-color="#000000" stop-opacity="0.2" />
+      <stop offset="100%" stop-color="#000000" stop-opacity="0" />
+    </radialGradient>
+    
+    <!-- Pattern pour les griffes -->
+    <linearGradient id="claw" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="50%" stop-color="#F5F5DC" />
+      <stop offset="100%" stop-color="#DEB887" />
+    </linearGradient>
+    
+    <!-- Gradient pour la langue -->
+    <radialGradient id="tongue" cx="50%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#FF6B9D" />
+      <stop offset="50%" stop-color="#FF1493" />
+      <stop offset="100%" stop-color="#C71585" />
+    </radialGradient>
+    
+    <!-- Pattern pour les moustaches avec dégradé -->
+    <linearGradient id="whisker" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.9" />
+      <stop offset="80%" stop-color="#E8E8E8" stop-opacity="0.8" />
+      <stop offset="100%" stop-color="#D0D0D0" stop-opacity="0.5" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Fond avec dégradé ciel -->
+  <rect width="900" height="900" fill="#87CEEB" />
+  <rect width="900" height="300" fill="url(#tigerBelly)" opacity="0.3" />
+  
+  <!-- Sol avec herbe -->
+  <ellipse cx="450" cy="750" rx="350" ry="80" fill="#228B22" opacity="0.6" />
+  <ellipse cx="450" cy="780" rx="320" ry="60" fill="#32CD32" />
+  <ellipse cx="450" cy="800" rx="280" ry="40" fill="#90EE90" />
+  
+  <!-- Ombre du tigre -->
+  <ellipse cx="450" cy="740" rx="220" ry="60" fill="url(#shadow)" />
+  
+  <!-- Corps principal du tigre -->
+  <g id="tiger" transform="translate(450, 400)">
+    
+    <!-- Queue avec rayures -->
+    <g id="tail">
+      <path d="M 150,50 Q 200,20 240,-10 Q 260,-30 270,-50 Q 275,-60 280,-70" 
+            stroke="url(#tigerBody1)" stroke-width="35" fill="none" stroke-linecap="round" />
+      <ellipse cx="205" cy="10" rx="12" ry="18" fill="url(#stripe1)" transform="rotate(-25 205 10)" />
+      <ellipse cx="235" cy="-15" rx="12" ry="18" fill="url(#stripe2)" transform="rotate(-35 235 -15)" />
+      <ellipse cx="258" cy="-38" rx="12" ry="16" fill="#000000" transform="rotate(-40 258 -38)" />
+      <ellipse cx="275" cy="-60" rx="10" ry="14" fill="url(#stripe1)" transform="rotate(-45 275 -60)" />
+    </g>
+    
+    <!-- Corps avec pattern de rayures -->
+    <ellipse cx="0" cy="80" rx="130" ry="100" fill="url(#stripePattern)" />
+    
+    <!-- Ventre clair -->
+    <ellipse cx="0" cy="100" rx="85" ry="75" fill="url(#tigerBelly)" />
+    
+    <!-- Pattes arrière -->
+    <g id="backLegs">
+      <!-- Patte arrière gauche -->
+      <g transform="translate(-70, 140)">
+        <ellipse cx="0" cy="0" rx="28" ry="50" fill="url(#furTexture)" />
+        <ellipse cx="0" cy="45" rx="24" ry="15" fill="url(#tigerBody2)" />
+        <ellipse cx="0" cy="58" rx="22" ry="12" fill="#2C1810" />
+        <!-- Griffes -->
+        <ellipse cx="-8" cy="64" rx="3" ry="6" fill="url(#claw)" />
+        <ellipse cx="0" cy="65" rx="3" ry="6" fill="url(#claw)" />
+        <ellipse cx="8" cy="64" rx="3" ry="6" fill="url(#claw)" />
+      </g>
+      
+      <!-- Patte arrière droite -->
+      <g transform="translate(70, 140)">
+        <ellipse cx="0" cy="0" rx="28" ry="50" fill="url(#furTexture)" />
+        <ellipse cx="0" cy="45" rx="24" ry="15" fill="url(#tigerBody2)" />
+        <ellipse cx="0" cy="58" rx="22" ry="12" fill="#2C1810" />
+        <!-- Griffes -->
+        <ellipse cx="-8" cy="64" rx="3" ry="6" fill="url(#claw)" />
+        <ellipse cx="0" cy="65" rx="3" ry="6" fill="url(#claw)" />
+        <ellipse cx="8" cy="64" rx="3" ry="6" fill="url(#claw)" />
+      </g>
+    </g>
+    
+    <!-- Pattes avant -->
+    <g id="frontLegs">
+      <!-- Patte avant gauche -->
+      <g transform="translate(-55, 120)">
+        <ellipse cx="0" cy="0" rx="25" ry="55" fill="url(#tigerBody1)" />
+        <ellipse cx="-3" cy="20" rx="8" ry="20" fill="url(#stripe1)" transform="rotate(10 -3 20)" />
+        <ellipse cx="0" cy="48" rx="20" ry="12" fill="url(#tigerBelly)" />
+        <ellipse cx="0" cy="58" rx="18" ry="10" fill="#2C1810" />
+        <!-- Griffes -->
+        <ellipse cx="-8" cy="63" rx="2.5" ry="5" fill="url(#claw)" />
+        <ellipse cx="-3" cy="64" rx="2.5" ry="5" fill="url(#claw)" />
+        <ellipse cx="3" cy="64" rx="2.5" ry="5" fill="url(#claw)" />
+        <ellipse cx="8" cy="63" rx="2.5" ry="5" fill="url(#claw)" />
+      </g>
+      
+      <!-- Patte avant droite -->
+      <g transform="translate(55, 120)">
+        <ellipse cx="0" cy="0" rx="25" ry="55" fill="url(#tigerBody1)" />
+        <ellipse cx="3" cy="20" rx="8" ry="20" fill="url(#stripe2)" transform="rotate(-10 3 20)" />
+        <ellipse cx="0" cy="48" rx="20" ry="12" fill="url(#tigerBelly)" />
+        <ellipse cx="0" cy="58" rx="18" ry="10" fill="#2C1810" />
+        <!-- Griffes -->
+        <ellipse cx="-8" cy="63" rx="2.5" ry="5" fill="url(#claw)" />
+        <ellipse cx="-3" cy="64" rx="2.5" ry="5" fill="url(#claw)" />
+        <ellipse cx="3" cy="64" rx="2.5" ry="5" fill="url(#claw)" />
+        <ellipse cx="8" cy="63" rx="2.5" ry="5" fill="url(#claw)" />
+      </g>
+    </g>
+    
+    <!-- Cou et épaules -->
+    <ellipse cx="0" cy="20" rx="95" ry="80" fill="url(#tigerBody1)" />
+    
+    <!-- Tête -->
+    <g id="head" transform="translate(0, -60)">
+      
+      <!-- Tête principale -->
+      <ellipse cx="0" cy="0" rx="95" ry="90" fill="url(#tigerBody2)" />
+      
+      <!-- Oreilles -->
+      <g id="ears">
+        <!-- Oreille gauche -->
+        <g transform="translate(-65, -60)">
+          <ellipse cx="0" cy="0" rx="35" ry="45" fill="url(#earOuter)" transform="rotate(-25)" />
+          <ellipse cx="2" cy="5" rx="20" ry="25" fill="url(#earInner)" transform="rotate(-25)" />
+          <!-- Rayures dans l'oreille -->
+          <path d="M -8,-10 L -2,-5 L -6,5" stroke="url(#stripe1)" stroke-width="3" fill="none" transform="rotate(-25)" />
+        </g>
+        
+        <!-- Oreille droite -->
+        <g transform="translate(65, -60)">
+          <ellipse cx="0" cy="0" rx="35" ry="45" fill="url(#earOuter)" transform="rotate(25)" />
+          <ellipse cx="-2" cy="5" rx="20" ry="25" fill="url(#earInner)" transform="rotate(25)" />
+          <!-- Rayures dans l'oreille -->
+          <path d="M 8,-10 L 2,-5 L 6,5" stroke="url(#stripe2)" stroke-width="3" fill="none" transform="rotate(25)" />
+        </g>
+      </g>
+      
+      <!-- Rayures du front -->
+      <g id="foreheadStripes">
+        <ellipse cx="-55" cy="-20" rx="10" ry="25" fill="url(#stripe1)" transform="rotate(-30 -55 -20)" />
+        <ellipse cx="-35" cy="-30" rx="8" ry="30" fill="url(#stripe2)" transform="rotate(-15 -35 -30)" />
+        <ellipse cx="35" cy="-30" rx="8" ry="30" fill="url(#stripe1)" transform="rotate(15 35 -30)" />
+        <ellipse cx="55" cy="-20" rx="10" ry="25" fill="url(#stripe2)" transform="rotate(30 55 -20)" />
+      </g>
+      
+      <!-- Museau -->
+      <ellipse cx="0" cy="35" rx="65" ry="50" fill="url(#tigerBelly)" />
+      
+      <!-- Rayures des joues -->
+      <g id="cheekStripes">
+        <ellipse cx="-50" cy="15" rx="8" ry="18" fill="url(#stripe1)" transform="rotate(-20 -50 15)" />
+        <ellipse cx="-58" cy="30" rx="7" ry="16" fill="url(#stripe2)" transform="rotate(-25 -58 30)" />
+        <ellipse cx="50" cy="15" rx="8" ry="18" fill="url(#stripe1)" transform="rotate(20 50 15)" />
+        <ellipse cx="58" cy="30" rx="7" ry="16" fill="url(#stripe2)" transform="rotate(25 58 30)" />
+      </g>
+      
+      <!-- Nez -->
+      <g id="nose">
+        <path d="M 0,18 L -12,30 Q 0,36 12,30 Z" fill="url(#nose)" />
+        <ellipse cx="-4" cy="28" rx="3" ry="4" fill="#8B0000" />
+        <ellipse cx="4" cy="28" rx="3" ry="4" fill="#8B0000" />
+        <line x1="0" y1="30" x2="0" y2="42" stroke="#8B0000" stroke-width="3" />
+      </g>
+      
+      <!-- Yeux -->
+      <g id="eyes">
+        <!-- Œil gauche -->
+        <g transform="translate(-35, -8)">
+          <ellipse cx="0" cy="0" rx="25" ry="28" fill="url(#eyeWhite)" />
+          <ellipse cx="0" cy="0" rx="20" ry="23" fill="url(#eyeGreen)" />
+          <ellipse cx="2" cy="2" rx="10" ry="14" fill="url(#pupil)" />
+          <!-- Reflet -->
+          <ellipse cx="-3" cy="-5" rx="5" ry="7" fill="#FFFFFF" opacity="0.7" />
+          <!-- Paupière -->
+          <path d="M -25,-2 Q 0,-8 25,-2" stroke="#000000" stroke-width="2" fill="none" />
+        </g>
+        
+        <!-- Œil droit -->
+        <g transform="translate(35, -8)">
+          <ellipse cx="0" cy="0" rx="25" ry="28" fill="url(#eyeWhite)" />
+          <ellipse cx="0" cy="0" rx="20" ry="23" fill="url(#eyeGreen)" />
+          <ellipse cx="-2" cy="2" rx="10" ry="14" fill="url(#pupil)" />
+          <!-- Reflet -->
+          <ellipse cx="3" cy="-5" rx="5" ry="7" fill="#FFFFFF" opacity="0.7" />
+          <!-- Paupière -->
+          <path d="M -25,-2 Q 0,-8 25,-2" stroke="#000000" stroke-width="2" fill="none" />
+        </g>
+      </g>
+      
+      <!-- Moustaches -->
+      <g id="whiskers" stroke="url(#whisker)" stroke-width="2.5" fill="none" stroke-linecap="round">
+        <!-- Moustaches gauches -->
+        <path d="M -50,30 Q -85,25 -120,20" />
+        <path d="M -50,36 Q -90,36 -125,36" />
+        <path d="M -50,42 Q -85,46 -120,52" />
+        
+        <!-- Moustaches droites -->
+        <path d="M 50,30 Q 85,25 120,20" />
+        <path d="M 50,36 Q 90,36 125,36" />
+        <path d="M 50,42 Q 85,46 120,52" />
+      </g>
+      
+      <!-- Points de moustaches -->
+      <g id="whiskerDots" fill="#2C1810">
+        <circle cx="-50" cy="30" r="3" />
+        <circle cx="-50" cy="36" r="3" />
+        <circle cx="-50" cy="42" r="3" />
+        <circle cx="50" cy="30" r="3" />
+        <circle cx="50" cy="36" r="3" />
+        <circle cx="50" cy="42" r="3" />
+      </g>
+      
+      <!-- Bouche -->
+      <g id="mouth">
+        <path d="M 0,42 Q -15,52 -20,50" stroke="#8B0000" stroke-width="3" fill="none" />
+        <path d="M 0,42 Q 15,52 20,50" stroke="#8B0000" stroke-width="3" fill="none" />
+      </g>
+      
+      <!-- Langue (optionnelle) -->
+      <ellipse cx="0" cy="50" rx="12" ry="8" fill="url(#tongue)" />
+      <path d="M 0,46 Q -5,50 0,54 Q 5,50 0,46" stroke="#C71585" stroke-width="1" fill="none" />
+      
+      <!-- Dents -->
+      <g id="teeth" fill="#FFFFFF">
+        <path d="M -18,38 L -15,45 L -12,38" />
+        <path d="M 12,38 L 15,45 L 18,38" />
+      </g>
+    </g>
+  </g>
+  
+  <!-- Éléments de décor -->
+  <g id="grass">
+    <path d="M 100,820 Q 105,780 100,740" stroke="#228B22" stroke-width="4" fill="none" />
+    <path d="M 150,830 Q 155,790 150,750" stroke="#32CD32" stroke-width="4" fill="none" />
+    <path d="M 200,825 Q 205,785 200,745" stroke="#90EE90" stroke-width="3" fill="none" />
+    <path d="M 700,825 Q 705,785 700,745" stroke="#228B22" stroke-width="4" fill="none" />
+    <path d="M 750,830 Q 755,790 750,750" stroke="#32CD32" stroke-width="4" fill="none" />
+    <path d="M 800,820 Q 805,780 800,740" stroke="#90EE90" stroke-width="3" fill="none" />
+  </g>
+</svg>
