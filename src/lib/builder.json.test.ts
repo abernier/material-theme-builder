@@ -15,6 +15,7 @@ import fixture5 from "../fixtures/material-theme-builder/try-05.json";
 import {
   builder,
   type MtbConfig,
+  schemeNames,
   schemeToVariant,
   STANDARD_TONES,
   tokenNames,
@@ -451,5 +452,62 @@ describe("builder › toJson().schemes background and onBackground", () => {
         }
       }
     });
+  }
+});
+
+// ─── schemes vs toCss(), with core-color overrides ───────────────────────
+//
+// `toJson().schemes` and the `--md-sys-color-*` of toCss() are the same roles,
+// read from one scheme: with core-color overrides, whatever the `scheme`.
+
+describe("builder › toJson().schemes with core-color overrides", () => {
+  const overrideInputs = inputs.filter(({ label }) =>
+    ["fixture 2", "fixture 3", "fixture 4", "fixture 5"].includes(label),
+  );
+
+  it("should cover every core-color override", () => {
+    const overridden = new Set(
+      overrideInputs.flatMap(({ options = {} }) =>
+        (
+          [
+            "primary",
+            "secondary",
+            "tertiary",
+            "error",
+            "neutral",
+            "neutralVariant",
+          ] as const
+        ).filter((core) => options[core] !== undefined),
+      ),
+    );
+    expect([...overridden].sort()).toEqual([
+      "error",
+      "neutral",
+      "neutralVariant",
+      "primary",
+      "secondary",
+      "tertiary",
+    ]);
+  });
+
+  for (const input of overrideInputs) {
+    for (const scheme of schemeNames) {
+      it(`should equal the roles of toCss() in every scheme (${input.label}, ${scheme})`, () => {
+        const options = { ...input.options, scheme };
+        const { schemes } = builder(input.source, options).toJson();
+
+        for (const { name, isDark, contrast } of jsonSchemeLevels) {
+          const css = builder(input.source, { ...options, contrast }).toCss();
+
+          const cssRoles = Object.fromEntries(
+            Object.keys(schemes[name] ?? {}).map((role) => [
+              role,
+              sysColorFromCss(css, kebabCase(role), isDark),
+            ]),
+          );
+          expect(schemes[name], name).toEqual(cssRoles);
+        }
+      });
+    }
   }
 });
