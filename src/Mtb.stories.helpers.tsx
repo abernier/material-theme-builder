@@ -37,8 +37,8 @@ import type { Mtb } from "./Mtb";
  */
 export const mtbArgTypes = {
   source: { control: "color" },
-  // Disabled while `colorMatch` is on, which takes precedence over it for the
-  // core colors: see `SchemeControlLock` in .storybook/manager.ts
+  // Disabled while `colorMatch` is on, which takes precedence over it: see
+  // `SchemeControlLock` in .storybook/manager.ts
   scheme: {
     type: { name: "enum", value: [...schemeNames] },
     control: "select",

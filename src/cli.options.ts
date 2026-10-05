@@ -108,7 +108,7 @@ export function addThemeOptions(command: Command) {
     )
     .option(
       "--color-match",
-      "Stay true to the color inputs: the content variant per core color, whatever --scheme (custom colors unaffected)",
+      "Stay true to the color inputs: the content variant per core color and custom color, whatever --scheme",
       DEFAULT_COLOR_MATCH,
     )
     .option(

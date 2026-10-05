@@ -1,11 +1,14 @@
 import {
   argbFromHex,
+  Blend,
   DynamicScheme,
+  Hct,
   hexFromArgb,
   MaterialDynamicColors,
-  type TonalPalette,
+  SchemeContent,
+  TonalPalette,
 } from "@material/material-color-utilities";
-import { kebabCase, omit, upperFirst } from "lodash-es";
+import { kebabCase, mapValues, omit, upperFirst } from "lodash-es";
 import { describe, expect, it } from "vitest";
 import colorMatchFixture from "../fixtures/material-theme-builder/try-01.colormatch.json";
 import fixture from "../fixtures/material-theme-builder/try-01.json";
@@ -19,6 +22,7 @@ import colorMatchFixture5 from "../fixtures/material-theme-builder/try-05.colorm
 import fixture5 from "../fixtures/material-theme-builder/try-05.json";
 import {
   builder,
+  DEFAULT_BLEND,
   DEFAULT_COLOR_MATCH,
   type MtbConfig,
   schemeNames,
@@ -589,64 +593,147 @@ describe("builder › toJson() with colorMatch", () => {
   }
 
   // MTB has no scheme selector: Color match off is tonal spot, on is content.
-  // So `colorMatch` wins over `scheme`.
+  // So `colorMatch` wins over `scheme`, for the custom colors as well.
   it.each(schemeNames)("should take precedence over scheme: %s", (scheme) => {
     const { source, options } = inputByLabel("fixture 2, colorMatch");
-    const coreColors = omit(options, "customColors");
+    expect(options?.customColors).not.toHaveLength(0);
 
-    const withScheme = builder(source, { ...coreColors, scheme });
-    const withoutScheme = builder(source, coreColors);
+    const withScheme = builder(source, { ...options, scheme });
+    const withoutScheme = builder(source, options);
 
     expect(withScheme.toJson()).toEqual(withoutScheme.toJson());
     expect(withScheme.toCss()).toEqual(withoutScheme.toCss());
   });
 
   // Custom colors have no fixture to conform to (MTB's JSON does not export
-  // their roles), and are left as they are without colorMatch -- following
-  // `scheme`, which the core colors no longer do.
+  // their roles). They follow MTB's own code instead, which reads them from
+  // the scheme of the custom color (harmonized, when `blend` is set): its
+  // primary, onPrimary, primaryContainer and onPrimaryContainer. That scheme is
+  // the Content variant with Color match on (see
+  // docs/adr/0003-color-match-is-the-content-variant-per-core-color.md).
   const customColorInputs = inputs.filter(
     ({ options }) => options?.customColors?.length,
   );
 
-  it("should cover custom colors under another scheme than the default", () => {
-    expect(customColorInputs.map(({ options }) => options?.scheme)).toEqual([
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      "content",
+  it("should cover custom colors with and without blend, under another scheme and contrast than the default", () => {
+    expect(
+      customColorInputs.map(({ options }) => [
+        options?.scheme,
+        options?.contrast,
+        ...(options?.customColors ?? []).map((color) => color.blend),
+      ]),
+    ).toEqual([
+      [undefined, undefined, true, true],
+      [undefined, undefined, false, false],
+      [undefined, undefined, true],
+      [undefined, undefined, true, false],
+      ["content", 0.5, true],
     ]);
   });
 
-  for (const { label, source, options } of customColorInputs) {
-    it(`should leave the custom-color palettes and roles untouched (${label})`, () => {
-      const off = builder(source, options);
-      const on = builder(source, { ...options, colorMatch: true });
+  // The color a custom color is built from, and the four roles builder()
+  // renders for it
+  function customColorsOf({ source, options = {} }: Input) {
+    const sourceArgb = argbFromHex(options.primary ?? source);
 
-      const customColorNames = (options?.customColors ?? []).map(
-        (color) => color.name,
-      );
-      expect(customColorNames).not.toHaveLength(0);
-      expect(Object.keys(on.customColorRoles)).toEqual(customColorNames);
+    return (options.customColors ?? []).map((color) => ({
+      name: color.name,
+      colorHct: Hct.fromInt(
+        (color.blend ?? DEFAULT_BLEND)
+          ? Blend.harmonize(argbFromHex(color.hex), sourceArgb)
+          : argbFromHex(color.hex),
+      ),
+      roleNames: {
+        color: color.name,
+        onColor: `on${upperFirst(color.name)}`,
+        container: `${color.name}Container`,
+        onContainer: `on${upperFirst(color.name)}Container`,
+      },
+    }));
+  }
 
-      for (const customColorName of customColorNames) {
-        const paletteName = kebabCase(customColorName);
-        expect(on.toJson().palettes[paletteName], customColorName).toEqual(
-          off.toJson().palettes[paletteName],
-        );
+  for (const input of customColorInputs) {
+    const { label, source, options } = input;
 
-        const customTokenNames = Object.keys(
-          on.customColorRoles[customColorName] ?? {},
-        );
-        expect(customTokenNames).toHaveLength(4);
-        for (const tokenName of customTokenNames) {
-          expect(on.mergedColorsLight[tokenName], tokenName).toBe(
-            off.mergedColorsLight[tokenName],
-          );
-          expect(on.mergedColorsDark[tokenName], tokenName).toBe(
-            off.mergedColorsDark[tokenName],
-          );
+    it(`should render each custom color with the primary roles of the Content scheme of its own color (${label})`, () => {
+      const theme = builder(source, { ...options, colorMatch: true });
+      const { palettes } = theme.toJson();
+
+      const customColors = customColorsOf(input);
+      expect(customColors).not.toHaveLength(0);
+
+      for (const { name, colorHct, roleNames } of customColors) {
+        for (const isDark of [false, true]) {
+          const rendered = isDark
+            ? theme.mergedColorsDark
+            : theme.mergedColorsLight;
+          // At the standard contrast, whatever `contrast`: the roles of a
+          // custom color do not follow it, with or without colorMatch
+          const content = new SchemeContent(colorHct, isDark, 0);
+
+          expect(
+            mapValues(roleNames, (roleName) => hex(rendered[roleName] ?? 0)),
+            `${name}, ${isDark ? "dark" : "light"}`,
+          ).toEqual({
+            color: hex(MaterialDynamicColors.primary.getArgb(content)),
+            onColor: hex(MaterialDynamicColors.onPrimary.getArgb(content)),
+            container: hex(
+              MaterialDynamicColors.primaryContainer.getArgb(content),
+            ),
+            onContainer: hex(
+              MaterialDynamicColors.onPrimaryContainer.getArgb(content),
+            ),
+          });
         }
+
+        // The palette is the primary palette of that scheme: the custom color
+        // keeps its own chroma
+        const { primaryPalette } = new SchemeContent(colorHct, false, 0);
+        expect(palettes[kebabCase(name)], name).toEqual(
+          Object.fromEntries(
+            STANDARD_TONES.map((tone) => [
+              tone.toString(),
+              hex(primaryPalette.tone(tone)),
+            ]),
+          ),
+        );
+      }
+    });
+
+    // Without colorMatch, nothing changes: a custom color has the hue of its
+    // own color, the chroma of the scheme's primary palette, and its roles at
+    // their standard tones
+    it(`should leave the custom colors as they are without colorMatch (${label})`, () => {
+      const theme = builder(source, options);
+      const { palettes } = theme.toJson();
+
+      for (const { name, colorHct, roleNames } of customColorsOf(input)) {
+        const palette = TonalPalette.fromHueAndChroma(
+          colorHct.hue,
+          theme.allPalettes.primary.chroma,
+        );
+
+        expect(palettes[kebabCase(name)], name).toEqual(
+          Object.fromEntries(
+            STANDARD_TONES.map((tone) => [
+              tone.toString(),
+              hex(palette.tone(tone)),
+            ]),
+          ),
+        );
+
+        expect(
+          mapValues(roleNames, (roleName) => [
+            hex(theme.mergedColorsLight[roleName] ?? 0),
+            hex(theme.mergedColorsDark[roleName] ?? 0),
+          ]),
+          name,
+        ).toEqual({
+          color: [hex(palette.tone(40)), hex(palette.tone(80))],
+          onColor: [hex(palette.tone(100)), hex(palette.tone(20))],
+          container: [hex(palette.tone(90)), hex(palette.tone(30))],
+          onContainer: [hex(palette.tone(30)), hex(palette.tone(90))],
+        });
       }
     });
   }

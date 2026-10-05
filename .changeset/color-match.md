@@ -15,7 +15,12 @@ with Color match on (`background` and `onBackground` aside, as before). Also
 available as `--color-match` on the CLI (`shadcn-apply` included) and as the
 `colorMatch` prop of `<Mtb>`.
 
+Custom colors follow it too, as in Material Theme Builder: each one keeps its
+own chroma, and its four roles are the `primary`, `onPrimary`,
+`primaryContainer` and `onPrimaryContainer` of the content variant of its own
+color (harmonized first, when `blend` is set).
+
 It takes precedence over `scheme`: Material Theme Builder has no scheme selector,
-Color match off is `tonalSpot` and on is `content`. Custom colors are unaffected.
+Color match off is `tonalSpot` and on is `content`.
 
 The default stays `false`, with which nothing changes.

@@ -116,7 +116,9 @@ the per-color rule `toJson()` had:
   single rule.
 
 - Custom colors are unaffected: their palette is still their hue at the chroma
-  of the base scheme's primary palette.
+  of the base scheme's primary palette. (Under `colorMatch` they keep their own
+  chroma instead, see
+  [ADR 0003](./0003-color-match-is-the-content-variant-per-core-color.md).)
 - A test compares `toJson().schemes` with the roles of `toCss()` for every
   scheme in `schemeNames`, with overrides, at the six light/dark and contrast
   levels (`src/lib/builder.json.test.ts`).

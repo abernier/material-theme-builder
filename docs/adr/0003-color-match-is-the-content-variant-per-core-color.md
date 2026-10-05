@@ -31,6 +31,12 @@ The palettes are exactly those of `scheme: "content"` under ADR 0004's per-color
 rule; what Color match adds is the roles of an overridden accent, read from the
 scheme of its own color (`colorMatchAccentRoles`).
 
+A custom color follows the same rule as an overridden accent (see
+[Custom colors](#custom-colors)): its palette is the primary palette of
+`SchemeContent` of its own color, and its four roles are that scheme's
+`primary`, `onPrimary`, `primaryContainer` and `onPrimaryContainer`
+(`colorMatchCustomColorScheme`).
+
 ## Why
 
 - `SchemeFidelity` does not reproduce the fixtures (37 roles off on `try-01`,
@@ -44,14 +50,63 @@ scheme of its own color (`colorMatchAccentRoles`).
   `scheme` given along with `colorMatch: true` has no MTB reading, and
   `colorMatch` takes precedence.
 
+## Custom colors
+
+MTB's JSON export says nothing on the roles of a custom color ("extended color"
+in MTB): its `extendedColors` hold a name, a color, a description and
+`harmonized`. We first concluded there was nothing to conform to, and left custom
+colors as they are without `colorMatch`. There is something: the code of MTB's
+web app. Its bundle was read, not run:
+`https://material-foundation.github.io/material-theme-builder/main.dart.js`
+(Flutter web compiled with dart2js), as fetched on 2026-10-05, sha256
+`1a8b8b05bab6814fa5a4b235928d3caba2fe54748cfe68299eacc4b76c673a1b`. Line numbers
+are those of the file as served; the names are minified.
+
+- One function builds every scheme (`Hy`, l.28416-28727), from a brightness,
+  the Color match flag, a contrast level and the core colors. It makes the
+  scheme of a color with a factory (l.118526-118529) that is `SchemeContent`
+  when Color match is on (`b8j`, l.28199-28212) and `SchemeTonalSpot` when it is
+  off (`b8k`, l.28290-28299). That is the per core color algorithm above, read
+  from the source this time.
+- An extended color is rendered by calling that same function with the
+  extended color as its only color, and taking `primary`, `onPrimary`,
+  `primaryContainer` and `onPrimaryContainer` from the result as `color`,
+  `onColor`, `colorContainer` and `onColorContainer`: on the scheme boards of
+  the page (l.120413-120431), in the Flutter export (l.118303-118314,
+  l.118724-118749) and in the Compose, Android Views and Web exports (`b9J`,
+  l.28810-28829). Light and dark are the brightness argument.
+
+So with Color match on, the roles of a custom color are the primary roles of
+`SchemeContent` of that color, and with it off those of `SchemeTonalSpot`. MTB
+does not agree with itself on two other points, which do not depend on Color
+match:
+
+|                                                  | Color the scheme is built from                                                                   | Contrast                                        |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------ | ----------------------------------------------- |
+| Scheme boards, Flutter export                    | harmonized with `primary` when "Harmonize" is on (l.118285-118302)                               | always 0, in all six schemes of the Flutter one |
+| Compose, Android Views and Web exports (l.28814) | the color as given, even when "Harmonize" is on (the harmonized one is only exported as `value`) | 0, 0.5 and 1                                    |
+
+On those two points `colorMatch` keeps what custom colors did before it: the
+color is harmonized when `blend` is set, and the roles do not follow `contrast`.
+With Color match off that was already MTB's rendering on screen: tonal spot's
+primary roles at standard contrast are the tones 40, 100, 90 and 30 (80, 20, 30
+and 90 in dark) of a palette at chroma 36.
+
 ## Consequences
 
-- `colorMatch` overrides `scheme` for the core colors. Default stays `false`,
-  with which nothing changes.
-- Custom colors are unaffected: their palettes and roles are what they are
-  without `colorMatch`, for the same inputs (`scheme` included, which they still
-  follow). MTB's JSON does not export extended-color roles, so there is nothing
-  to conform to.
+- `colorMatch` overrides `scheme`, for the core colors and the custom colors.
+  Default stays `false`, with which nothing changes.
+- Without `colorMatch`, a custom color has the chroma of the primary palette of
+  `scheme`; with it, its own. Its roles then sit at the tones Content gives the
+  primary roles (the container near the tone of the color itself) instead of
+  their standard tones. They are still `DynamicColor`s that take a tone of the
+  custom color's palette, so
+  [ADR 0001](./0001-reference-palettes-are-the-scheme-palettes.md) holds for
+  them too.
+- The roles of a custom color do not follow `contrast`, with or without
+  `colorMatch`. MTB's Compose, Android Views and Web exports do render them at
+  medium and high contrast; reproducing that is a separate decision, for both
+  modes at once.
 - [ADR 0001](./0001-reference-palettes-are-the-scheme-palettes.md) holds: the
   reference palettes are the palettes the roles are drawn from. For an
   overridden accent, the exported palette is the primary palette of

@@ -113,8 +113,8 @@ export type MtbConfig = {
   /** Source color in hex format (e.g., "#6750A4") used to generate the color scheme */
   source: string;
   /**
-   * Color scheme variant. Default: "tonalSpot". Ignored for the core colors
-   * when `colorMatch` is on.
+   * Color scheme variant. Default: "tonalSpot". Ignored when `colorMatch` is
+   * on.
    */
   scheme?: SchemeName;
   /** Contrast level from -1.0 (reduced) to 1.0 (increased). Default: 0 (standard) */
@@ -132,16 +132,15 @@ export type MtbConfig = {
   /** Error color - used for error states. Overrides the default palette generation. */
   error?: string;
   /**
-   * Color match mode for core colors -- "Color match - Stay true to my color
-   * inputs" in Material Theme Builder. Default: `DEFAULT_COLOR_MATCH` (false).
+   * Color match mode -- "Color match - Stay true to my color inputs" in
+   * Material Theme Builder. Default: `DEFAULT_COLOR_MATCH` (false).
    *
-   * When true, each core color is rendered with the Content variant of its own
-   * input, which keeps the input's chroma and puts the input itself in the
-   * container role. When false, the core colors follow `scheme`.
+   * When true, each core color and each custom color is rendered with the
+   * Content variant of its own input, which keeps the input's chroma and puts
+   * the input itself in the container role. When false, they follow `scheme`.
    *
    * It takes precedence over `scheme`: Material Theme Builder has no scheme
-   * selector, Color match off is tonal spot and on is content. Custom colors
-   * are not affected: they are rendered as they are without `colorMatch`.
+   * selector, Color match off is tonal spot and on is content.
    */
   colorMatch?: boolean;
   /**
@@ -171,7 +170,7 @@ export type McuConfig = MtbConfig;
 export const DEFAULT_SCHEME = "tonalSpot" satisfies SchemeName;
 /** Default contrast level (standard). */
 export const DEFAULT_CONTRAST = 0;
-/** Default color match mode — off, the core colors follow the scheme. */
+/** Default color match mode — off, the colors follow the scheme. */
 export const DEFAULT_COLOR_MATCH = false;
 /** Default custom colors (none). */
 export const DEFAULT_CUSTOM_COLORS: HexCustomColor[] = [];
@@ -492,36 +491,57 @@ function customColorRoleNames(colorname: string) {
 //
 // Based on Material Design 3 spec: https://m3.material.io/styles/color/roles
 //
+// Under `colorMatch`, `colorMatchScheme` is the scheme of the custom color's
+// own color, light or dark (see colorMatchCustomColorScheme): each role then
+// takes the tone of its primary counterpart on that scheme, instead of its
+// standard tone.
+//
 // returns: { customColor1: DynamicColor, onCustomColor1: DynamicColor, ... }
 //
 
-function buildCustomColorRoles(colorname: string, palette: TonalPalette) {
+function buildCustomColorRoles(
+  colorname: string,
+  palette: TonalPalette,
+  colorMatchScheme?: (isDark: boolean) => DynamicScheme,
+) {
   const getPaletteForColor = () => palette;
   const names = customColorRoleNames(colorname);
+  const { primary, onPrimary, primaryContainer, onPrimaryContainer } =
+    MaterialDynamicColors;
+
+  // The tone of a role: under `colorMatch`, the one of its primary counterpart
+  // on the scheme of the custom color; its standard tone otherwise
+  const toneOf = (
+    primaryRole: DynamicColor,
+    standardTone: (s: DynamicScheme) => number,
+  ) =>
+    colorMatchScheme
+      ? (s: DynamicScheme) => primaryRole.getTone(colorMatchScheme(s.isDark))
+      : standardTone;
 
   return {
     [names.color]: new DynamicColor(
       names.color,
       getPaletteForColor,
-      (s) => (s.isDark ? 80 : 40), // Main color: lighter in dark mode, darker in light mode
+      toneOf(primary, (s) => (s.isDark ? 80 : 40)), // Main color: lighter in dark mode, darker in light mode
       true, // background
     ),
     [names.onColor]: new DynamicColor(
       names.onColor,
       getPaletteForColor,
-      (s) => (s.isDark ? 20 : 100), // Text on main color: high contrast (dark on light, light on dark)
+      toneOf(onPrimary, (s) => (s.isDark ? 20 : 100)), // Text on main color: high contrast (dark on light, light on dark)
       false,
     ),
     [names.container]: new DynamicColor(
       names.container,
       getPaletteForColor,
-      (s) => (s.isDark ? 30 : 90), // Container: subtle variant (darker in dark mode, lighter in light mode)
+      toneOf(primaryContainer, (s) => (s.isDark ? 30 : 90)), // Container: subtle variant (darker in dark mode, lighter in light mode)
       true, // background
     ),
     [names.onContainer]: new DynamicColor(
       names.onContainer,
       getPaletteForColor,
-      (s) => (s.isDark ? 90 : 30), // Text on container: high contrast against container background
+      toneOf(onPrimaryContainer, (s) => (s.isDark ? 90 : 30)), // Text on container: high contrast against container background
       false,
     ),
   };
@@ -735,20 +755,60 @@ function colorMatchAccentRoles(
 }
 
 //
-// The palette of a custom color: its hue -- once harmonized with the effective
-// source, when `blend` is set -- at the chroma of the scheme's primary palette.
+// The color a custom color is built from: its own, harmonized with the
+// effective source when `blend` is set.
 //
-function createCustomColorPalette(
-  color: Required<HexCustomColor>,
-  sourceArgb: number,
-  chroma: number,
-) {
+function customColorArgb(color: Required<HexCustomColor>, sourceArgb: number) {
   const colorArgb = argbFromHex(color.hex);
-  const harmonizedArgb = color.blend
-    ? Blend.harmonize(colorArgb, sourceArgb)
-    : colorArgb;
+  return color.blend ? Blend.harmonize(colorArgb, sourceArgb) : colorArgb;
+}
 
-  return TonalPalette.fromHueAndChroma(Hct.fromInt(harmonizedArgb).hue, chroma);
+//
+// The palette of a custom color: the hue of its color (see customColorArgb), at
+// the chroma of the scheme's primary palette.
+//
+// Under `colorMatch` no `chroma` is given and the color keeps its own: that is
+// the primary palette of the Content scheme of the color.
+//
+function createCustomColorPalette(colorArgb: number, chroma?: number) {
+  const colorHct = Hct.fromInt(colorArgb);
+
+  return TonalPalette.fromHueAndChroma(colorHct.hue, chroma ?? colorHct.chroma);
+}
+
+//
+// What Material Theme Builder's "Color match" does to a custom color: its
+// roles are the primary roles of the Content scheme of its own color, like
+// those of an overridden accent (see colorMatchAccentRoles and
+// docs/adr/0003-color-match-is-the-content-variant-per-core-color.md).
+//
+// Like there, that scheme is built from palettes already resolved rather than
+// with `new SchemeContent()`: the primary roles read the scheme's source color
+// and its primary palette only, and `palette` is that primary palette.
+//
+// It is built at the standard contrast: the roles of a custom color do not
+// follow `contrast`, with or without `colorMatch`.
+//
+// returns: the scheme, light or dark
+//
+function colorMatchCustomColorScheme(
+  colorArgb: number,
+  palette: TonalPalette,
+  palettes: CorePalettes,
+) {
+  const schemeAt = (isDark: boolean) =>
+    buildScheme(
+      "content",
+      colorArgb,
+      { ...palettes, primary: palette },
+      isDark,
+      DEFAULT_CONTRAST,
+    );
+
+  const light = schemeAt(false);
+  const dark = schemeAt(true);
+
+  return (isDark: boolean) => (isDark ? dark : light);
 }
 
 // The reference palettes are, by definition, the palettes the system roles are
@@ -860,9 +920,9 @@ export function builder(
   if (cores.neutralVariant)
     overrides.neutralVariant = argbFromHex(cores.neutralVariant);
 
-  // Color match takes precedence over `scheme` for the core colors: it is the
-  // Content variant (MTB has no scheme selector: off is tonal spot, on is
-  // content), see docs/adr/0003-color-match-is-the-content-variant-per-core-color.md
+  // Color match takes precedence over `scheme`: it is the Content variant (MTB
+  // has no scheme selector: off is tonal spot, on is content), see
+  // docs/adr/0003-color-match-is-the-content-variant-per-core-color.md
   const coreScheme = colorMatch ? "content" : scheme;
 
   const corePalettes = resolveCorePalettes(
@@ -895,17 +955,23 @@ export function builder(
   const dark = renderScheme(true, contrast);
   const lightScheme = light.scheme;
 
-  // Custom colors do not follow Color match: they keep the chroma of the
-  // primary palette of `scheme`, as without `colorMatch`
+  // The color each custom color is built from
+  const customColors = hexCustomColors.map((color) => ({
+    name: color.name,
+    argb: customColorArgb(color, effectiveSourceArgb),
+  }));
+
+  // Custom colors follow Color match too: they keep their own chroma under it,
+  // instead of taking the one of the scheme's primary palette
   const customColorChroma = colorMatch
-    ? resolveCorePalettes(scheme, effectiveSourceArgb, {}).primary.chroma
+    ? undefined
     : corePalettes.primary.chroma;
 
   // Custom color palettes, keyed by custom color name
   const customColorPalettes: ColorPalettes = Object.fromEntries(
-    hexCustomColors.map((color) => [
-      color.name,
-      createCustomColorPalette(color, effectiveSourceArgb, customColorChroma),
+    customColors.map(({ name, argb }) => [
+      name,
+      createCustomColorPalette(argb, customColorChroma),
     ]),
   );
 
@@ -927,13 +993,20 @@ export function builder(
   // The roles of each custom color, keyed by custom color name, then by token
   // name -- the custom-color counterpart of MaterialDynamicColors
   const customColorRoles = Object.fromEntries(
-    hexCustomColors.map((color) => [
-      color.name,
-      buildCustomColorRoles(
-        color.name,
-        getPalette(customColorPalettes, color.name),
-      ),
-    ]),
+    customColors.map(({ name, argb }) => {
+      const palette = getPalette(customColorPalettes, name);
+
+      return [
+        name,
+        buildCustomColorRoles(
+          name,
+          palette,
+          colorMatch
+            ? colorMatchCustomColorScheme(argb, palette, corePalettes)
+            : undefined,
+        ),
+      ];
+    }),
   );
 
   const mergedColorsLight = mergeBaseAndCustomColors(light, customColorRoles);
