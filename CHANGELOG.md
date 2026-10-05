@@ -1,5 +1,90 @@
 # material-theme-builder
 
+## 5.2.0
+
+### Minor Changes
+
+- 754c4b6: `colorMatch` is now implemented: Material Theme Builder's "Color match - Stay
+  true to my color inputs". It was declared but ignored.
+
+  ```ts
+  builder("#6750A4", { secondary: "#B03A3A", colorMatch: true });
+  ```
+
+  With `colorMatch: true`, each core color is rendered with the content variant of
+  its own input, and `toJson().schemes` matches Material Theme Builder's export
+  with Color match on (`background` and `onBackground` aside, as before). Also
+  available as `--color-match` on the CLI (`shadcn-apply` included) and as the
+  `colorMatch` prop of `<Mtb>`.
+
+  Custom colors follow it too, as in Material Theme Builder: each one keeps its
+  own chroma, and its four roles are the `primary`, `onPrimary`,
+  `primaryContainer` and `onPrimaryContainer` of the content variant of its own
+  color (harmonized first, when `blend` is set).
+
+  It takes precedence over `scheme`: Material Theme Builder has no scheme selector,
+  Color match off is `tonalSpot` and on is `content`.
+
+  The default stays `false`, with which nothing changes.
+
+- a62cce2: `builder()` now throws on a custom color whose name collides with a system role,
+  a core palette or another custom color, e.g.
+  `Invalid customColors[0].name: 'secondary'. Its role 'secondary' collides with the system role 'secondary'.`
+
+  Such a color used to silently replace part of the core family: one named
+  `secondary` took over `secondary`, `onSecondary`, `secondaryContainer`,
+  `onSecondaryContainer` and the `secondary` reference palette in `toCss()`, while
+  `secondaryFixed`, `secondaryFixedDim` and `toJson().schemes` kept the core
+  color's.
+
+  Names are compared as the exporters spell them, kebab-cased, so `Secondary`,
+  `neutral variant` (the `neutral-variant` palette) and `brand` next to `Brand` are
+  refused too. So is a name that lands on a Tailwind shade, like `primary500`:
+  `toTailwind()` would declare `--color-primary-500` twice.
+
+  Rename the custom color, or use the core-color override (`secondary: "#..."`) if
+  replacing the core color was the intent. `<Mtb>` throws the same error, and the
+  CLI prints it in one line.
+
+- e446186: `material-theme-builder/react` exports the stories' color-scheme poster —
+  `Poster`, `Scheme` and `Shades` — to render under an `<Mtb>`:
+
+  ```tsx
+  import { Mtb, Poster, Scheme, Shades } from "material-theme-builder/react";
+
+  <Mtb source="#769CDF">
+    <Poster style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+      <Scheme theme="light" title="Light scheme" />
+      <Scheme theme="dark" title="Dark scheme" />
+      <Shades />
+    </Poster>
+  </Mtb>;
+  ```
+
+  Its layout is inline styles, so it needs no Tailwind, nor any `@source` for
+  `node_modules`.
+
+### Patch Changes
+
+- a62cce2: `toCss()` and `toJson().schemes` now agree when a core color (`secondary`,
+  `tertiary`, `error`, `neutral`, `neutralVariant`) is overridden under the
+  `expressive`, `fidelity` or `content` scheme. They used to derive the override's
+  palette in two different ways, so the same role could differ between the CSS and
+  the JSON.
+
+  Both now read one scheme, in which an override takes the palette the scheme
+  variant builds from its own color (as `toJson().schemes` already did), instead of
+  its hue at the chroma of the source. Rendered colors change for `expressive`,
+  `fidelity` and `content` with core-color overrides: the `--md-sys-color-*` and
+  `--md-ref-palette-*` of `toCss()`, `toJson().palettes` and every other output.
+  Under `fidelity` and `content` an override keeps its own chroma; under
+  `expressive` its hue is rotated like a source color's, and `primary: X` now
+  renders like `source: X`.
+
+  `toJson().schemes` is unchanged, and so is every output under `tonalSpot` (the
+  default), `monochrome`, `neutral` and `vibrant`. See
+  `docs/adr/0004-a-core-color-override-takes-the-palette-of-its-own-scheme.md`.
+
 ## 5.1.0
 
 ### Minor Changes
