@@ -3,30 +3,24 @@
 /**
  * The color-scheme poster of Material Theme Builder's stories -- every M3 role
  * of a theme (`Scheme`) and its tonal palettes (`Shades`), laid out the way the
- * official app's poster is.
- *
- * Also published as a shadcn registry item, so a project can install this very
- * file rather than hand-roll a copy of it:
- *
- * ```sh
- * npx shadcn@latest add https://unpkg.com/material-theme-builder/r/scheme.json
- * ```
- *
- * Hence the imports: only what a consumer resolves too -- `cn` from the `utils`
- * registry item, and the package itself by name. The stories import it from
- * here, so they and the registry ship the same component.
+ * official app's poster is. Exported from `material-theme-builder/react`; the
+ * stories draw it too.
  *
  * The swatches read nothing from React: they paint from the
  * `--md-sys-color-*` and `--md-ref-palette-*` custom properties `<Mtb>` (or
- * `toCss()`) declares. Tailwind v4 is needed for the layout classes.
+ * `toCss()`) declares.
+ *
+ * Its layout needs no Tailwind: it is shipped compiled, in `node_modules`,
+ * where a consumer's Tailwind does not look for class names -- so it is written
+ * as inline styles, sized by the custom properties `Poster` declares. Only
+ * `Scheme`'s opt-in `tw` mode uses utilities.
  *
  * @example
  * ```tsx
- * import { Mtb } from "material-theme-builder/react";
- * import { Poster, Scheme, Shades } from "@/components/mtb/scheme";
+ * import { Mtb, Poster, Scheme, Shades } from "material-theme-builder/react";
  *
  * <Mtb source="#769CDF">
- *   <Poster className="flex flex-col gap-6">
+ *   <Poster style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
  *     <Scheme theme="light" title="Light scheme" />
  *     <Scheme theme="dark" title="Dark scheme" />
  *     <Shades />
@@ -37,21 +31,60 @@
 
 import { kebabCase, startCase, upperFirst } from "lodash-es";
 import {
+  createContext,
+  useContext,
+  type ComponentProps,
+  type CSSProperties,
+} from "react";
+import {
   STANDARD_TONES,
   type HexCustomColor,
   type TokenName,
-} from "material-theme-builder";
-import { createContext, useContext, type ComponentProps } from "react";
+} from "./lib/builder";
 
-import { cn } from "@/lib/utils";
+/** The class names given, space-separated -- `undefined` if there is none. */
+function classNames(...names: (string | false | undefined)[]) {
+  return names.filter(Boolean).join(" ") || undefined;
+}
 
-function Foo({ children, ...props }: ComponentProps<"div">) {
+/**
+ * A grid of `columns` equal columns -- or of that `grid-template-columns`, if a
+ * string -- and `rows` equal rows. Equal as Tailwind's `grid-cols-*` makes
+ * them: `minmax(0, 1fr)`, so a long label cannot widen its column.
+ */
+function grid(columns: number | string, rows?: number): CSSProperties {
+  return {
+    display: "grid",
+    gridTemplateColumns:
+      typeof columns === "number"
+        ? `repeat(${columns}, minmax(0, 1fr))`
+        : columns,
+    gridTemplateRows: rows ? `repeat(${rows}, minmax(0, 1fr))` : undefined,
+  };
+}
+
+/** A column of children `gap` apart. */
+function column(gap: string): CSSProperties {
+  return { display: "flex", flexDirection: "column", gap };
+}
+
+/**
+ * The height of a tall cell -- a main role, a surface row. `Poster` lowers it
+ * on a narrow screen.
+ */
+const cell: CSSProperties = { height: "var(--cell, 5rem)" };
+
+/** The heading over a scheme or a palette. */
+const heading: CSSProperties = {
+  margin: 0,
+  fontSize: "inherit",
+  fontWeight: 700,
+  textTransform: "capitalize",
+};
+
+function Foo({ children, style, ...props }: ComponentProps<"div">) {
   return (
-    <div
-      data-id="Foo"
-      {...props}
-      className={cn("grid grid-cols-1 gap-0", props.className)}
-    >
+    <div data-id="Foo" {...props} style={{ ...grid(1), ...style }}>
       {children}
     </div>
   );
@@ -161,7 +194,7 @@ function Swatch({
   return (
     <div
       title={name}
-      className={cn(tw && twClasses[role], className)}
+      className={classNames(tw && twClasses[role], className)}
       style={
         tw
           ? style
@@ -183,31 +216,33 @@ function PosterStyle({ notext }: { notext?: boolean }) {
     <style>{`
       @scope {
         & {
-          --gap1:0.5rem;
-          --gap2:1px;
-
-          --fs:${notext ? 0 : ".8rem"};
-          @media (max-width: 768px) {--fs:0;}
+          --gap1: 0.5rem;
+          --gap2: 1px;
+          --cell: 5rem;
+          --tone: 4rem;
+          --pad: 1rem;
+          --fs: ${notext ? 0 : "0.8rem"};
 
           @media (max-width: 768px) {
-            --gap1:2px;
+            --gap1: 2px;
+            --cell: 45px;
+            --tone: 45px;
+            --fs: 0;
           }
-
+          @media (width < 48rem) {
+            --pad: 0.5rem;
+          }
 
           p {
-            font-family:sans-serif;
-            color:white;mix-blend-mode:difference;
-            white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+            font-family: sans-serif;
+            color: white;
+            mix-blend-mode: difference;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
 
-            font-size:var(--fs);
-            margin:.35rem;
-
-          }
-
-          [class*="h-20"],[class*="h-16"] {
-            @media (max-width: 768px) {
-              height:45px;
-            }
+            font-size: var(--fs);
+            margin: 0.35rem;
           }
         }
       }
@@ -220,8 +255,8 @@ function PosterStyle({ notext }: { notext?: boolean }) {
  * label size and cell heights they paint with.
  *
  * Without it they still render, but with no gaps and unstyled labels -- so
- * wrap them all in one, the way the stories do. Lay it out with `className`
- * like any `div`, e.g. `flex flex-col gap-6`.
+ * wrap them all in one, the way the stories do. Lay it out like any `div`,
+ * e.g. as a column with some gap between the schemes.
  */
 export function Poster({
   notext = false,
@@ -240,14 +275,22 @@ export function Poster({
 }
 
 /**
- * The page colors each `theme` puts behind the poster. The `dark` class is
- * what flips the swatches themselves: `<Mtb>` declares the dark values under
- * `.dark`.
+ * The page colors each `theme` puts behind the poster. They only frame it: the
+ * `dark` class `Scheme` adds is what flips the swatches themselves, `<Mtb>`
+ * declaring the dark values under `.dark`.
  */
-const themeClasses = {
-  light: "p-2 md:p-4 bg-[var(--light)] text-[var(--dark)]",
-  dark: "dark p-2 md:p-4 bg-[var(--dark)] text-[var(--light)]",
-} satisfies Record<"light" | "dark", string>;
+const themeStyles = {
+  light: {
+    padding: "var(--pad, 1rem)",
+    background: "#fbfbfb",
+    color: "#1c1b1f",
+  },
+  dark: {
+    padding: "var(--pad, 1rem)",
+    background: "#1c1b1f",
+    color: "#fbfbfb",
+  },
+} satisfies Record<"light" | "dark", CSSProperties>;
 
 /**
  * The four roles the current spec no longer lists, as an extra row under
@@ -271,7 +314,7 @@ function SurfaceExtraRoles({
   if (!background && !surfaceVariant && !surfaceTint) return null;
 
   return (
-    <div className="grid grid-cols-4 grid-rows-1">
+    <div style={grid(4, 1)}>
       {background && (
         <>
           <Swatch role="background" />
@@ -279,9 +322,11 @@ function SurfaceExtraRoles({
         </>
       )}
       {surfaceVariant && (
-        <Swatch role="surfaceVariant" className="col-start-3" />
+        <Swatch role="surfaceVariant" style={{ gridColumnStart: 3 }} />
       )}
-      {surfaceTint && <Swatch role="surfaceTint" className="col-start-4" />}
+      {surfaceTint && (
+        <Swatch role="surfaceTint" style={{ gridColumnStart: 4 }} />
+      )}
     </div>
   );
 }
@@ -301,6 +346,7 @@ export function Scheme({
   tw = false,
   children,
   className,
+  style,
   ...props
 }: {
   /** Heading displayed above the scheme. */
@@ -312,7 +358,10 @@ export function Scheme({
    * Off by default: Tailwind is optional here, so the stories are better proof
    * of the theme when they do without it. Only the Tailwind story turns it on —
    * that one is precisely about the utilities resolving. Needs the
-   * `material-theme-builder/tailwind` plugin.
+   * `material-theme-builder/tailwind` plugin, and a Tailwind that scans this
+   * package for the utilities -- which it does not do in `node_modules` unless
+   * told to: `@source "../node_modules/material-theme-builder/dist/react.js";`
+   * (relative to the stylesheet).
    */
   tw?: boolean;
   /** The custom colors to show, as `<Mtb>` got them. */
@@ -396,16 +445,17 @@ export function Scheme({
   return (
     <TwContext.Provider value={tw}>
       <div
-        className={cn(
-          "flex flex-col gap-4 [--light:#fbfbfb] [--dark:#1c1b1f]",
-          theme && themeClasses[theme],
-          className,
-        )}
+        className={classNames(theme === "dark" && "dark", className)}
+        style={{
+          ...column("1rem"),
+          ...(theme && themeStyles[theme]),
+          ...style,
+        }}
         {...props}
       >
-        {title && <h3 className="font-bold capitalize">{title}</h3>}
+        {title && <h3 style={heading}>{title}</h3>}
 
-        <div className="grid grid-cols-[3fr_1fr] gap-(--gap1)">
+        <div style={{ ...grid("3fr 1fr"), gap: "var(--gap1)" }}>
           {
             //
             //  █████
@@ -416,29 +466,29 @@ export function Scheme({
             //
           }
 
-          <div className="grid grid-cols-3 grid-rows-2 gap-(--gap2)">
+          <div style={{ ...grid(3, 2), gap: "var(--gap2)" }}>
             <Foo>
-              <Swatch role="primary" className="h-20" />
+              <Swatch role="primary" style={cell} />
               <Swatch role="onPrimary" />
             </Foo>
             <Foo>
-              <Swatch role="secondary" className="h-20" />
+              <Swatch role="secondary" style={cell} />
               <Swatch role="onSecondary" />
             </Foo>
             <Foo>
-              <Swatch role="tertiary" className="h-20" />
+              <Swatch role="tertiary" style={cell} />
               <Swatch role="onTertiary" />
             </Foo>
             <Foo>
-              <Swatch role="primaryContainer" className="h-20" />
+              <Swatch role="primaryContainer" style={cell} />
               <Swatch role="onPrimaryContainer" />
             </Foo>
             <Foo>
-              <Swatch role="secondaryContainer" className="h-20" />
+              <Swatch role="secondaryContainer" style={cell} />
               <Swatch role="onSecondaryContainer" />
             </Foo>
             <Foo>
-              <Swatch role="tertiaryContainer" className="h-20" />
+              <Swatch role="tertiaryContainer" style={cell} />
               <Swatch role="onTertiaryContainer" />
             </Foo>
           </div>
@@ -453,13 +503,13 @@ export function Scheme({
             //
           }
 
-          <div className="grid grid-cols-1 grid-rows-2 gap-(--gap2)">
+          <div style={{ ...grid(1, 2), gap: "var(--gap2)" }}>
             <Foo>
-              <Swatch role="error" className="h-20" />
+              <Swatch role="error" style={cell} />
               <Swatch role="onError" />
             </Foo>
             <Foo>
-              <Swatch role="errorContainer" className="h-20" />
+              <Swatch role="errorContainer" style={cell} />
               <Swatch role="onErrorContainer" />
             </Foo>
           </div>
@@ -476,33 +526,33 @@ export function Scheme({
 
           {fixedAccents && (
             <>
-              <div className="grid grid-cols-3 grid-rows-1 gap-(--gap2)">
+              <div style={{ ...grid(3, 1), gap: "var(--gap2)" }}>
                 <Foo>
-                  <FooTop className="h-20 grid grid-cols-2 grid-rows-1">
+                  <FooTop style={{ ...cell, ...grid(2, 1) }}>
                     <Swatch role="primaryFixed" />
                     <Swatch role="primaryFixedDim" />
                   </FooTop>
-                  <FooBottom className="grid grid-cols-1 grid-rows-2">
+                  <FooBottom style={grid(1, 2)}>
                     <Swatch role="onPrimaryFixed" />
                     <Swatch role="onPrimaryFixedVariant" />
                   </FooBottom>
                 </Foo>
                 <Foo>
-                  <FooTop className="h-20 grid grid-cols-2 grid-rows-1">
+                  <FooTop style={{ ...cell, ...grid(2, 1) }}>
                     <Swatch role="secondaryFixed" />
                     <Swatch role="secondaryFixedDim" />
                   </FooTop>
-                  <FooBottom className="grid grid-cols-1 grid-rows-2">
+                  <FooBottom style={grid(1, 2)}>
                     <Swatch role="onSecondaryFixed" />
                     <Swatch role="onSecondaryFixedVariant" />
                   </FooBottom>
                 </Foo>
                 <Foo>
-                  <FooTop className="h-20 grid grid-cols-2 grid-rows-1">
+                  <FooTop style={{ ...cell, ...grid(2, 1) }}>
                     <Swatch role="tertiaryFixed" />
                     <Swatch role="tertiaryFixedDim" />
                   </FooTop>
-                  <FooBottom className="grid grid-cols-1 grid-rows-2">
+                  <FooBottom style={grid(1, 2)}>
                     <Swatch role="onTertiaryFixed" />
                     <Swatch role="onTertiaryFixedVariant" />
                   </FooBottom>
@@ -533,20 +583,20 @@ export function Scheme({
             //
           }
 
-          <div className="grid grid-cols-1 gap-(--gap2)">
-            <div className="h-20 grid grid-cols-3 grid-rows-1">
+          <div style={{ ...grid(1), gap: "var(--gap2)" }}>
+            <div style={{ ...cell, ...grid(3, 1) }}>
               <Swatch role="surfaceDim" />
               <Swatch role="surface" />
               <Swatch role="surfaceBright" />
             </div>
-            <div className="h-20 grid grid-cols-5 grid-rows-1">
+            <div style={{ ...cell, ...grid(5, 1) }}>
               <Swatch role="surfaceContainerLowest" />
               <Swatch role="surfaceContainerLow" />
               <Swatch role="surfaceContainer" />
               <Swatch role="surfaceContainerHigh" />
               <Swatch role="surfaceContainerHighest" />
             </div>
-            <div className="grid grid-cols-4 grid-rows-1">
+            <div style={grid(4, 1)}>
               <Swatch role="onSurface" />
               <Swatch role="onSurfaceVariant" />
               <Swatch role="outline" />
@@ -569,15 +619,15 @@ export function Scheme({
             //
           }
 
-          <div className="flex flex-col gap-1">
+          <div style={column("0.25rem")}>
             <Foo>
-              <Swatch role="inverseSurface" className="h-20" />
+              <Swatch role="inverseSurface" style={cell} />
               <Swatch role="inverseOnSurface" />
             </Foo>
             <Foo>
               <Swatch role="inversePrimary" />
             </Foo>
-            <div className="grid grid-cols-2 gap-(--gap2)">
+            <div style={{ ...grid(2), gap: "var(--gap2)" }}>
               <Swatch role="scrim" />
               <Swatch role="shadow" />
             </div>
@@ -593,14 +643,14 @@ export function Scheme({
           //
         }
         {customColors && customColors.length > 0 && (
-          <div className="flex flex-col gap-(--gap2)">
+          <div style={column("var(--gap2)")}>
             {customColors?.map((customColor) => (
-              <div key={customColor.name} className="grid grid-cols-4">
+              <div key={customColor.name} style={grid(4)}>
                 <Foo>
                   <FooTop
                     title={kebabCase(customColor.name)}
-                    className="h-20"
                     style={{
+                      ...cell,
                       backgroundColor: `var(--md-sys-color-${kebabCase(customColor.name)})`,
                     }}
                   >
@@ -610,8 +660,8 @@ export function Scheme({
                 <Foo>
                   <FooTop
                     title={`on-${kebabCase(customColor.name)}`}
-                    className="h-20"
                     style={{
+                      ...cell,
                       backgroundColor: `var(--md-sys-color-on-${kebabCase(customColor.name)})`,
                     }}
                   >
@@ -621,8 +671,8 @@ export function Scheme({
                 <Foo>
                   <FooTop
                     title={`${kebabCase(customColor.name)}-container`}
-                    className="h-20"
                     style={{
+                      ...cell,
                       backgroundColor: `var(--md-sys-color-${kebabCase(customColor.name)}-container)`,
                     }}
                   >
@@ -632,8 +682,8 @@ export function Scheme({
                 <Foo>
                   <FooTop
                     title={`on-${kebabCase(customColor.name)}-container`}
-                    className="h-20"
                     style={{
+                      ...cell,
                       backgroundColor: `var(--md-sys-color-on-${kebabCase(customColor.name)}-container)`,
                     }}
                   >
@@ -665,7 +715,7 @@ export function Shades({
   customColors?: HexCustomColor[];
 }) {
   return (
-    <div className="flex flex-col gap-(--gap2)">
+    <div style={column("var(--gap2)")}>
       {[
         ...[
           "primary",
@@ -680,14 +730,14 @@ export function Shades({
       ].map(({ name, isCustom }) => (
         <div key={name}>
           {!noTitle && (
-            <h3 className="font-bold capitalize">
+            <h3 style={heading}>
               {isCustom ? upperFirst(name) : name.replace("-", " ")}
             </h3>
           )}
 
           <div
-            className="grid"
             style={{
+              display: "grid",
               gridTemplateColumns: `repeat(${STANDARD_TONES.length}, 1fr)`,
             }}
           >
@@ -697,8 +747,11 @@ export function Shades({
                 <div
                   key={tone}
                   title={`${isCustom ? kebabCase(name) : name}-${tone}`}
-                  className="h-16 flex items-center justify-center"
                   style={{
+                    height: "var(--tone, 4rem)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
                     backgroundColor: `var(--md-ref-palette-${isCustom ? kebabCase(name) : name}-${tone})`,
                   }}
                 >

@@ -1,7 +1,6 @@
 import type { Meta } from "@storybook/react-vite";
 import { useState, type ComponentProps } from "react";
 import { Fab } from "./components/m3/Fab";
-import { Poster, Scheme, Shades } from "./components/mtb/scheme";
 import { ExportButton } from "./ExportButton";
 import {
   DEFAULT_CONTRAST,
@@ -11,6 +10,7 @@ import {
   type MtbConfig,
 } from "./lib/builder";
 import type { Mtb } from "./Mtb";
+import { Poster, Scheme, Shades } from "./Scheme";
 
 /**
  * `<Mtb>`'s props as controls, shared by every story that themes with them.
@@ -104,40 +104,46 @@ function TailwindCustomColors() {
   return (
     <div className="flex flex-col gap-(--gap2)">
       <div className="grid grid-cols-4">
-        <div className="h-20 bg-myCustomColor1" title="myCustomColor1">
+        <div className="h-(--cell) bg-myCustomColor1" title="myCustomColor1">
           <p>MyCustomColor1</p>
         </div>
-        <div className="h-20 bg-on-myCustomColor1" title="on-myCustomColor1">
+        <div
+          className="h-(--cell) bg-on-myCustomColor1"
+          title="on-myCustomColor1"
+        >
           <p>On MyCustomColor1</p>
         </div>
         <div
-          className="h-20 bg-myCustomColor1-container"
+          className="h-(--cell) bg-myCustomColor1-container"
           title="myCustomColor1-container"
         >
           <p>MyCustomColor1 Container</p>
         </div>
         <div
-          className="h-20 bg-on-myCustomColor1-container"
+          className="h-(--cell) bg-on-myCustomColor1-container"
           title="on-myCustomColor1-container"
         >
           <p>On MyCustomColor1 Container</p>
         </div>
       </div>
       <div className="grid grid-cols-4">
-        <div className="h-20 bg-myCustomColor2" title="myCustomColor2">
+        <div className="h-(--cell) bg-myCustomColor2" title="myCustomColor2">
           <p>MyCustomColor2</p>
         </div>
-        <div className="h-20 bg-on-myCustomColor2" title="on-myCustomColor2">
+        <div
+          className="h-(--cell) bg-on-myCustomColor2"
+          title="on-myCustomColor2"
+        >
           <p>On MyCustomColor2</p>
         </div>
         <div
-          className="h-20 bg-myCustomColor2-container"
+          className="h-(--cell) bg-myCustomColor2-container"
           title="myCustomColor2-container"
         >
           <p>MyCustomColor2 Container</p>
         </div>
         <div
-          className="h-20 bg-on-myCustomColor2-container"
+          className="h-(--cell) bg-on-myCustomColor2-container"
           title="on-myCustomColor2-container"
         >
           <p>On MyCustomColor2 Container</p>

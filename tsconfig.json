@@ -3,10 +3,7 @@
     /* Path aliases (shadcn) */
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
-      // The package's own name, for what is written the way a consumer writes
-      // it: `src/components/mtb/`, shipped as a shadcn registry item.
-      "material-theme-builder": ["./src/index.ts"]
+      "@/*": ["./src/*"]
     },
     /* Base Options: */
     "esModuleInterop": true,
