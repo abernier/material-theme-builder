@@ -32,6 +32,7 @@ import {
   CORE_PALETTES,
   DEFAULT_PREFIX,
   SHADE_TO_TONE,
+  type TokenName,
   tokenNames,
 } from "./tokens";
 
@@ -111,7 +112,10 @@ const schemesMap = {
 export type MtbConfig = {
   /** Source color in hex format (e.g., "#6750A4") used to generate the color scheme */
   source: string;
-  /** Color scheme variant. Default: "tonalSpot" */
+  /**
+   * Color scheme variant. Default: "tonalSpot". Ignored for the core colors
+   * when `colorMatch` is on.
+   */
   scheme?: SchemeName;
   /** Contrast level from -1.0 (reduced) to 1.0 (increased). Default: 0 (standard) */
   contrast?: number;
@@ -128,12 +132,16 @@ export type MtbConfig = {
   /** Error color - used for error states. Overrides the default palette generation. */
   error?: string;
   /**
-   * Color match mode for core colors.
-   * When true, stays true to input colors without harmonization.
-   * When false (default), colors may be adjusted for better harmonization.
-   * Corresponds to "Color match - Stay true to my color inputs" in Material Theme Builder.
+   * Color match mode for core colors -- "Color match - Stay true to my color
+   * inputs" in Material Theme Builder. Default: `DEFAULT_COLOR_MATCH` (false).
    *
-   * @deprecated Not yet implemented. This prop is currently ignored.
+   * When true, each core color is rendered with the Content variant of its own
+   * input, which keeps the input's chroma and puts the input itself in the
+   * container role. When false, the core colors follow `scheme`.
+   *
+   * It takes precedence over `scheme`: Material Theme Builder has no scheme
+   * selector, Color match off is tonal spot and on is content. Custom colors
+   * are not affected: they are rendered as they are without `colorMatch`.
    */
   colorMatch?: boolean;
   /**
@@ -163,6 +171,8 @@ export type McuConfig = MtbConfig;
 export const DEFAULT_SCHEME = "tonalSpot" satisfies SchemeName;
 /** Default contrast level (standard). */
 export const DEFAULT_CONTRAST = 0;
+/** Default color match mode — off, the core colors follow the scheme. */
+export const DEFAULT_COLOR_MATCH = false;
 /** Default custom colors (none). */
 export const DEFAULT_CUSTOM_COLORS: HexCustomColor[] = [];
 /** Default blend mode — harmonize custom colors with source. */
@@ -369,6 +379,18 @@ type CorePalettes = {
 
 type ColorPalettes = Record<string, TonalPalette>;
 
+/** The system roles of a scheme, as ARGB integers keyed by token name. */
+type SystemRoles = Record<TokenName, number>;
+
+/**
+ * The scheme rendered at one level: its system roles, and the scheme holding
+ * the palettes they are drawn from.
+ *
+ * The roles are not always the scheme's own: under `colorMatch`, those of an
+ * overridden accent are read from the scheme of the accent's own color.
+ */
+export type RenderedScheme = { scheme: DynamicScheme; roles: SystemRoles };
+
 /**
  * The reference palettes, keyed by kebab-case palette name: each one's colors
  * at every `STANDARD_TONES` tone, in that order.
@@ -395,7 +417,7 @@ export type BuilderContext = {
   // The rendered scheme at any level -- the one construction behind
   // mergedColorsLight/Dark, for the exporters that need other levels than the
   // configured one (toJson() exports six)
-  renderScheme: (isDark: boolean, contrast: number) => DynamicScheme;
+  renderScheme: (isDark: boolean, contrast: number) => RenderedScheme;
 
   // Computed outputs (shared across toCss, toJson, toFigma)
   allPalettes: Record<string, TonalPalette>;
@@ -506,26 +528,29 @@ function buildCustomColorRoles(colorname: string, palette: TonalPalette) {
 }
 
 //
+// Base colors (all listed in tokenNames), as the scheme renders them
+//
+// returns: { primary: 0xFF6200EE, onPrimary: 0xFFFFFFFF, ... }
+//
+function systemRoles(scheme: DynamicScheme) {
+  // Cast: toRecord() is typed by Object.fromEntries(), which forgets the keys
+  return toRecord(tokenNames, (tokenName) => {
+    const dynamicColor = MaterialDynamicColors[tokenName];
+    const argb = dynamicColor.getArgb(scheme);
+    return [tokenName, argb];
+  }) as SystemRoles;
+}
+
+//
 // Merge the base Material Dynamic Colors with custom colors
 //
 // returns: { primary: 0xFF6200EE, onPrimary: 0xFFFFFFFF, ..., customColor1: 0xFF6200EF, customColor2: 0x00FF00, ... }
 //
 
 function mergeBaseAndCustomColors(
-  scheme: DynamicScheme,
+  { scheme, roles: baseVars }: RenderedScheme,
   customColorRoles: Record<string, Record<string, DynamicColor>>,
-) {
-  //
-  // Base colors (all listed in tokenNames)
-  //
-  // returns: { primary: 0xFF6200EE, onPrimary: 0xFFFFFFFF, ... }
-  //
-  const baseVars = toRecord(tokenNames, (tokenName) => {
-    const dynamicColor = MaterialDynamicColors[tokenName];
-    const argb = dynamicColor.getArgb(scheme);
-    return [tokenName, argb];
-  });
-
+): Record<string, number> {
   //
   // Custom colors: get the ARGB values using the scheme - exactly like core
   // colors do
@@ -627,6 +652,88 @@ function buildScheme(
   return scheme;
 }
 
+// The roles of each accent, mapped to the primary role they are read from on
+// the Content scheme of the accent's own color (see colorMatchAccentRoles).
+const accentRolesFromPrimary = {
+  secondary: {
+    secondary: "primary",
+    onSecondary: "onPrimary",
+    secondaryContainer: "primaryContainer",
+    onSecondaryContainer: "onPrimaryContainer",
+    secondaryFixed: "primaryFixed",
+    secondaryFixedDim: "primaryFixedDim",
+    onSecondaryFixed: "onPrimaryFixed",
+    onSecondaryFixedVariant: "onPrimaryFixedVariant",
+  },
+  tertiary: {
+    tertiary: "primary",
+    onTertiary: "onPrimary",
+    tertiaryContainer: "primaryContainer",
+    onTertiaryContainer: "onPrimaryContainer",
+    tertiaryFixed: "primaryFixed",
+    tertiaryFixedDim: "primaryFixedDim",
+    onTertiaryFixed: "onPrimaryFixed",
+    onTertiaryFixedVariant: "onPrimaryFixedVariant",
+  },
+  error: {
+    error: "primary",
+    onError: "onPrimary",
+    errorContainer: "primaryContainer",
+    onErrorContainer: "onPrimaryContainer",
+  },
+} satisfies Record<
+  "secondary" | "tertiary" | "error",
+  Partial<Record<TokenName, TokenName>>
+>;
+
+//
+// What Material Theme Builder's "Color match" adds to the Content variant: the
+// roles of each overridden accent (`secondary`, `tertiary`, `error`), at one
+// level (see docs/adr/0003-color-match-is-the-content-variant-per-core-color.md).
+//
+// The palettes are already those of the Content variant per core color (see
+// resolveCorePalettes). The roles of an overridden accent are not the ones a
+// single scheme holding those palettes renders, though: the Content container
+// tones follow the scheme's source color, which has to be the accent's own
+// color. So they are the primary roles of the Content scheme of that color.
+//
+// That scheme is built from the palettes already resolved rather than with
+// `new SchemeContent()`, which would derive all of them again at every level
+// (the expensive part). The primary roles read the scheme's source color and
+// its primary palette only, and `palettes[accent]` is that primary palette.
+//
+function colorMatchAccentRoles(
+  overrides: CoreOverrides,
+  palettes: CorePalettes,
+  isDark: boolean,
+  contrast: number,
+) {
+  const roles: Partial<SystemRoles> = {};
+
+  for (const accent of ["secondary", "tertiary", "error"] as const) {
+    const argb = overrides[accent];
+    const palette = palettes[accent];
+    if (argb === undefined || palette === undefined) continue;
+
+    const accentScheme = buildScheme(
+      "content",
+      argb,
+      { ...palettes, primary: palette },
+      isDark,
+      contrast,
+    );
+
+    for (const [tokenName, primaryTokenName] of Object.entries(
+      accentRolesFromPrimary[accent],
+    )) {
+      roles[tokenName as TokenName] =
+        MaterialDynamicColors[primaryTokenName].getArgb(accentScheme);
+    }
+  }
+
+  return roles;
+}
+
 //
 // The palette of a custom color: its hue -- once harmonized with the effective
 // source, when `blend` is set -- at the chroma of the scheme's primary palette.
@@ -715,6 +822,7 @@ export function builder(
     neutral,
     neutralVariant,
     error,
+    colorMatch = DEFAULT_COLOR_MATCH,
     customColors: customColorInputs = DEFAULT_CUSTOM_COLORS,
     prefix = DEFAULT_PREFIX,
   }: Omit<MtbConfig, "source"> = {},
@@ -752,33 +860,52 @@ export function builder(
   if (cores.neutralVariant)
     overrides.neutralVariant = argbFromHex(cores.neutralVariant);
 
+  // Color match takes precedence over `scheme` for the core colors: it is the
+  // Content variant (MTB has no scheme selector: off is tonal spot, on is
+  // content), see docs/adr/0003-color-match-is-the-content-variant-per-core-color.md
+  const coreScheme = colorMatch ? "content" : scheme;
+
   const corePalettes = resolveCorePalettes(
-    scheme,
+    coreScheme,
     effectiveSourceArgb,
     overrides,
   );
 
-  const renderScheme = (isDark: boolean, contrastLevel: number) =>
-    buildScheme(
-      scheme,
+  const renderScheme = (isDark: boolean, contrastLevel: number) => {
+    const rendered = buildScheme(
+      coreScheme,
       effectiveSourceArgb,
       corePalettes,
       isDark,
       contrastLevel,
     );
 
-  const lightScheme = renderScheme(false, contrast);
-  const darkScheme = renderScheme(true, contrast);
+    const roles = systemRoles(rendered);
+    if (colorMatch) {
+      Object.assign(
+        roles,
+        colorMatchAccentRoles(overrides, corePalettes, isDark, contrastLevel),
+      );
+    }
+
+    return { scheme: rendered, roles } satisfies RenderedScheme;
+  };
+
+  const light = renderScheme(false, contrast);
+  const dark = renderScheme(true, contrast);
+  const lightScheme = light.scheme;
+
+  // Custom colors do not follow Color match: they keep the chroma of the
+  // primary palette of `scheme`, as without `colorMatch`
+  const customColorChroma = colorMatch
+    ? resolveCorePalettes(scheme, effectiveSourceArgb, {}).primary.chroma
+    : corePalettes.primary.chroma;
 
   // Custom color palettes, keyed by custom color name
   const customColorPalettes: ColorPalettes = Object.fromEntries(
     hexCustomColors.map((color) => [
       color.name,
-      createCustomColorPalette(
-        color,
-        effectiveSourceArgb,
-        lightScheme.primaryPalette.chroma,
-      ),
+      createCustomColorPalette(color, effectiveSourceArgb, customColorChroma),
     ]),
   );
 
@@ -809,14 +936,8 @@ export function builder(
     ]),
   );
 
-  const mergedColorsLight = mergeBaseAndCustomColors(
-    lightScheme,
-    customColorRoles,
-  );
-  const mergedColorsDark = mergeBaseAndCustomColors(
-    darkScheme,
-    customColorRoles,
-  );
+  const mergedColorsLight = mergeBaseAndCustomColors(light, customColorRoles);
+  const mergedColorsDark = mergeBaseAndCustomColors(dark, customColorRoles);
 
   // ── Shared token→palette mapping ──────────────────────────────────────
   const schemePalettes: [string, TonalPalette][] = [

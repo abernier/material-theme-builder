@@ -22,7 +22,7 @@ Support for:
   - [x] Harmonization (aka. `blend`, on by default) -- with effective color:
         `source` or `primary` if defined
 - [x] Shades (aka. "tonals")
-- [ ] colorMatch
+- [x] colorMatch (aka. "Color match - Stay true to my color inputs")
 
 # Usage
 
@@ -64,6 +64,21 @@ theme.toShadcnRegistryItem({ fallback: true });
 > maintainers say they are only there as reference. See [ADR 0001](docs/adr/0001-reference-palettes-are-the-scheme-palettes.md)
 > for why.
 
+`colorMatch: true` is Material Theme Builder's "Color match - Stay true to my
+color inputs": each core color is rendered with the content variant of its own
+input, instead of being toned down to the scheme's chroma.
+
+```ts
+builder("#6750A4", { secondary: "#B03A3A", colorMatch: true });
+```
+
+> [!NOTE]
+>
+> `colorMatch` takes precedence over `scheme` -- Material Theme Builder has no
+> scheme selector: Color match off is `tonalSpot`, on is `content`. Custom
+> colors are unaffected: they are rendered as they are without `colorMatch`.
+> See [ADR 0003](docs/adr/0003-color-match-is-the-content-variant-per-core-color.md).
+
 ## CLI
 
 ```sh
@@ -73,6 +88,13 @@ $ npx material-theme-builder "#6750A4"
 will generate a `material-theme` folder with: `Light.tokens.json` and `Dark.tokens.json` [design-tokens](https://www.designtokens.org/tr/2025.10/) files, you can (both) import into Figma.
 
 See `npx material-theme-builder --help` for all available options.
+
+`--color-match` is [`colorMatch`](#programmatic-api): it takes precedence over
+`--scheme`, and leaves custom colors unaffected.
+
+```sh
+$ npx material-theme-builder "#6750A4" --secondary "#B03A3A" --color-match
+```
 
 ## React
 
@@ -113,6 +135,10 @@ import { Mtb } from "material-theme-builder/react";
 > `<Mtb>` renders its `<style>`, so it works both server- and client-side.
 > Client-side is what you want when the theme has to be interactive through
 > `setMtbConfig`.
+
+`<Mtb>` takes the same options as [`builder`](#programmatic-api), as props --
+`colorMatch` included (`<Mtb source="#0e1216" colorMatch>`): it takes precedence
+over `scheme`, and leaves custom colors unaffected.
 
 > [!NOTE]
 >

@@ -1,10 +1,6 @@
-import {
-  type DynamicScheme,
-  hexFromArgb,
-  MaterialDynamicColors,
-} from "@material/material-color-utilities";
+import { hexFromArgb } from "@material/material-color-utilities";
 
-import type { BuilderContext, TokenName } from "./builder";
+import type { BuilderContext, RenderedScheme, TokenName } from "./builder";
 
 // Token order matching Material Theme Builder export format
 const FIXTURE_TOKEN_ORDER = [
@@ -81,14 +77,11 @@ export function buildJson(ctx: BuilderContext) {
 
   function buildJsonSchemes() {
     // Extract scheme colors in fixture token order
-    function extractSchemeColors(scheme: DynamicScheme) {
+    function extractSchemeColors({ roles }: RenderedScheme) {
       const colors: Record<string, string> = {};
 
       for (const tokenName of FIXTURE_TOKEN_ORDER) {
-        const dynamicColor = MaterialDynamicColors[tokenName];
-        colors[tokenName] = hexFromArgb(
-          dynamicColor.getArgb(scheme),
-        ).toUpperCase();
+        colors[tokenName] = hexFromArgb(roles[tokenName]).toUpperCase();
       }
 
       return colors;
