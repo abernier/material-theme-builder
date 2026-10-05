@@ -195,6 +195,35 @@ return (
 );
 ```
 
+## Scheme poster
+
+The poster the [stories](https://main--695eb517cb602e59b4cc045c.chromatic.com)
+draw — every M3 role of the theme, light and dark, and its tonal palettes:
+
+```tsx
+import { Mtb, Poster, Scheme, Shades } from "material-theme-builder/react";
+
+<Mtb source="#769CDF">
+  <Poster style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+    <Scheme theme="light" title="Light scheme" />
+    <Scheme theme="dark" title="Dark scheme" />
+    <Shades />
+  </Poster>
+</Mtb>;
+```
+
+`Poster` is the frame — gaps, labels, cell heights — so keep `Scheme` and
+`Shades` inside one. It needs no Tailwind: its layout is inline styles, so
+nothing has to scan `node_modules` for class names. Custom colors are passed
+along (`customColors={...}`, as given to `<Mtb>`), and `Scheme` has opt-in rows
+for the roles the spec dropped (`background`, `surfaceVariant`, `surfaceTint`).
+
+> [!NOTE]
+>
+> `theme="dark"` adds the `dark` class the dark values are keyed on;
+> `theme="light"` cannot take an ancestor's away, so on a page in dark mode it
+> shows the dark values too.
+
 ## Tailwind
 
 Compatible through [theme variables](https://tailwindcss.com/docs/theme) — one

@@ -9,10 +9,9 @@ import {
   Layout,
   mtbArgs,
   mtbArgTypes,
-  Scheme,
-  Shades,
   TailwindScheme,
 } from "./Mtb.stories.helpers";
+import { Scheme, Shades } from "./Scheme";
 
 import exampleSvg from "./assets/example.svg?raw";
 
