@@ -67,7 +67,8 @@ theme.toShadcnRegistryItem({ fallback: true });
 `colorMatch: true` is Material Theme Builder's "Color match - Stay true to my
 color inputs": each core color and each custom color is rendered with the
 content variant of its own input, instead of being toned down to the scheme's
-chroma.
+chroma. A custom color is still harmonized first when its `blend` is set (the
+default): set `blend: false` to keep it exactly as given.
 
 ```ts
 builder("#6750A4", { secondary: "#B03A3A", colorMatch: true });

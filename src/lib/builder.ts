@@ -139,6 +139,10 @@ export type MtbConfig = {
    * Content variant of its own input, which keeps the input's chroma and puts
    * the input itself in the container role. When false, they follow `scheme`.
    *
+   * A custom color is harmonized first when its `blend` is set (the default),
+   * as without `colorMatch`: its input is then the harmonized color. Set
+   * `blend: false` to keep the color exactly as given.
+   *
    * It takes precedence over `scheme`: Material Theme Builder has no scheme
    * selector, Color match off is tonal spot and on is content.
    */
@@ -707,6 +711,33 @@ const accentRolesFromPrimary = {
 >;
 
 //
+// The Content scheme of one color, for its primary roles: what Material Theme
+// Builder's "Color match" reads the roles of an overridden accent and of a
+// custom color from.
+//
+// It is built from the palettes already resolved rather than with
+// `new SchemeContent()`, which would derive all of them again at every level
+// (the expensive part). The primary roles read the scheme's source color and
+// its primary palette only, and `palette` is that primary palette: the one the
+// Content variant gives `colorArgb`.
+//
+function colorMatchSchemeOf(
+  colorArgb: number,
+  palette: TonalPalette,
+  palettes: CorePalettes,
+  isDark: boolean,
+  contrast: number,
+) {
+  return buildScheme(
+    "content",
+    colorArgb,
+    { ...palettes, primary: palette },
+    isDark,
+    contrast,
+  );
+}
+
+//
 // What Material Theme Builder's "Color match" adds to the Content variant: the
 // roles of each overridden accent (`secondary`, `tertiary`, `error`), at one
 // level (see docs/adr/0003-color-match-is-the-content-variant-per-core-color.md).
@@ -715,12 +746,8 @@ const accentRolesFromPrimary = {
 // resolveCorePalettes). The roles of an overridden accent are not the ones a
 // single scheme holding those palettes renders, though: the Content container
 // tones follow the scheme's source color, which has to be the accent's own
-// color. So they are the primary roles of the Content scheme of that color.
-//
-// That scheme is built from the palettes already resolved rather than with
-// `new SchemeContent()`, which would derive all of them again at every level
-// (the expensive part). The primary roles read the scheme's source color and
-// its primary palette only, and `palettes[accent]` is that primary palette.
+// color. So they are the primary roles of the Content scheme of that color
+// (see colorMatchSchemeOf), and `palettes[accent]` is its primary palette.
 //
 function colorMatchAccentRoles(
   overrides: CoreOverrides,
@@ -735,10 +762,10 @@ function colorMatchAccentRoles(
     const palette = palettes[accent];
     if (argb === undefined || palette === undefined) continue;
 
-    const accentScheme = buildScheme(
-      "content",
+    const accentScheme = colorMatchSchemeOf(
       argb,
-      { ...palettes, primary: palette },
+      palette,
+      palettes,
       isDark,
       contrast,
     );
@@ -765,15 +792,10 @@ function customColorArgb(color: Required<HexCustomColor>, sourceArgb: number) {
 
 //
 // The palette of a custom color: the hue of its color (see customColorArgb), at
-// the chroma of the scheme's primary palette.
+// the given chroma.
 //
-// Under `colorMatch` no `chroma` is given and the color keeps its own: that is
-// the primary palette of the Content scheme of the color.
-//
-function createCustomColorPalette(colorArgb: number, chroma?: number) {
-  const colorHct = Hct.fromInt(colorArgb);
-
-  return TonalPalette.fromHueAndChroma(colorHct.hue, chroma ?? colorHct.chroma);
+function createCustomColorPalette(colorArgb: number, chroma: number) {
+  return TonalPalette.fromHueAndChroma(Hct.fromInt(colorArgb).hue, chroma);
 }
 
 //
@@ -782,11 +804,8 @@ function createCustomColorPalette(colorArgb: number, chroma?: number) {
 // those of an overridden accent (see colorMatchAccentRoles and
 // docs/adr/0003-color-match-is-the-content-variant-per-core-color.md).
 //
-// Like there, that scheme is built from palettes already resolved rather than
-// with `new SchemeContent()`: the primary roles read the scheme's source color
-// and its primary palette only, and `palette` is that primary palette.
-//
-// It is built at the standard contrast: the roles of a custom color do not
+// `palette` is the primary palette of that scheme (see colorMatchSchemeOf). It
+// is built at the standard contrast: the roles of a custom color do not
 // follow `contrast`, with or without `colorMatch`.
 //
 // returns: the scheme, light or dark
@@ -797,13 +816,7 @@ function colorMatchCustomColorScheme(
   palettes: CorePalettes,
 ) {
   const schemeAt = (isDark: boolean) =>
-    buildScheme(
-      "content",
-      colorArgb,
-      { ...palettes, primary: palette },
-      isDark,
-      DEFAULT_CONTRAST,
-    );
+    colorMatchSchemeOf(colorArgb, palette, palettes, isDark, DEFAULT_CONTRAST);
 
   const light = schemeAt(false);
   const dark = schemeAt(true);
@@ -961,17 +974,18 @@ export function builder(
     argb: customColorArgb(color, effectiveSourceArgb),
   }));
 
-  // Custom colors follow Color match too: they keep their own chroma under it,
-  // instead of taking the one of the scheme's primary palette
-  const customColorChroma = colorMatch
-    ? undefined
-    : corePalettes.primary.chroma;
-
-  // Custom color palettes, keyed by custom color name
+  // Custom color palettes, keyed by custom color name.
+  //
+  // A custom color takes the chroma of the scheme's primary palette. Under
+  // Color match it keeps its own instead: that is the primary palette of the
+  // Content scheme of the color.
   const customColorPalettes: ColorPalettes = Object.fromEntries(
     customColors.map(({ name, argb }) => [
       name,
-      createCustomColorPalette(argb, customColorChroma),
+      createCustomColorPalette(
+        argb,
+        colorMatch ? Hct.fromInt(argb).chroma : corePalettes.primary.chroma,
+      ),
     ]),
   );
 
