@@ -65,8 +65,10 @@ theme.toShadcnRegistryItem({ fallback: true });
 > for why.
 
 `colorMatch: true` is Material Theme Builder's "Color match - Stay true to my
-color inputs": each core color is rendered with the content variant of its own
-input, instead of being toned down to the scheme's chroma.
+color inputs": each core color and each custom color is rendered with the
+content variant of its own input, instead of being toned down to the scheme's
+chroma. A custom color is still harmonized first when its `blend` is set (the
+default): set `blend: false` to keep it exactly as given.
 
 ```ts
 builder("#6750A4", { secondary: "#B03A3A", colorMatch: true });
@@ -75,9 +77,8 @@ builder("#6750A4", { secondary: "#B03A3A", colorMatch: true });
 > [!NOTE]
 >
 > `colorMatch` takes precedence over `scheme` -- Material Theme Builder has no
-> scheme selector: Color match off is `tonalSpot`, on is `content`. Custom
-> colors are unaffected: they are rendered as they are without `colorMatch`.
-> See [ADR 0003](docs/adr/0003-color-match-is-the-content-variant-per-core-color.md).
+> scheme selector: Color match off is `tonalSpot`, on is `content`. See
+> [ADR 0003](docs/adr/0003-color-match-is-the-content-variant-per-core-color.md).
 
 ## CLI
 
@@ -90,7 +91,7 @@ will generate a `material-theme` folder with: `Light.tokens.json` and `Dark.toke
 See `npx material-theme-builder --help` for all available options.
 
 `--color-match` is [`colorMatch`](#programmatic-api): it takes precedence over
-`--scheme`, and leaves custom colors unaffected.
+`--scheme`, for the custom colors as well.
 
 ```sh
 $ npx material-theme-builder "#6750A4" --secondary "#B03A3A" --color-match
@@ -138,7 +139,7 @@ import { Mtb } from "material-theme-builder/react";
 
 `<Mtb>` takes the same options as [`builder`](#programmatic-api), as props --
 `colorMatch` included (`<Mtb source="#0e1216" colorMatch>`): it takes precedence
-over `scheme`, and leaves custom colors unaffected.
+over `scheme`, for the custom colors as well.
 
 > [!NOTE]
 >

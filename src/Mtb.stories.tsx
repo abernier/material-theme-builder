@@ -685,6 +685,21 @@ export const CustomColorsHarmonizedSt: Story = {
   render: St1.render,
 };
 
+// One harmonized, one not: under `colorMatch` a custom color keeps its own
+// chroma and lands in its container role, once harmonized when `blend` is set
+export const CustomColorsColorMatchSt: Story = {
+  name: "Custom colors [colorMatch]",
+  args: {
+    source: "#769CDF",
+    customColors: [
+      { name: "myCustomColor1", hex: customColor1, blend: true },
+      { name: "myCustomColor2", hex: customColor2, blend: false },
+    ],
+    colorMatch: true,
+  },
+  render: St1.render,
+};
+
 //
 // ████████  █████  ██ ██      ██     ██ ██ ███    ██ ██████
 //    ██    ██   ██ ██ ██      ██     ██ ██ ████   ██ ██   ██

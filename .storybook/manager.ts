@@ -56,8 +56,7 @@ addons.register(ADDON_ID, () => {
 
 /**
  * Disables the `scheme` control while `colorMatch` is on: `colorMatch` takes
- * precedence over `scheme` for the core colors, so the control would look
- * broken.
+ * precedence over `scheme`, so the control would look broken.
  *
  * Storybook can hide a control on a condition (`if`), not disable it, and
  * `table.readonly`, which does disable one, takes no condition. So this sets
