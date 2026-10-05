@@ -92,6 +92,35 @@ With Color match off that was already MTB's rendering on screen: tonal spot's
 primary roles at standard contrast are the tones 40, 100, 90 and 30 (80, 20, 30
 and 90 in dark) of a palette at chroma 36.
 
+## Combining with `scheme`
+
+We considered giving `colorMatch: true` a meaning with a `scheme` other than
+content, and rejected it: nothing upstream defines that combination, and the one
+that can be built does not do what Color match promises.
+
+- MTB never makes it. The factory above is the only place a theme's scheme is
+  built: tonal spot or content, nothing else.
+- In MCU, fidelity is not an option but a property of two variants:
+  `isFidelity` is `variant === FIDELITY || variant === CONTENT`
+  ([`color_spec_2021.ts`, l.31-34](https://github.com/material-foundation/material-color-utilities/blob/5b3618b16fdc3825e21d5679bafd144662088ea1/typescript/dynamiccolor/color_spec_2021.ts#L31-L34)),
+  in 0.3.0, in 0.4.0 and on `main`. A scheme has one variant, so it is either a
+  fidelity one or another one.
+- MCU moves further from it. The 2025 spec has no fidelity tone rule, and a
+  Content or Fidelity scheme always falls back to the 2021 spec
+  ([`dynamic_scheme.ts`, l.204-214](https://github.com/material-foundation/material-color-utilities/blob/5b3618b16fdc3825e21d5679bafd144662088ea1/typescript/dynamiccolor/dynamic_scheme.ts#L204-L214)).
+- What can be built is a `DynamicScheme` of the Content variant given the
+  palettes of another variant: the fidelity tone rules on that variant's hues
+  and chromas. Material's "Use color fidelity" guidance (m3.material.io, Styles,
+  Color, Advanced) words fidelity that way, as a switch apart from the variant.
+  It keeps the tone of the input and nothing else. For `#CAB337` (hue 100,
+  chroma 49, tone 73) in light, `primaryContainer` is `#CAB337` itself with the
+  Content palettes, `#C5B35E` (chroma 36) with the tonal spot ones and `#E59CD0`
+  (hue 340, a pink) with the expressive ones. That is not staying true to the
+  color inputs. Monochrome cannot take it at all: its tone rules hang on the
+  same single variant.
+
+So `scheme` has no effect with `colorMatch: true`, and that is the whole rule.
+
 ## Consequences
 
 - `colorMatch` overrides `scheme`, for the core colors and the custom colors.
