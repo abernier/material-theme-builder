@@ -28,7 +28,12 @@ import {
   type ShadcnRegistryItemOptions,
 } from "./builder.shadcn";
 import { buildTailwind, type TailwindOptions } from "./builder.tailwind";
-import { DEFAULT_PREFIX, tokenNames } from "./tokens";
+import {
+  CORE_PALETTES,
+  DEFAULT_PREFIX,
+  SHADE_TO_TONE,
+  tokenNames,
+} from "./tokens";
 
 // ─── Re-exports (types defined alongside their exporter) ─────────────────
 
@@ -225,6 +230,86 @@ function assertHexInputs(
  */
 function optionalHex(hex: string | undefined) {
   return hex?.trim() || undefined;
+}
+
+// ─── Custom color names ──────────────────────────────────────────────────
+//
+// A custom color brings one palette and four roles, all named after it (see
+// `buildCustomColorRoles()`), and nothing kept those names apart from the ones
+// already taken: `mergeBaseAndCustomColors()` spreads the custom roles over the
+// system roles, `allPalettes` the custom palettes over the core ones.
+//
+// So a custom color named `secondary` replaced `secondary`, `onSecondary`,
+// `secondaryContainer`, `onSecondaryContainer` and the `secondary` reference
+// palette, while `secondaryFixed` and `secondaryFixedDim` stayed the core
+// color's: half a family replaced, fixed roles that were no longer tones of an
+// exported palette (against
+// docs/adr/0001-reference-palettes-are-the-scheme-palettes.md), and a
+// `toJson().schemes` -- read from the scheme, not from the merged roles -- that
+// disagreed with `toCss()`. Replacing a core color is what the core-color
+// overrides are for.
+//
+// Names are compared as the exporters spell them, kebab-cased: `Secondary`,
+// `neutral variant` and `neutralVariant` land on the same custom properties as
+// the names they look like, and so do `brand` and `Brand` on each other's.
+// (toFigmaVariables() start-cases and toFlutter() only capitalizes; whatever
+// collides there collides kebab-cased too.)
+//
+// Roles and palettes are two namespaces, `--{prefix}-sys-color-*` and
+// `--{prefix}-ref-palette-*`: `neutral` is a core palette and no role. Tailwind
+// has a single namespace, though: toTailwind() and the Tailwind plugin write
+// both the roles and the eleven shades of every palette as `--color-*`, so a
+// shade name (`primary-500`) is taken the way a role name is.
+function assertCustomColorNames(customColors: HexCustomColor[]) {
+  // Every name already taken, as the exporters spell it, with who took it
+  const takenRoles = new Map<string, string>();
+  const takenPalettes = new Map<string, string>();
+
+  for (const token of tokenNames)
+    takenRoles.set(kebabCase(token), `the system role '${token}'`);
+
+  for (const palette of CORE_PALETTES) {
+    takenPalettes.set(palette, `the core palette '${palette}'`);
+
+    for (const [shade] of SHADE_TO_TONE)
+      takenRoles.set(
+        `${palette}-${shade}`,
+        `the Tailwind shade '${palette}-${shade}' of the core palette '${palette}'`,
+      );
+  }
+
+  customColors.forEach(({ name }, i) => {
+    // Take `spelling` for this custom color, unless it is taken already
+    function take(taken: Map<string, string>, spelling: string, what: string) {
+      const owner = taken.get(spelling);
+      if (owner !== undefined)
+        throw new Error(
+          `Invalid customColors[${i}].name: '${name}'. Its ${what} collides with ${owner}. Expected a name that no system role, core palette or other custom color already uses.`,
+        );
+
+      taken.set(spelling, `the ${what} of customColors[${i}]`);
+    }
+
+    // The four roles `buildCustomColorRoles()` generates
+    const roles = [
+      name,
+      `on${upperFirst(name)}`,
+      `${name}Container`,
+      `on${upperFirst(name)}Container`,
+    ];
+    for (const role of roles)
+      take(takenRoles, kebabCase(role), `role '${role}'`);
+
+    const palette = kebabCase(name);
+    take(takenPalettes, palette, `palette '${palette}'`);
+
+    for (const [shade] of SHADE_TO_TONE)
+      take(
+        takenRoles,
+        `${palette}-${shade}`,
+        `Tailwind shade '${palette}-${shade}'`,
+      );
+  });
 }
 
 /**
@@ -598,6 +683,7 @@ export function builder(
   };
 
   assertHexInputs(hexSource, cores, customColorInputs);
+  assertCustomColorNames(customColorInputs);
 
   // `blend` may be omitted. Its default is applied here, once, so that the
   // palette, the roles and every exporter's metadata read the same value: the

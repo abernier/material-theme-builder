@@ -298,14 +298,22 @@ export function FlowfieldScene({ ...props }: ComponentProps<typeof Flowfield>) {
                       );
                       setMtbConfig({ ...mtbConfig, customColors: updated });
                     } else {
-                      // first change of this pick session — add a new color
+                      // first change of this pick session — add a new color,
+                      // under the next number no custom color bears yet:
+                      // removing an earlier one would otherwise hand the
+                      // number of the last out again, and `builder()` throws
+                      // on two custom colors of the same name
+                      const names = new Set(existing.map((c) => c.name));
+                      let number = existing.length + 1;
+                      while (names.has(`customColor${number}`)) number++;
+
                       pendingAddIndexRef.current = existing.length;
                       setMtbConfig({
                         ...mtbConfig,
                         customColors: [
                           ...existing,
                           {
-                            name: `customColor${existing.length + 1}`,
+                            name: `customColor${number}`,
                             hex,
                             blend: true,
                           },

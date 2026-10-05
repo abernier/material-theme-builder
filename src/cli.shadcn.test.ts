@@ -181,6 +181,31 @@ describe("cli", () => {
     expect(message).not.toContain("node_modules");
   });
 
+  // The one input only `builder()` can refuse: a custom color's name is checked
+  // against the whole list, so there is no parser to restate it in. Its message
+  // is the CLI's answer, in one line all the same.
+  it.runIf(fs.existsSync(cli))(
+    "should refuse a colliding custom color name in one line",
+    () => {
+      let message = "";
+      try {
+        run([
+          "#6750A4",
+          "--custom-colors",
+          '[{"name":"secondary","hex":"#FF5733"}]',
+          "--format",
+          "css",
+        ]);
+      } catch (error) {
+        message = String((error as { stderr?: string }).stderr ?? error);
+      }
+
+      expect(message.trim()).toBe(
+        "Error: Invalid customColors[0].name: 'secondary'. Its role 'secondary' collides with the system role 'secondary'. Expected a name that no system role, core palette or other custom color already uses.",
+      );
+    },
+  );
+
   it.runIf(fs.existsSync(cli))("should list the subcommand in --help", () => {
     const help = run(["--help"]);
 
