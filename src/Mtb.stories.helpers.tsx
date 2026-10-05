@@ -7,7 +7,6 @@ import {
   useState,
   type ComponentProps,
 } from "react";
-import type { InputType } from "storybook/internal/csf";
 import { Fab } from "./components/m3/Fab";
 import { ExportButton } from "./ExportButton";
 import {
@@ -21,13 +20,6 @@ import {
 } from "./lib/builder";
 import { cn } from "./lib/utils";
 import type { Mtb } from "./Mtb";
-
-// The `scheme` control, shared by the two rows it has in `mtbArgTypes`
-const schemeArgType = {
-  type: { name: "enum", value: [...schemeNames] },
-  control: "select",
-  options: schemeNames,
-} satisfies InputType;
 
 /**
  * `<Mtb>`'s props as controls, shared by every story that themes with them.
@@ -45,22 +37,12 @@ const schemeArgType = {
  */
 export const mtbArgTypes = {
   source: { control: "color" },
-  // `colorMatch` takes precedence over `scheme` for the core colors, so the
-  // control is disabled while it is on. Storybook has no conditional
-  // `readonly`, only conditional rows (`if`): hence two rows for the one arg,
-  // of which one shows at a time.
+  // Disabled while `colorMatch` is on, which takes precedence over it for the
+  // core colors: see `SchemeControlLock` in .storybook/manager.ts
   scheme: {
-    ...schemeArgType,
-    if: { arg: "colorMatch", truthy: false },
-  },
-  schemeReadonly: {
-    ...schemeArgType,
-    // What points this second row at the `scheme` arg: the controls table
-    // reads and writes the arg named by a row's `key`
-    key: "scheme",
-    name: "scheme",
-    table: { readonly: true },
-    if: { arg: "colorMatch" },
+    type: { name: "enum", value: [...schemeNames] },
+    control: "select",
+    options: schemeNames,
   },
   customColors: {
     type: {
@@ -87,7 +69,7 @@ export const mtbArgTypes = {
   children: {
     table: { disable: true }, // hide
   },
-} satisfies Meta<typeof Mtb>["argTypes"] & { schemeReadonly: InputType };
+} satisfies Meta<typeof Mtb>["argTypes"];
 
 /**
  * Same reason, for the one prop a picker cannot cover: an unset `object`

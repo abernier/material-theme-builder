@@ -1,9 +1,18 @@
 import { PaintBrushAltIcon } from "@storybook/icons";
-import { createElement } from "react";
+import { createElement, useEffect } from "react";
 import { IconButton } from "storybook/internal/components";
-import { addons, types, useGlobals } from "storybook/manager-api";
+import {
+  addons,
+  types,
+  useArgs,
+  useArgTypes,
+  useGlobals,
+  useStorybookApi,
+  useStorybookState,
+} from "storybook/manager-api";
 
 const ADDON_ID = "mtb/scheme-overlay";
+const SCHEME_CONTROL_LOCK_ID = "mtb/scheme-control-lock";
 
 /**
  * The scheme overlay's on/off switch.
@@ -42,5 +51,53 @@ addons.register(ADDON_ID, () => {
     // Nothing to overlay in docs, where every story renders at once.
     match: ({ viewMode }) => viewMode === "story",
     render: () => createElement(SchemeOverlayTool),
+  });
+});
+
+/**
+ * Disables the `scheme` control while `colorMatch` is on: `colorMatch` takes
+ * precedence over `scheme` for the core colors, so the control would look
+ * broken.
+ *
+ * Storybook can hide a control on a condition (`if`), not disable it, and
+ * `table.readonly`, which does disable one, takes no condition. So this sets
+ * it on the argTypes the manager holds for the current story, each time
+ * `colorMatch` changes -- and again each time the story is prepared, which
+ * hands the manager fresh argTypes.
+ *
+ * Renders nothing: it is a tool only because that is where a component can
+ * live in the manager.
+ */
+function SchemeControlLock() {
+  const api = useStorybookApi();
+  const { storyId } = useStorybookState();
+  const [args] = useArgs();
+  const argTypes = useArgTypes();
+
+  const scheme = argTypes.scheme;
+  // No args yet while the story is not prepared, whatever the type says
+  const readonly = Boolean((args as typeof args | undefined)?.colorMatch);
+
+  useEffect(() => {
+    if (!scheme || Boolean(scheme.table?.readonly) === readonly) return;
+
+    void api.updateStory(storyId, {
+      argTypes: {
+        ...argTypes,
+        scheme: { ...scheme, table: { ...scheme.table, readonly } },
+      },
+    });
+  }, [api, storyId, argTypes, scheme, readonly]);
+
+  return null;
+}
+
+addons.register(SCHEME_CONTROL_LOCK_ID, () => {
+  addons.add(SCHEME_CONTROL_LOCK_ID, {
+    type: types.TOOL,
+    title: "Scheme control lock",
+    // The controls only show next to a story
+    match: ({ viewMode }) => viewMode === "story",
+    render: () => createElement(SchemeControlLock),
   });
 });
