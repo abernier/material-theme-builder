@@ -63,6 +63,7 @@ export const mtbArgTypes = {
   error: { control: "color" },
   neutral: { control: "color" },
   neutralVariant: { control: "color" },
+  colorMatch: { control: "boolean" },
   children: {
     table: { disable: true }, // hide
   },
@@ -1238,9 +1239,9 @@ function cliFlag(name: string, value?: string | number, fallback?: unknown) {
  * CLI takes it.
  *
  * Only what differs from the defaults is written out, so the command reads as
- * the *changes* made in the controls rather than as a dump of every option. Two
- * of the props have no flag at all: `customColors`, which a registry item
- * cannot carry, and `colorMatch`, which is not a CLI option.
+ * the *changes* made in the controls rather than as a dump of every option. One
+ * of the props has no flag at all: `customColors`, which a registry item cannot
+ * carry.
  *
  * @see https://github.com/abernier/material-theme-builder#shadcn-apply
  */
@@ -1255,6 +1256,8 @@ function shadcnApplyCommand(config: MtbConfig) {
     ...cliFlag("--error", config.error),
     ...cliFlag("--neutral", config.neutral),
     ...cliFlag("--neutral-variant", config.neutralVariant),
+    // A boolean flag: written bare, and only when it is on
+    ...(config.colorMatch ? ["--color-match"] : []),
     ...cliFlag("--prefix", config.prefix, DEFAULT_PREFIX),
   ].join(" ");
 }

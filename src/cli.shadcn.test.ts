@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 
 import { addThemeOptions, themeFrom } from "./cli.options";
 import { addArgv } from "./cli.shadcn";
+import { builder } from "./lib/builder";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -75,6 +76,11 @@ describe("theme options", () => {
     expect(theme.options.prefix).toBe("my");
   });
 
+  it("should read --color-match, off by default", () => {
+    expect(themeFrom(command([])).options.colorMatch).toBe(false);
+    expect(themeFrom(command(["--color-match"])).options.colorMatch).toBe(true);
+  });
+
   it("should default `fallback` to true, being declared as a negation", () => {
     expect(themeFrom(command([])).fallback).toBe(true);
     expect(themeFrom(command(["--no-fallback"])).fallback).toBe(false);
@@ -130,6 +136,22 @@ describe("cli", () => {
   ] as const)("should still answer `%s`", (_, args, expected) => {
     expect(run(["#6750A4", ...args])).toContain(expected);
   });
+
+  it.runIf(fs.existsSync(cli))(
+    "should build the theme --color-match asks for",
+    () => {
+      const args = ["#6750A4", "--secondary", "#B03A3A", "--format", "json"];
+      const options = { secondary: "#B03A3A" };
+
+      expect(JSON.parse(run([...args, "--color-match"]))).toEqual(
+        builder("#6750A4", { ...options, colorMatch: true }).toJson(),
+      );
+      // Guards the assertion above: without the flag, another theme
+      expect(JSON.parse(run(args))).toEqual(
+        builder("#6750A4", options).toJson(),
+      );
+    },
+  );
 
   it.runIf(fs.existsSync(cli))("should refuse an unknown --format", () => {
     // It used to fall through to JSON, silently -- a typo answered with output

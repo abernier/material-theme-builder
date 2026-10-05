@@ -5,18 +5,26 @@ import {
   MaterialDynamicColors,
   type TonalPalette,
 } from "@material/material-color-utilities";
-import { kebabCase, omit } from "lodash-es";
+import { kebabCase, omit, upperFirst } from "lodash-es";
 import { describe, expect, it } from "vitest";
+import colorMatchFixture from "../fixtures/material-theme-builder/try-01.colormatch.json";
 import fixture from "../fixtures/material-theme-builder/try-01.json";
+import colorMatchFixture2 from "../fixtures/material-theme-builder/try-02.colormatch.json";
 import fixture2 from "../fixtures/material-theme-builder/try-02.json";
+import colorMatchFixture3 from "../fixtures/material-theme-builder/try-03.colormatch.json";
 import fixture3 from "../fixtures/material-theme-builder/try-03.json";
+import colorMatchFixture4 from "../fixtures/material-theme-builder/try-04.colormatch.json";
 import fixture4 from "../fixtures/material-theme-builder/try-04.json";
+import colorMatchFixture5 from "../fixtures/material-theme-builder/try-05.colormatch.json";
 import fixture5 from "../fixtures/material-theme-builder/try-05.json";
 import {
   builder,
+  DEFAULT_COLOR_MATCH,
   type MtbConfig,
+  schemeNames,
   schemeToVariant,
   STANDARD_TONES,
+  type TokenName,
   tokenNames,
 } from "./builder";
 
@@ -197,6 +205,17 @@ const inputs: Input[] = [
   },
 ];
 
+// The MTB fixture inputs again, with Color match on
+const colorMatchInputs: Input[] = inputs
+  .filter(({ label }) => label.startsWith("fixture "))
+  .map(({ label, source, options }) => ({
+    label: `${label}, colorMatch`,
+    source,
+    options: { ...options, colorMatch: true },
+  }));
+
+const allInputs = [...inputs, ...colorMatchInputs];
+
 function hex(argb: number) {
   return hexFromArgb(argb).toUpperCase();
 }
@@ -231,7 +250,11 @@ function renderedScheme(
 
   const scheme = new DynamicScheme({
     sourceColorArgb: argbFromHex(options.primary ?? source),
-    variant: schemeToVariant[options.scheme ?? "tonalSpot"],
+    // colorMatch is the Content variant, whatever the `scheme`
+    variant:
+      schemeToVariant[
+        options.colorMatch ? "content" : (options.scheme ?? "tonalSpot")
+      ],
     contrastLevel: options.contrast ?? 0,
     isDark,
     primaryPalette: palette("primary"),
@@ -245,8 +268,54 @@ function renderedScheme(
   return scheme;
 }
 
+// The role builder() renders `tokenName` from, and the scheme it reads it on.
+//
+// That is the token's own role on the rendered scheme, but for the roles of an
+// accent overridden under colorMatch: those are the primary roles of the
+// Content scheme of the accent's own color (see
+// docs/adr/0003-color-match-is-the-content-variant-per-core-color.md), rebuilt
+// here around the palette exported for that accent.
+function renderedRole(
+  input: Input,
+  allPalettes: Record<string, TonalPalette>,
+  tokenName: TokenName,
+  isDark: boolean,
+) {
+  const scheme = renderedScheme(input, allPalettes, isDark);
+  const { options = {} } = input;
+
+  const accent = (["secondary", "tertiary", "error"] as const).find((name) =>
+    tokenName.toLowerCase().includes(name),
+  );
+  const accentHex = accent && options.colorMatch ? options[accent] : undefined;
+  if (!accent || !accentHex) {
+    return { role: MaterialDynamicColors[tokenName], scheme };
+  }
+
+  // eg onSecondaryContainer -> onPrimaryContainer
+  const primaryTokenName = tokenName
+    .replace(accent, "primary")
+    .replace(upperFirst(accent), "Primary") as TokenName;
+
+  return {
+    role: MaterialDynamicColors[primaryTokenName],
+    scheme: new DynamicScheme({
+      sourceColorArgb: argbFromHex(accentHex),
+      variant: schemeToVariant.content,
+      contrastLevel: options.contrast ?? 0,
+      isDark,
+      primaryPalette:
+        accent === "error" ? scheme.errorPalette : scheme[`${accent}Palette`],
+      secondaryPalette: scheme.secondaryPalette,
+      tertiaryPalette: scheme.tertiaryPalette,
+      neutralPalette: scheme.neutralPalette,
+      neutralVariantPalette: scheme.neutralVariantPalette,
+    }),
+  };
+}
+
 describe("builder › toJson().palettes", () => {
-  for (const input of inputs) {
+  for (const input of allInputs) {
     it(`should equal the --md-ref-palette-* of toCss() (${input.label})`, () => {
       const theme = builder(input.source, input.options);
       const { palettes } = theme.toJson();
@@ -259,19 +328,23 @@ describe("builder › toJson().palettes", () => {
     });
   }
 
-  for (const input of inputs) {
+  for (const input of allInputs) {
     it(`should hold the palette every system role is a tone of (${input.label})`, () => {
       const theme = builder(input.source, input.options);
       const { palettes } = theme.toJson();
 
       for (const isDark of [false, true]) {
-        const scheme = renderedScheme(input, theme.allPalettes, isDark);
         const rendered = isDark
           ? theme.mergedColorsDark
           : theme.mergedColorsLight;
 
         for (const tokenName of tokenNames) {
-          const role = MaterialDynamicColors[tokenName];
+          const { role, scheme } = renderedRole(
+            input,
+            theme.allPalettes,
+            tokenName,
+            isDark,
+          );
           const roleHex = hex(role.getArgb(scheme));
 
           // The scheme rebuilt here is the one builder() rendered
@@ -303,7 +376,7 @@ describe("builder › toJson().palettes", () => {
     });
   }
 
-  for (const input of inputs) {
+  for (const input of allInputs) {
     it(`should hold the palette every custom-color role is a tone of (${input.label})`, () => {
       const theme = builder(input.source, input.options);
       const { palettes } = theme.toJson();
@@ -410,17 +483,22 @@ function sysColorFromCss(css: string, name: string, isDark: boolean) {
 }
 
 describe("builder › toJson().schemes background and onBackground", () => {
-  const backgroundInputs = inputs.filter(({ label }) =>
-    ["fixture 1", "fixture 2", "fixture 4"].includes(label),
+  const backgroundInputs = allInputs.filter(({ label }) =>
+    ["fixture 1", "fixture 2", "fixture 4"].includes(
+      label.replace(", colorMatch", ""),
+    ),
   );
 
-  it("should cover the MTB fixtures that override neutral, and one that does not", () => {
+  it("should cover the MTB fixtures that override neutral, and one that does not, with and without colorMatch", () => {
     expect(
       backgroundInputs.map(({ label, options }) => [label, options?.neutral]),
     ).toEqual([
       ["fixture 1", undefined],
       ["fixture 2", "#957FF1"],
       ["fixture 4", "#75003C"],
+      ["fixture 1, colorMatch", undefined],
+      ["fixture 2, colorMatch", "#957FF1"],
+      ["fixture 4, colorMatch", "#75003C"],
     ]);
   });
 
@@ -448,6 +526,142 @@ describe("builder › toJson().schemes background and onBackground", () => {
         // export as well
         if (contrast === 0) {
           expect(colors.onBackground, name).toBe(colors.onSurface);
+        }
+      }
+    });
+  }
+});
+
+// ─── Color match ─────────────────────────────────────────────────────────
+//
+// `colorMatch` is MTB's "Color match - Stay true to my color inputs": the
+// Content variant, applied per core color (see
+// docs/adr/0003-color-match-is-the-content-variant-per-core-color.md). The
+// `try-0N.colormatch.json` fixtures are MTB's exports of the `try-0N.json`
+// inputs with Color match on.
+
+function inputByLabel(label: string) {
+  const input = allInputs.find((candidate) => candidate.label === label);
+  if (!input) throw new Error(`No '${label}' input`);
+  return input;
+}
+
+describe("builder › toJson() with colorMatch", () => {
+  it.each([
+    ["fixture 1", colorMatchFixture],
+    ["fixture 2", colorMatchFixture2],
+    ["fixture 3", colorMatchFixture3],
+    ["fixture 4", colorMatchFixture4],
+    ["fixture 5", colorMatchFixture5],
+  ])(
+    "should match material theme builder colorMatch %s",
+    (label, colorMatchFixture) => {
+      const { source, options } = inputByLabel(`${label}, colorMatch`);
+      const result = builder(source, options).toJson();
+      expect(comparable(result)).toEqual(comparable(colorMatchFixture));
+    },
+  );
+
+  it("should be off by default", () => {
+    expect(DEFAULT_COLOR_MATCH).toBe(false);
+  });
+
+  for (const { label, source, options } of inputs) {
+    it(`should render colorMatch: false exactly like an omitted one (${label})`, () => {
+      const omitted = builder(source, options);
+      const off = builder(source, { ...options, colorMatch: false });
+
+      expect(off.toJson()).toEqual(omitted.toJson());
+      expect(off.toCss()).toEqual(omitted.toCss());
+    });
+  }
+
+  // Guards the tests above: were `colorMatch` to change nothing, `false` would
+  // render like an omitted one whatever the default.
+  for (const { label, source, options } of colorMatchInputs) {
+    it(`should render colorMatch: true differently (${label})`, () => {
+      const off = builder(source, { ...options, colorMatch: false });
+      const on = builder(source, options);
+
+      expect(on.toJson().schemes).not.toEqual(off.toJson().schemes);
+      expect(on.toCss()).not.toEqual(off.toCss());
+    });
+  }
+
+  // MTB has no scheme selector: Color match off is tonal spot, on is content.
+  // So `colorMatch` wins over `scheme`.
+  it.each(schemeNames)("should take precedence over scheme: %s", (scheme) => {
+    const { source, options } = inputByLabel("fixture 2, colorMatch");
+    const coreColors = omit(options, "customColors");
+
+    const withScheme = builder(source, { ...coreColors, scheme });
+    const withoutScheme = builder(source, coreColors);
+
+    expect(withScheme.toJson()).toEqual(withoutScheme.toJson());
+    expect(withScheme.toCss()).toEqual(withoutScheme.toCss());
+  });
+
+  // Custom colors have no fixture to conform to (MTB's JSON does not export
+  // their roles), and are left as they are without colorMatch -- following
+  // `scheme`, which the core colors no longer do.
+  const customColorInputs = inputs.filter(
+    ({ options }) => options?.customColors?.length,
+  );
+
+  it("should cover custom colors under another scheme than the default", () => {
+    expect(customColorInputs.map(({ options }) => options?.scheme)).toEqual([
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      "content",
+    ]);
+  });
+
+  for (const { label, source, options } of customColorInputs) {
+    it(`should leave the custom-color palettes and roles untouched (${label})`, () => {
+      const off = builder(source, options);
+      const on = builder(source, { ...options, colorMatch: true });
+
+      const customColorNames = (options?.customColors ?? []).map(
+        (color) => color.name,
+      );
+      expect(customColorNames).not.toHaveLength(0);
+      expect(Object.keys(on.customColorRoles)).toEqual(customColorNames);
+
+      for (const customColorName of customColorNames) {
+        const paletteName = kebabCase(customColorName);
+        expect(on.toJson().palettes[paletteName], customColorName).toEqual(
+          off.toJson().palettes[paletteName],
+        );
+
+        const customTokenNames = Object.keys(
+          on.customColorRoles[customColorName] ?? {},
+        );
+        expect(customTokenNames).toHaveLength(4);
+        for (const tokenName of customTokenNames) {
+          expect(on.mergedColorsLight[tokenName], tokenName).toBe(
+            off.mergedColorsLight[tokenName],
+          );
+          expect(on.mergedColorsDark[tokenName], tokenName).toBe(
+            off.mergedColorsDark[tokenName],
+          );
+        }
+      }
+    });
+  }
+
+  for (const { label, source, options } of colorMatchInputs) {
+    it(`should render every role as toCss() does, in every scheme (${label})`, () => {
+      const { schemes } = builder(source, options).toJson();
+
+      for (const { name, isDark, contrast } of jsonSchemeLevels) {
+        const css = builder(source, { ...options, contrast }).toCss();
+
+        for (const [tokenName, color] of Object.entries(schemes[name] ?? {})) {
+          expect(color, `${name} ${tokenName}`).toBe(
+            sysColorFromCss(css, kebabCase(tokenName), isDark),
+          );
         }
       }
     });

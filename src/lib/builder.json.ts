@@ -3,11 +3,10 @@ import {
   DynamicScheme,
   Hct,
   hexFromArgb,
-  MaterialDynamicColors,
 } from "@material/material-color-utilities";
 
 import type { BuilderContext, TokenName } from "./builder";
-import { schemeToVariant } from "./builder";
+import { buildColorMatchScheme, schemeToVariant, systemRoles } from "./builder";
 
 // Token order matching Material Theme Builder export format
 const FIXTURE_TOKEN_ORDER = [
@@ -75,6 +74,8 @@ export function buildJson(ctx: BuilderContext) {
     primaryHct,
     SchemeClass,
     scheme,
+    colorMatch,
+    cores,
     primary,
     secondary,
     tertiary,
@@ -87,14 +88,11 @@ export function buildJson(ctx: BuilderContext) {
 
   function buildJsonSchemes() {
     // Extract scheme colors in fixture token order
-    function extractSchemeColors(scheme: DynamicScheme) {
+    function extractSchemeColors(roles: Record<TokenName, number>) {
       const colors: Record<string, string> = {};
 
       for (const tokenName of FIXTURE_TOKEN_ORDER) {
-        const dynamicColor = MaterialDynamicColors[tokenName];
-        colors[tokenName] = hexFromArgb(
-          dynamicColor.getArgb(scheme),
-        ).toUpperCase();
+        colors[tokenName] = hexFromArgb(roles[tokenName]).toUpperCase();
       }
 
       return colors;
@@ -132,6 +130,19 @@ export function buildJson(ctx: BuilderContext) {
     ] as const;
 
     for (const { name, isDark, contrast } of jsonContrastLevels) {
+      // Color match takes precedence over `scheme`: the same scheme builder()
+      // renders, at this level's `isDark` and contrast
+      if (colorMatch) {
+        const { roles } = buildColorMatchScheme(
+          effectiveSourceArgb,
+          cores,
+          isDark,
+          contrast,
+        );
+        jsonSchemes[name] = extractSchemeColors(roles);
+        continue;
+      }
+
       // Base scheme from primary — provides default palettes for all roles
       const baseScheme = new SchemeClass(primaryHct, isDark, contrast);
 
@@ -154,7 +165,7 @@ export function buildJson(ctx: BuilderContext) {
       // scheme. MTB's export takes background/onBackground from the base
       // scheme instead; we do not reproduce that (see
       // docs/adr/0002-json-background-follows-the-rendered-scheme.md).
-      jsonSchemes[name] = extractSchemeColors(composedScheme);
+      jsonSchemes[name] = extractSchemeColors(systemRoles(composedScheme));
     }
 
     return jsonSchemes;

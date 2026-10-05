@@ -2,6 +2,7 @@ import { cleanup, render } from "@testing-library/react";
 import { useEffect } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it } from "vitest";
+import { builder } from "./lib/builder";
 import { Mcu, Mtb } from "./Mtb";
 import { useMcu, useMtb } from "./Mtb.context";
 
@@ -98,6 +99,19 @@ describe("Mtb", () => {
     styleContent = styleTag?.textContent || "";
 
     expect(styleContent).not.toContain("--md-sys-color-brand");
+  });
+
+  it("should hand `colorMatch` over to builder()", () => {
+    const config = { source: "#6750A4", secondary: "#B03A3A" };
+
+    render(<Mtb {...config} colorMatch />);
+
+    const styleContent = document.querySelector("#mcu-styles")?.textContent;
+    expect(styleContent).toBe(
+      builder(config.source, { ...config, colorMatch: true }).toCss(),
+    );
+    // Guards the assertion above: `colorMatch` does change the CSS
+    expect(styleContent).not.toBe(builder(config.source, config).toCss());
   });
 
   it("should render the CSS variables into the server markup", () => {

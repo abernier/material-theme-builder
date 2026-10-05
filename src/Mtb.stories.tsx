@@ -620,25 +620,38 @@ export const PrimarySecondaryTertiaryErrorNeutralNeutralVariantSt: Story = {
 
 //
 
-// export const PrimarySecondaryTertiaryErrorNeutralNeutralVariantColorMatchSt: Story =
-//   {
-//     name: "[primary][secondary][tertiary][error][neutral][neutralVariant][colorMatch]",
-//     args: {
-//       source: "#769CDF", // keep source because required (but primary will be considered effective one)
-//       primary: "#cab337",
-//       secondary: "#b03a3a",
-//       tertiary: "#2138d2",
-//       error: "#479200",
-//       neutral: "#957FF1",
-//       neutralVariant: "#007EDF",
-//       colorMatch: true,
-//     },
-//     render: (args) => (
-//       <Mtb {...args}>
-//         <Bar customColors={args.customColors} />
-//       </Mtb>
-//     ),
-//   };
+export const PrimarySecondaryTertiaryErrorNeutralNeutralVariantColorMatchSt: Story =
+  {
+    name: "[primary][secondary][tertiary][error][neutral][neutralVariant][colorMatch]",
+    args: {
+      source: "#769CDF", // keep source because required (but primary will be considered effective one)
+      primary: "#cab337",
+      secondary: "#b03a3a",
+      tertiary: "#2138d2",
+      error: "#479200",
+      neutral: "#957FF1",
+      neutralVariant: "#007EDF",
+      colorMatch: true,
+    },
+    render: (args) => (
+      <Mtb {...args}>
+        <Layout>
+          <Scheme
+            theme="light"
+            title="Light scheme"
+            customColors={args.customColors}
+          />
+
+          <Scheme
+            theme="dark"
+            title="Dark scheme"
+            customColors={args.customColors}
+          />
+          <Shades customColors={args.customColors} />
+        </Layout>
+      </Mtb>
+    ),
+  };
 
 //
 //  ██████ ██    ██ ███████ ████████  ██████  ███    ███
