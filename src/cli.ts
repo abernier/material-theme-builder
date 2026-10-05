@@ -187,12 +187,23 @@ addThemeOptions(
       customColors = result.data;
     }
 
-    const result = builder(source, {
-      ...builderOptions(opts),
-      customColors,
-    });
+    // Every hex was checked on the way in, so what `builder()` can still refuse
+    // here is a custom color's name -- one that collides with a system role, a
+    // core palette or another custom color. It takes the whole list to tell,
+    // which is why this one is not restated in the schema above: the library's
+    // own sentence is printed instead, as one line rather than a stack trace.
+    let theme: Theme;
+    try {
+      theme = builder(source, {
+        ...builderOptions(opts),
+        customColors,
+      });
+    } catch (error) {
+      console.error(`Error: ${error instanceof Error ? error.message : error}`);
+      process.exit(1);
+    }
 
-    writeOutput(result, opts);
+    writeOutput(theme, opts);
   });
 
 // The subcommand lives alongside the program's own action rather than turning it

@@ -172,6 +172,11 @@ over `scheme`, and leaves custom colors unaffected.
 >
 > CSS varnames are always kebab-cased, e.g. `myCustomColor1` →
 > `--md-sys-color-my-custom-color-1` / `--md-ref-palette-my-custom-color-1-<tone>`
+>
+> So a custom color needs a name of its own, once kebab-cased: `builder()` and
+> `<Mtb>` throw on one that collides with a system role (`secondary`,
+> `onSurface`), a core palette (`neutral`) or another custom color (`brand` and
+> `Brand`). To replace a core color, use its override (`secondary: "#..."`).
 
 ## `useMtb`
 

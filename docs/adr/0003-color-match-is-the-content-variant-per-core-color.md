@@ -24,8 +24,12 @@ applied per core color:
   `SchemeContent` of its own color (chroma / 8, and chroma / 8 + 4). Its roles
   keep their standard tones.
 
-We decided that `colorMatch: true` is that algorithm, built in one place
-(`buildColorMatchScheme`) that both `builder()` and `toJson()` read.
+We decided that `colorMatch: true` is that algorithm, built in the one scheme
+construction that every exporter reads (`renderScheme`, see
+[ADR 0004](./0004-a-core-color-override-takes-the-palette-of-its-own-scheme.md)).
+The palettes are exactly those of `scheme: "content"` under ADR 0004's per-color
+rule; what Color match adds is the roles of an overridden accent, read from the
+scheme of its own color (`colorMatchAccentRoles`).
 
 ## Why
 

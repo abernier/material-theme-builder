@@ -28,7 +28,13 @@ import {
   type ShadcnRegistryItemOptions,
 } from "./builder.shadcn";
 import { buildTailwind, type TailwindOptions } from "./builder.tailwind";
-import { DEFAULT_PREFIX, type TokenName, tokenNames } from "./tokens";
+import {
+  CORE_PALETTES,
+  DEFAULT_PREFIX,
+  SHADE_TO_TONE,
+  type TokenName,
+  tokenNames,
+} from "./tokens";
 
 // ─── Re-exports (types defined alongside their exporter) ─────────────────
 
@@ -236,6 +242,81 @@ function optionalHex(hex: string | undefined) {
   return hex?.trim() || undefined;
 }
 
+// ─── Custom color names ──────────────────────────────────────────────────
+//
+// A custom color brings one palette and four roles, all named after it (see
+// `buildCustomColorRoles()`), and nothing kept those names apart from the ones
+// already taken: `mergeBaseAndCustomColors()` spreads the custom roles over the
+// system roles, `allPalettes` the custom palettes over the core ones.
+//
+// So a custom color named `secondary` replaced `secondary`, `onSecondary`,
+// `secondaryContainer`, `onSecondaryContainer` and the `secondary` reference
+// palette, while `secondaryFixed` and `secondaryFixedDim` stayed the core
+// color's: half a family replaced, fixed roles that were no longer tones of an
+// exported palette (against
+// docs/adr/0001-reference-palettes-are-the-scheme-palettes.md), and a
+// `toJson().schemes` -- read from the scheme, not from the merged roles -- that
+// disagreed with `toCss()`. Replacing a core color is what the core-color
+// overrides are for.
+//
+// Names are compared as the exporters spell them, kebab-cased: `Secondary`,
+// `neutral variant` and `neutralVariant` land on the same custom properties as
+// the names they look like, and so do `brand` and `Brand` on each other's.
+// (toFigmaVariables() start-cases and toFlutter() only capitalizes; whatever
+// collides there collides kebab-cased too.)
+//
+// Roles and palettes are two namespaces, `--{prefix}-sys-color-*` and
+// `--{prefix}-ref-palette-*`: `neutral` is a core palette and no role. Tailwind
+// has a single namespace, though: toTailwind() and the Tailwind plugin write
+// both the roles and the eleven shades of every palette as `--color-*`, so a
+// shade name (`primary-500`) is taken the way a role name is.
+function assertCustomColorNames(customColors: HexCustomColor[]) {
+  if (customColors.length === 0) return;
+
+  // Every name already taken, as the exporters spell it, with who took it
+  const takenRoles = new Map<string, string>();
+  const takenPalettes = new Map<string, string>();
+
+  for (const token of tokenNames)
+    takenRoles.set(kebabCase(token), `the system role '${token}'`);
+
+  for (const palette of CORE_PALETTES) {
+    takenPalettes.set(palette, `the core palette '${palette}'`);
+
+    for (const [shade] of SHADE_TO_TONE)
+      takenRoles.set(
+        `${palette}-${shade}`,
+        `the Tailwind shade '${palette}-${shade}' of the core palette '${palette}'`,
+      );
+  }
+
+  customColors.forEach(({ name }, i) => {
+    // Take `spelling` for this custom color, unless it is taken already
+    function take(taken: Map<string, string>, spelling: string, what: string) {
+      const owner = taken.get(spelling);
+      if (owner !== undefined)
+        throw new Error(
+          `Invalid customColors[${i}].name: '${name}'. Its ${what} collides with ${owner}. Expected a name that no system role, core palette or other custom color already uses.`,
+        );
+
+      taken.set(spelling, `the ${what} of customColors[${i}]`);
+    }
+
+    for (const role of Object.values(customColorRoleNames(name)))
+      take(takenRoles, kebabCase(role), `role '${role}'`);
+
+    const palette = kebabCase(name);
+    take(takenPalettes, palette, `palette '${palette}'`);
+
+    for (const [shade] of SHADE_TO_TONE)
+      take(
+        takenRoles,
+        `${palette}-${shade}`,
+        `Tailwind shade '${palette}-${shade}'`,
+      );
+  });
+}
+
 /**
  * The 28 standard tone values used in Material You tonal palettes.
  *
@@ -275,12 +356,25 @@ export const schemeToVariant = {
 
 // ─── Internal types ──────────────────────────────────────────────────────
 
-type ColorDefinition = {
-  name: string;
-  hex?: string;
-  blend?: boolean;
-  core?: boolean;
-  chromaSource?: "primary" | "neutral" | "neutralVariant";
+// The core colors an input can override, as ARGB. `primary` is not one of them:
+// when given, it replaces the source the whole scheme is built from.
+type CoreOverrides = {
+  secondary?: number;
+  tertiary?: number;
+  error?: number;
+  neutral?: number;
+  neutralVariant?: number;
+};
+
+// The palettes of the rendered scheme, core-color overrides applied. `error` is
+// only set when overridden: a scheme keeps its own error palette otherwise.
+type CorePalettes = {
+  primary: TonalPalette;
+  secondary: TonalPalette;
+  tertiary: TonalPalette;
+  error?: TonalPalette;
+  neutral: TonalPalette;
+  neutralVariant: TonalPalette;
 };
 
 type ColorPalettes = Record<string, TonalPalette>;
@@ -288,11 +382,14 @@ type ColorPalettes = Record<string, TonalPalette>;
 /** The system roles of a scheme, as ARGB integers keyed by token name. */
 type SystemRoles = Record<TokenName, number>;
 
-/** The core-color overrides. */
-type CoreColorOverrides = Pick<
-  MtbConfig,
-  "primary" | "secondary" | "tertiary" | "error" | "neutral" | "neutralVariant"
->;
+/**
+ * The scheme rendered at one level: its system roles, and the scheme holding
+ * the palettes they are drawn from.
+ *
+ * The roles are not always the scheme's own: under `colorMatch`, those of an
+ * overridden accent are read from the scheme of the accent's own color.
+ */
+export type RenderedScheme = { scheme: DynamicScheme; roles: SystemRoles };
 
 /**
  * The reference palettes, keyed by kebab-case palette name: each one's colors
@@ -318,12 +415,10 @@ export type BuilderContext = {
   /** The custom colors, each with its `blend` default applied. */
   hexCustomColors: Required<HexCustomColor>[];
 
-  // Derived intermediates
-  /** The core-color overrides, a blank one read as no override. */
-  cores: CoreColorOverrides;
-  effectiveSourceArgb: number;
-  primaryHct: Hct;
-  SchemeClass: SchemeConstructor;
+  // The rendered scheme at any level -- the one construction behind
+  // mergedColorsLight/Dark, for the exporters that need other levels than the
+  // configured one (toJson() exports six)
+  renderScheme: (isDark: boolean, contrast: number) => RenderedScheme;
 
   // Computed outputs (shared across toCss, toJson, toFigma)
   allPalettes: Record<string, TonalPalette>;
@@ -374,12 +469,27 @@ function getPalette(palettes: ColorPalettes, colorName: string) {
 }
 
 //
-// The roles of one custom color, as DynamicColor objects exactly like core
-// colors:
+// The names of the four roles of one custom color:
 // 1. <colorname>
 // 2. on<Colorname>
 // 3. <colorname>Container
 // 4. on<Colorname>Container
+//
+// Spelled here once, for `buildCustomColorRoles()` that generates the roles and
+// `assertCustomColorNames()` that keeps their names free.
+//
+function customColorRoleNames(colorname: string) {
+  return {
+    color: colorname,
+    onColor: `on${upperFirst(colorname)}`,
+    container: `${colorname}Container`,
+    onContainer: `on${upperFirst(colorname)}Container`,
+  };
+}
+
+//
+// The roles of one custom color, as DynamicColor objects exactly like core
+// colors.
 //
 // Based on Material Design 3 spec: https://m3.material.io/styles/color/roles
 //
@@ -388,28 +498,29 @@ function getPalette(palettes: ColorPalettes, colorName: string) {
 
 function buildCustomColorRoles(colorname: string, palette: TonalPalette) {
   const getPaletteForColor = () => palette;
+  const names = customColorRoleNames(colorname);
 
   return {
-    [colorname]: new DynamicColor(
-      colorname,
+    [names.color]: new DynamicColor(
+      names.color,
       getPaletteForColor,
       (s) => (s.isDark ? 80 : 40), // Main color: lighter in dark mode, darker in light mode
       true, // background
     ),
-    [`on${upperFirst(colorname)}`]: new DynamicColor(
-      `on${upperFirst(colorname)}`,
+    [names.onColor]: new DynamicColor(
+      names.onColor,
       getPaletteForColor,
       (s) => (s.isDark ? 20 : 100), // Text on main color: high contrast (dark on light, light on dark)
       false,
     ),
-    [`${colorname}Container`]: new DynamicColor(
-      `${colorname}Container`,
+    [names.container]: new DynamicColor(
+      names.container,
       getPaletteForColor,
       (s) => (s.isDark ? 30 : 90), // Container: subtle variant (darker in dark mode, lighter in light mode)
       true, // background
     ),
-    [`on${upperFirst(colorname)}Container`]: new DynamicColor(
-      `on${upperFirst(colorname)}Container`,
+    [names.onContainer]: new DynamicColor(
+      names.onContainer,
       getPaletteForColor,
       (s) => (s.isDark ? 90 : 30), // Text on container: high contrast against container background
       false,
@@ -417,12 +528,12 @@ function buildCustomColorRoles(colorname: string, palette: TonalPalette) {
   };
 }
 
-/**
- * Base colors (all listed in tokenNames), as the scheme renders them.
- *
- * returns: { primary: 0xFF6200EE, onPrimary: 0xFFFFFFFF, ... }
- */
-export function systemRoles(scheme: DynamicScheme) {
+//
+// Base colors (all listed in tokenNames), as the scheme renders them
+//
+// returns: { primary: 0xFF6200EE, onPrimary: 0xFFFFFFFF, ... }
+//
+function systemRoles(scheme: DynamicScheme) {
   // Cast: toRecord() is typed by Object.fromEntries(), which forgets the keys
   return toRecord(tokenNames, (tokenName) => {
     const dynamicColor = MaterialDynamicColors[tokenName];
@@ -438,8 +549,7 @@ export function systemRoles(scheme: DynamicScheme) {
 //
 
 function mergeBaseAndCustomColors(
-  baseVars: SystemRoles,
-  scheme: DynamicScheme,
+  { scheme, roles: baseVars }: RenderedScheme,
   customColorRoles: Record<string, Record<string, DynamicColor>>,
 ): Record<string, number> {
   //
@@ -458,45 +568,94 @@ function mergeBaseAndCustomColors(
 }
 
 //
-// Helper function to create a palette for any color (core or custom)
-// This unifies the logic between core colors and custom colors
+// The palettes of the scheme every exporter renders: toCss(), toJson().schemes
+// and all the others read their system roles from this one construction, so
+// they cannot disagree.
 //
-function createColorPalette(
-  colorDef: ColorDefinition & { hex: string },
-  baseScheme: DynamicScheme,
-  effectiveSourceForHarmonization: number,
+// A core-color override takes the palette the variant gives its own color (see
+// docs/adr/0004-a-core-color-override-takes-the-palette-of-its-own-scheme.md):
+// - `sourceArgb` is the effective source -- `primary` when given, else
+//   `source`. Every palette that is not overridden comes from its scheme, the
+//   primary palette always;
+// - `secondary`, `tertiary` and `error` take the primary palette of the scheme
+//   of their own color;
+// - `neutral` and `neutralVariant` take the neutral and the neutral-variant
+//   palette of the scheme of their own color.
+//
+// Resolved once per theme rather than at every level: a scheme's palettes come
+// from its color alone, light or dark and at any contrast, and building a
+// scheme is the expensive part (`fidelity` and `content` search a complement).
+//
+function resolveCorePalettes(
+  schemeName: SchemeName,
+  sourceArgb: number,
+  overrides: CoreOverrides,
+): CorePalettes {
+  const SchemeClass = schemesMap[schemeName];
+  // The level asked for here is arbitrary: the palettes do not depend on it
+  const schemeOf = (argb: number) =>
+    new SchemeClass(Hct.fromInt(argb), false, DEFAULT_CONTRAST);
+
+  const base = schemeOf(sourceArgb);
+  const { secondary, tertiary, error, neutral, neutralVariant } = overrides;
+
+  return {
+    primary: base.primaryPalette,
+    secondary:
+      secondary !== undefined
+        ? schemeOf(secondary).primaryPalette
+        : base.secondaryPalette,
+    tertiary:
+      tertiary !== undefined
+        ? schemeOf(tertiary).primaryPalette
+        : base.tertiaryPalette,
+    error: error !== undefined ? schemeOf(error).primaryPalette : undefined,
+    neutral:
+      neutral !== undefined
+        ? schemeOf(neutral).neutralPalette
+        : base.neutralPalette,
+    neutralVariant:
+      neutralVariant !== undefined
+        ? schemeOf(neutralVariant).neutralVariantPalette
+        : base.neutralVariantPalette,
+  };
+}
+
+//
+// The scheme every exporter renders, at one level (light or dark, at one
+// contrast), from the palettes `resolveCorePalettes()` resolved.
+//
+function buildScheme(
+  schemeName: SchemeName,
+  sourceArgb: number,
+  palettes: CorePalettes,
+  isDark: boolean,
+  contrast: number,
 ) {
-  // Get the color value, applying harmonization if needed
-  const colorArgb = argbFromHex(colorDef.hex);
-  const harmonizedArgb = colorDef.blend
-    ? Blend.harmonize(colorArgb, effectiveSourceForHarmonization)
-    : colorArgb;
+  const scheme = new DynamicScheme({
+    sourceColorArgb: sourceArgb,
+    variant: schemeToVariant[schemeName],
+    contrastLevel: contrast,
+    isDark,
+    primaryPalette: palettes.primary,
+    secondaryPalette: palettes.secondary,
+    tertiaryPalette: palettes.tertiary,
+    neutralPalette: palettes.neutral,
+    neutralVariantPalette: palettes.neutralVariant,
+  });
 
-  const hct = Hct.fromInt(harmonizedArgb);
-
-  // Determine which chroma to use based on color type
-  let targetChroma: number;
-  if (colorDef.core && colorDef.chromaSource) {
-    // Core colors use specific chroma values from the base scheme
-    if (colorDef.chromaSource === "neutral") {
-      targetChroma = baseScheme.neutralPalette.chroma;
-    } else if (colorDef.chromaSource === "neutralVariant") {
-      targetChroma = baseScheme.neutralVariantPalette.chroma;
-    } else {
-      // primary chroma for primary, secondary, tertiary, error
-      targetChroma = baseScheme.primaryPalette.chroma;
-    }
-  } else {
-    // Custom colors use primary chroma (same as before)
-    targetChroma = baseScheme.primaryPalette.chroma;
+  // The DynamicScheme constructor does not accept an errorPalette: it has to
+  // be set after creation
+  if (palettes.error !== undefined) {
+    scheme.errorPalette = palettes.error;
   }
 
-  return TonalPalette.fromHueAndChroma(hct.hue, targetChroma);
+  return scheme;
 }
 
 // The roles of each accent, mapped to the primary role they are read from on
-// the Content scheme of the accent's own color (see buildColorMatchScheme).
-const colorMatchAccentRoles = {
+// the Content scheme of the accent's own color (see colorMatchAccentRoles).
+const accentRolesFromPrimary = {
   secondary: {
     secondary: "primary",
     onSecondary: "onPrimary",
@@ -528,87 +687,56 @@ const colorMatchAccentRoles = {
   Partial<Record<TokenName, TokenName>>
 >;
 
-/**
- * The scheme of Material Theme Builder's "Color match", for one `isDark` and
- * one contrast level: the system roles, and the scheme holding the palettes
- * they are drawn from.
- *
- * Color match is the Content variant, applied per core color (see
- * docs/adr/0003-color-match-is-the-content-variant-per-core-color.md):
- *
- * - the base is the Content scheme of the source (`primary`, when given);
- * - an overridden accent (`secondary`, `tertiary`, `error`) takes the primary
- *   roles of the Content scheme of its own color;
- * - an overridden `neutral` or `neutralVariant` takes the palette of that name
- *   from the Content scheme of its own color, its roles keeping their tones.
- *
- * Shared by builder() (the rendered light and dark schemes) and toJson() (the
- * six schemes of the export), so the two cannot disagree.
- *
- * @param sourceArgb the effective source: `primary` when given, else `source`
- * @param overrides the other core-color overrides, `primary` being the source
- */
-export function buildColorMatchScheme(
-  sourceArgb: number,
-  overrides: Omit<CoreColorOverrides, "primary">,
+//
+// What Material Theme Builder's "Color match" adds to the Content variant: the
+// roles of each overridden accent (`secondary`, `tertiary`, `error`), at one
+// level (see docs/adr/0003-color-match-is-the-content-variant-per-core-color.md).
+//
+// The palettes are already those of the Content variant per core color (see
+// resolveCorePalettes). The roles of an overridden accent are not the ones a
+// single scheme holding those palettes renders, though: the Content container
+// tones follow the scheme's source color, which has to be the accent's own
+// color. So they are the primary roles of the Content scheme of that color.
+//
+function colorMatchAccentRoles(
+  overrides: CoreOverrides,
   isDark: boolean,
   contrast: number,
 ) {
-  const base = new SchemeContent(Hct.fromInt(sourceArgb), isDark, contrast);
+  const roles: Partial<SystemRoles> = {};
 
-  // The Content scheme of a core color, when it is overridden
-  const contentScheme = (hex: string | undefined) =>
-    hex
-      ? new SchemeContent(Hct.fromInt(argbFromHex(hex)), isDark, contrast)
-      : undefined;
-
-  // One Content scheme per overridden core color. A single scheme given the
-  // override palettes would not do: the Content container tones follow the
-  // scheme's source color, which has to be the accent's own color.
-  const secondary = contentScheme(overrides.secondary);
-  const tertiary = contentScheme(overrides.tertiary);
-  const error = contentScheme(overrides.error);
-  const neutral = contentScheme(overrides.neutral);
-  const neutralVariant = contentScheme(overrides.neutralVariant);
-
-  // The scheme holding the palettes the roles are drawn from: the reference
-  // palettes (see docs/adr/0001-reference-palettes-are-the-scheme-palettes.md)
-  const scheme = new DynamicScheme({
-    sourceColorArgb: sourceArgb,
-    variant: Variant.CONTENT,
-    contrastLevel: contrast,
-    isDark,
-    primaryPalette: base.primaryPalette,
-    secondaryPalette: secondary?.primaryPalette ?? base.secondaryPalette,
-    tertiaryPalette: tertiary?.primaryPalette ?? base.tertiaryPalette,
-    neutralPalette: neutral?.neutralPalette ?? base.neutralPalette,
-    neutralVariantPalette:
-      neutralVariant?.neutralVariantPalette ?? base.neutralVariantPalette,
-  });
-
-  // Note: DynamicScheme constructor doesn't accept errorPalette as parameter
-  // We need to set it after creation
-  if (error) scheme.errorPalette = error.primaryPalette;
-
-  // Every role as that scheme renders it, `background` and `onBackground`
-  // included (see docs/adr/0002-json-background-follows-the-rendered-scheme.md)...
-  const roles = systemRoles(scheme);
-
-  // ...but the roles of an overridden accent, read from its own Content scheme
-  const accentSchemes = { secondary, tertiary, error };
   for (const accent of ["secondary", "tertiary", "error"] as const) {
-    const accentScheme = accentSchemes[accent];
-    if (!accentScheme) continue;
+    const argb = overrides[accent];
+    if (argb === undefined) continue;
+
+    const accentScheme = new SchemeContent(Hct.fromInt(argb), isDark, contrast);
 
     for (const [tokenName, primaryTokenName] of Object.entries(
-      colorMatchAccentRoles[accent],
+      accentRolesFromPrimary[accent],
     )) {
       roles[tokenName as TokenName] =
         MaterialDynamicColors[primaryTokenName].getArgb(accentScheme);
     }
   }
 
-  return { scheme, roles };
+  return roles;
+}
+
+//
+// The palette of a custom color: its hue -- once harmonized with the effective
+// source, when `blend` is set -- at the chroma of the scheme's primary palette.
+//
+function createCustomColorPalette(
+  color: Required<HexCustomColor>,
+  sourceArgb: number,
+  chroma: number,
+) {
+  const colorArgb = argbFromHex(color.hex);
+  const harmonizedArgb = color.blend
+    ? Blend.harmonize(colorArgb, sourceArgb)
+    : colorArgb;
+
+  return TonalPalette.fromHueAndChroma(Hct.fromInt(harmonizedArgb).hue, chroma);
 }
 
 // The reference palettes are, by definition, the palettes the system roles are
@@ -697,6 +825,7 @@ export function builder(
   };
 
   assertHexInputs(hexSource, cores, customColorInputs);
+  assertCustomColorNames(customColorInputs);
 
   // `blend` may be omitted. Its default is applied here, once, so that the
   // palette, the roles and every exporter's metadata read the same value: the
@@ -707,120 +836,66 @@ export function builder(
     blend: c.blend ?? DEFAULT_BLEND,
   }));
 
-  const sourceArgb = argbFromHex(hexSource);
+  // The effective source: `primary`, when given, replaces `source` as the color
+  // the scheme is built from and custom colors are harmonized with
+  const effectiveSourceArgb = argbFromHex(cores.primary ?? hexSource);
 
-  // Determine the effective source for harmonization
-  // When primary is defined, it becomes the effective source
-  const effectiveSource = cores.primary || hexSource;
-  const effectiveSourceArgb = argbFromHex(effectiveSource);
-  const effectiveSourceForHarmonization = cores.primary
-    ? argbFromHex(cores.primary)
-    : sourceArgb;
+  const overrides: CoreOverrides = {};
+  if (cores.secondary) overrides.secondary = argbFromHex(cores.secondary);
+  if (cores.tertiary) overrides.tertiary = argbFromHex(cores.tertiary);
+  if (cores.error) overrides.error = argbFromHex(cores.error);
+  if (cores.neutral) overrides.neutral = argbFromHex(cores.neutral);
+  if (cores.neutralVariant)
+    overrides.neutralVariant = argbFromHex(cores.neutralVariant);
 
-  // Create a base scheme to get the standard chroma values
-  const SchemeClass = schemesMap[scheme];
-  const primaryHct = Hct.fromInt(effectiveSourceArgb);
-  const baseScheme = new SchemeClass(primaryHct, false, contrast);
+  // Color match takes precedence over `scheme` for the core colors: it is the
+  // Content variant (MTB has no scheme selector: off is tonal spot, on is
+  // content), see docs/adr/0003-color-match-is-the-content-variant-per-core-color.md
+  const coreScheme = colorMatch ? "content" : scheme;
 
-  // Unified color processing: Combine core colors and custom colors, filter to only those with hex defined
-  const allColors: ColorDefinition[] = [
-    // Core colors (hex may be undefined)
-    {
-      name: "primary",
-      hex: cores.primary,
-      core: true,
-      chromaSource: "primary",
-    },
-    {
-      name: "secondary",
-      hex: cores.secondary,
-      core: true,
-      chromaSource: "primary",
-    },
-    {
-      name: "tertiary",
-      hex: cores.tertiary,
-      core: true,
-      chromaSource: "primary",
-    },
-    { name: "error", hex: cores.error, core: true, chromaSource: "primary" },
-    {
-      name: "neutral",
-      hex: cores.neutral,
-      core: true,
-      chromaSource: "neutral",
-    },
-    {
-      name: "neutralVariant",
-      hex: cores.neutralVariant,
-      core: true,
-      chromaSource: "neutralVariant",
-    },
-    //
-    // Custom colors
-    //
-    ...hexCustomColors.map((c) => ({
-      name: c.name,
-      hex: c.hex,
-      blend: c.blend,
-      core: false,
-    })),
-  ];
-
-  const definedColors = allColors.filter(
-    (c): c is ColorDefinition & { hex: string } => c.hex !== undefined,
+  const corePalettes = resolveCorePalettes(
+    coreScheme,
+    effectiveSourceArgb,
+    overrides,
   );
 
-  // Create palettes for all defined colors
-  const colorPalettes = Object.fromEntries(
-    definedColors.map((colorDef) => [
-      colorDef.name,
-      createColorPalette(colorDef, baseScheme, effectiveSourceForHarmonization),
-    ]),
-  );
+  const renderScheme = (isDark: boolean, contrastLevel: number) => {
+    const rendered = buildScheme(
+      coreScheme,
+      effectiveSourceArgb,
+      corePalettes,
+      isDark,
+      contrastLevel,
+    );
 
-  // Create schemes with core color palettes (or defaults from baseScheme)
-  // Since source is always required, we always have a base to work from
-  const variant = schemeToVariant[scheme];
-  const schemeConfig = {
-    sourceColorArgb: effectiveSourceArgb,
-    variant,
-    contrastLevel: contrast,
-    primaryPalette: colorPalettes["primary"] || baseScheme.primaryPalette,
-    secondaryPalette: colorPalettes["secondary"] || baseScheme.secondaryPalette,
-    tertiaryPalette: colorPalettes["tertiary"] || baseScheme.tertiaryPalette,
-    neutralPalette: colorPalettes["neutral"] || baseScheme.neutralPalette,
-    neutralVariantPalette:
-      colorPalettes["neutralVariant"] || baseScheme.neutralVariantPalette,
-  };
-  const errorPalette = colorPalettes["error"];
-
-  // The rendered scheme for one `isDark`: its system roles, and the scheme
-  // holding the palettes they are drawn from.
-  function renderScheme(isDark: boolean) {
-    // Color match takes precedence over `scheme` (MTB has no scheme selector:
-    // off is tonal spot, on is content). The custom colors do not follow: they
-    // keep the palettes built above, from the `scheme` base.
+    const roles = systemRoles(rendered);
     if (colorMatch) {
-      return buildColorMatchScheme(
-        effectiveSourceArgb,
-        cores,
-        isDark,
-        contrast,
+      Object.assign(
+        roles,
+        colorMatchAccentRoles(overrides, isDark, contrastLevel),
       );
     }
 
-    const scheme = new DynamicScheme({ ...schemeConfig, isDark });
+    return { scheme: rendered, roles } satisfies RenderedScheme;
+  };
 
-    // Note: DynamicScheme constructor doesn't accept errorPalette as parameter
-    // We need to set it after creation
-    if (errorPalette) scheme.errorPalette = errorPalette;
+  const light = renderScheme(false, contrast);
+  const dark = renderScheme(true, contrast);
+  const lightScheme = light.scheme;
 
-    return { scheme, roles: systemRoles(scheme) };
-  }
+  // Custom colors do not follow Color match: they keep the chroma of the
+  // primary palette of `scheme`, as without `colorMatch`
+  const customColorChroma = colorMatch
+    ? resolveCorePalettes(scheme, effectiveSourceArgb, {}).primary.chroma
+    : corePalettes.primary.chroma;
 
-  const { scheme: lightScheme, roles: lightRoles } = renderScheme(false);
-  const { scheme: darkScheme, roles: darkRoles } = renderScheme(true);
+  // Custom color palettes, keyed by custom color name
+  const customColorPalettes: ColorPalettes = Object.fromEntries(
+    hexCustomColors.map((color) => [
+      color.name,
+      createCustomColorPalette(color, effectiveSourceArgb, customColorChroma),
+    ]),
+  );
 
   // The palettes the system roles are drawn from: the reference palettes of
   // toCss() and toJson(). They follow the scheme variant (eg SchemeTonalSpot
@@ -834,40 +909,23 @@ export function builder(
     neutral: lightScheme.neutralPalette,
     "neutral-variant": lightScheme.neutralVariantPalette,
     // Add custom color palettes
-    ...Object.fromEntries(
-      definedColors
-        .filter((c) => !c.core)
-        .map((colorDef) => [colorDef.name, colorPalettes[colorDef.name]]),
-    ),
+    ...customColorPalettes,
   };
-
-  // Extract custom colors (non-core) for merging
-  const customColors = definedColors
-    .filter((c) => !c.core)
-    .map((c) => ({
-      name: c.name,
-      value: argbFromHex(c.hex),
-    }));
 
   // The roles of each custom color, keyed by custom color name, then by token
   // name -- the custom-color counterpart of MaterialDynamicColors
   const customColorRoles = Object.fromEntries(
-    customColors.map((color) => [
+    hexCustomColors.map((color) => [
       color.name,
-      buildCustomColorRoles(color.name, getPalette(colorPalettes, color.name)),
+      buildCustomColorRoles(
+        color.name,
+        getPalette(customColorPalettes, color.name),
+      ),
     ]),
   );
 
-  const mergedColorsLight = mergeBaseAndCustomColors(
-    lightRoles,
-    lightScheme,
-    customColorRoles,
-  );
-  const mergedColorsDark = mergeBaseAndCustomColors(
-    darkRoles,
-    darkScheme,
-    customColorRoles,
-  );
+  const mergedColorsLight = mergeBaseAndCustomColors(light, customColorRoles);
+  const mergedColorsDark = mergeBaseAndCustomColors(dark, customColorRoles);
 
   // ── Shared token→palette mapping ──────────────────────────────────────
   const schemePalettes: [string, TonalPalette][] = [
@@ -897,10 +955,7 @@ export function builder(
     neutralVariant,
     error,
     hexCustomColors,
-    cores,
-    effectiveSourceArgb,
-    primaryHct,
-    SchemeClass,
+    renderScheme,
     allPalettes,
     refPalettes,
     mergedColorsLight,

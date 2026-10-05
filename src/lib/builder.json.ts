@@ -1,12 +1,6 @@
-import {
-  argbFromHex,
-  DynamicScheme,
-  Hct,
-  hexFromArgb,
-} from "@material/material-color-utilities";
+import { hexFromArgb } from "@material/material-color-utilities";
 
-import type { BuilderContext, TokenName } from "./builder";
-import { buildColorMatchScheme, schemeToVariant, systemRoles } from "./builder";
+import type { BuilderContext, RenderedScheme, TokenName } from "./builder";
 
 // Token order matching Material Theme Builder export format
 const FIXTURE_TOKEN_ORDER = [
@@ -70,12 +64,7 @@ const FIXTURE_TOKEN_ORDER = [
 export function buildJson(ctx: BuilderContext) {
   const {
     hexSource,
-    effectiveSourceArgb,
-    primaryHct,
-    SchemeClass,
-    scheme,
-    colorMatch,
-    cores,
+    renderScheme,
     primary,
     secondary,
     tertiary,
@@ -88,7 +77,7 @@ export function buildJson(ctx: BuilderContext) {
 
   function buildJsonSchemes() {
     // Extract scheme colors in fixture token order
-    function extractSchemeColors(roles: Record<TokenName, number>) {
+    function extractSchemeColors({ roles }: RenderedScheme) {
       const colors: Record<string, string> = {};
 
       for (const tokenName of FIXTURE_TOKEN_ORDER) {
@@ -97,26 +86,6 @@ export function buildJson(ctx: BuilderContext) {
 
       return colors;
     }
-
-    // Resolve an override palette from a hex color string.
-    // Returns null when hex is undefined (no override for that role).
-    function resolveOverridePalette(
-      hex: string | undefined,
-      role: "primaryPalette" | "neutralPalette" | "neutralVariantPalette",
-    ) {
-      if (!hex) return null;
-      return new SchemeClass(Hct.fromInt(argbFromHex(hex)), false, 0)[role];
-    }
-
-    // Override palettes (isDark/contrast-invariant)
-    const secPalette = resolveOverridePalette(secondary, "primaryPalette");
-    const terPalette = resolveOverridePalette(tertiary, "primaryPalette");
-    const errPalette = resolveOverridePalette(error, "primaryPalette");
-    const neuPalette = resolveOverridePalette(neutral, "neutralPalette");
-    const nvPalette = resolveOverridePalette(
-      neutralVariant,
-      "neutralVariantPalette",
-    );
 
     const jsonSchemes: Record<string, Record<string, string>> = {};
 
@@ -130,42 +99,13 @@ export function buildJson(ctx: BuilderContext) {
     ] as const;
 
     for (const { name, isDark, contrast } of jsonContrastLevels) {
-      // Color match takes precedence over `scheme`: the same scheme builder()
-      // renders, at this level's `isDark` and contrast
-      if (colorMatch) {
-        const { roles } = buildColorMatchScheme(
-          effectiveSourceArgb,
-          cores,
-          isDark,
-          contrast,
-        );
-        jsonSchemes[name] = extractSchemeColors(roles);
-        continue;
-      }
-
-      // Base scheme from primary — provides default palettes for all roles
-      const baseScheme = new SchemeClass(primaryHct, isDark, contrast);
-
-      // Compose scheme: override palette where specified, base default otherwise
-      const composedScheme = new DynamicScheme({
-        sourceColorArgb: effectiveSourceArgb,
-        variant: schemeToVariant[scheme],
-        contrastLevel: contrast,
-        isDark,
-        primaryPalette: baseScheme.primaryPalette,
-        secondaryPalette: secPalette || baseScheme.secondaryPalette,
-        tertiaryPalette: terPalette || baseScheme.tertiaryPalette,
-        neutralPalette: neuPalette || baseScheme.neutralPalette,
-        neutralVariantPalette: nvPalette || baseScheme.neutralVariantPalette,
-      });
-
-      if (errPalette) composedScheme.errorPalette = errPalette;
-
-      // Every role, background/onBackground included, comes from the composed
-      // scheme. MTB's export takes background/onBackground from the base
-      // scheme instead; we do not reproduce that (see
+      // Every level is the scheme toCss() renders at that level, built by
+      // builder()'s one scheme construction. So every role, background and
+      // onBackground included, comes from the rendered scheme. MTB's export
+      // takes background/onBackground from the scheme of `primary` alone
+      // instead; we do not reproduce that (see
       // docs/adr/0002-json-background-follows-the-rendered-scheme.md).
-      jsonSchemes[name] = extractSchemeColors(systemRoles(composedScheme));
+      jsonSchemes[name] = extractSchemeColors(renderScheme(isDark, contrast));
     }
 
     return jsonSchemes;
