@@ -41,6 +41,10 @@ export const mtbArgTypes = {
     type: { name: "enum", value: [...schemeNames] },
     control: "select",
     options: schemeNames,
+    // `colorMatch` takes precedence over `scheme` for the core colors, so the
+    // control would look broken while it is on. Storybook can only hide a
+    // control conditionally, not disable it.
+    if: { arg: "colorMatch", truthy: false },
   },
   customColors: {
     type: {
