@@ -22,7 +22,8 @@
       "default": "./dist/tailwind-plugin.js"
     },
     "./shadcn.css": "./dist/shadcn.css",
-    "./registry-item.json": "./dist/registry-item.json"
+    "./registry-item.json": "./dist/registry-item.json",
+    "./r/*": "./dist/r/*"
   },
   "homepage": "https://github.com/abernier/material-theme-builder",
   "bugs": {
@@ -111,7 +112,8 @@
     "vitest": "^4.0.16"
   },
   "scripts": {
-    "build": "tsup",
+    "build": "tsup && pnpm run build-registry",
+    "build-registry": "shadcn build --output dist/r",
     "lint": "eslint .",
     "lgtm": "pnpm run build && pnpm run build-figma && pnpm run lint && pnpm run check-format && pnpm run check-exports && pnpm run typecheck && pnpm run test",
     "typecheck": "tsc",

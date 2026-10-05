@@ -1,0 +1,23 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry.json",
+  "name": "material-theme-builder",
+  "homepage": "https://github.com/abernier/material-theme-builder",
+  "items": [
+    {
+      "name": "scheme",
+      "type": "registry:component",
+      "title": "Scheme poster",
+      "description": "Material Theme Builder's color-scheme poster: every M3 role of the theme above it (Scheme) and its tonal palettes (Shades), painted from the CSS variables <Mtb> declares.",
+      "dependencies": ["material-theme-builder@^5.2.0", "lodash-es"],
+      "devDependencies": ["@types/lodash-es"],
+      "registryDependencies": ["utils"],
+      "files": [
+        {
+          "path": "src/components/mtb/scheme.tsx",
+          "type": "registry:component"
+        }
+      ],
+      "docs": "Render it inside <Mtb> from material-theme-builder/react: <Poster><Scheme theme=\"light\" /><Scheme theme=\"dark\" /><Shades /></Poster>. See https://github.com/abernier/material-theme-builder#scheme-poster"
+    }
+  ]
+}

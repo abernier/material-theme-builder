@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { type ComponentProps, useMemo } from "react";
 import { allModes } from "../.storybook/modes";
+import { Scheme, Shades } from "./components/mtb/scheme";
 import { type MtbConfig } from "./lib/builder";
 import { recolorizeSvg } from "./lib/recolorizeSvg";
 import { Mtb } from "./Mtb";
@@ -9,8 +10,6 @@ import {
   Layout,
   mtbArgs,
   mtbArgTypes,
-  Scheme,
-  Shades,
   TailwindScheme,
 } from "./Mtb.stories.helpers";
 

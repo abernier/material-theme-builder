@@ -8,11 +8,13 @@
 // still shipped `Mtb` and the color utilities to the browser, for a component
 // the page never rendered.
 
-export { builder } from "./lib/builder";
+export { STANDARD_TONES, builder } from "./lib/builder";
 export type {
+  HexCustomColor,
   McuConfig,
   MtbConfig,
   ShadcnRegistryItem,
   ShadcnTheme,
   ShadcnVarName,
+  TokenName,
 } from "./lib/builder";

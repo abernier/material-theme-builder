@@ -498,6 +498,39 @@ see:
 
 </details>
 
+### Scheme poster
+
+The poster the [stories](https://main--695eb517cb602e59b4cc045c.chromatic.com) draw
+— every M3 role of the theme, light and dark, and its tonal palettes — is a
+registry item too, to install rather than hand-roll a copy of:
+
+```sh
+$ npx shadcn@latest add https://unpkg.com/material-theme-builder/r/scheme.json
+```
+
+It lands in `components/mtb/scheme.tsx`. Put it under an `<Mtb>`, which is all
+it paints from:
+
+```tsx
+import { Mtb } from "material-theme-builder/react";
+import { Poster, Scheme, Shades } from "@/components/mtb/scheme";
+
+<Mtb source="#769CDF">
+  <Poster className="flex flex-col gap-6">
+    <Scheme theme="light" title="Light scheme" />
+    <Scheme theme="dark" title="Dark scheme" />
+    <Shades />
+  </Poster>
+</Mtb>;
+```
+
+`Poster` is the frame — gaps, labels, cell heights — so keep `Scheme` and
+`Shades` inside one. `theme="dark"` adds the `dark` class the dark values are
+keyed on; `theme="light"` cannot take an ancestor's away, so on a page in dark
+mode it shows the dark values too. Custom colors are passed along (`customColors={...}`, as
+given to `<Mtb>`), and `Scheme` has opt-in rows for the roles the spec dropped
+(`background`, `surfaceVariant`, `surfaceTint`).
+
 # Dev
 
 ## INSTALL
@@ -555,6 +588,12 @@ what keeps every one of those outputs a function of the _mapping_ rather than of
 a color: `SOURCE` there is arbitrary, and has to stay able to be. The fallback
 variant belongs to whoever knows a real source color — the CLI's
 `--format registry-item`.
+
+`dist/r/` is `shadcn build`'s output for `registry.json`, also part of
+`pnpm run build`. Its one item is `src/components/mtb/scheme.tsx` verbatim —
+the stories import it from there — so that file is written as a consumer's
+would be: `cn` from `@/lib/utils`, the package from `material-theme-builder`,
+which `tsconfig.json` maps back to `src/index.ts`.
 
 `src/styles/shadcn.css` is the other half of that arrangement, and is _not_
 generated from anything here: it is pristine `shadcn init --preset b0` output,
