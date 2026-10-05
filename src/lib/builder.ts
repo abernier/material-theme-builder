@@ -405,7 +405,6 @@ export type BuilderContext = {
   hexSource: string;
   prefix: string;
   scheme: SchemeName;
-  colorMatch: boolean;
   primary?: string;
   secondary?: string;
   tertiary?: string;
@@ -698,8 +697,14 @@ const accentRolesFromPrimary = {
 // tones follow the scheme's source color, which has to be the accent's own
 // color. So they are the primary roles of the Content scheme of that color.
 //
+// That scheme is built from the palettes already resolved rather than with
+// `new SchemeContent()`, which would derive all of them again at every level
+// (the expensive part). The primary roles read the scheme's source color and
+// its primary palette only, and `palettes[accent]` is that primary palette.
+//
 function colorMatchAccentRoles(
   overrides: CoreOverrides,
+  palettes: CorePalettes,
   isDark: boolean,
   contrast: number,
 ) {
@@ -707,9 +712,16 @@ function colorMatchAccentRoles(
 
   for (const accent of ["secondary", "tertiary", "error"] as const) {
     const argb = overrides[accent];
-    if (argb === undefined) continue;
+    const palette = palettes[accent];
+    if (argb === undefined || palette === undefined) continue;
 
-    const accentScheme = new SchemeContent(Hct.fromInt(argb), isDark, contrast);
+    const accentScheme = buildScheme(
+      "content",
+      argb,
+      { ...palettes, primary: palette },
+      isDark,
+      contrast,
+    );
 
     for (const [tokenName, primaryTokenName] of Object.entries(
       accentRolesFromPrimary[accent],
@@ -872,7 +884,7 @@ export function builder(
     if (colorMatch) {
       Object.assign(
         roles,
-        colorMatchAccentRoles(overrides, isDark, contrastLevel),
+        colorMatchAccentRoles(overrides, corePalettes, isDark, contrastLevel),
       );
     }
 
@@ -947,7 +959,6 @@ export function builder(
     hexSource,
     prefix,
     scheme,
-    colorMatch,
     primary,
     secondary,
     tertiary,
