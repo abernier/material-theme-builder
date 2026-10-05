@@ -1,3 +1,4 @@
+import { argbFromHex, Hct } from "@material/material-color-utilities";
 import { describe, expect, it } from "vitest";
 
 import { builder, DEFAULT_BLEND, isHexColor } from "./builder";
@@ -241,6 +242,71 @@ describe("builder() › customColors[].name", () => {
     expect(() =>
       builder(SOURCE, { secondary: "#00D68A", ...custom("brand") }),
     ).not.toThrow();
+  });
+});
+
+// The rule of
+// docs/adr/0004-a-core-color-override-takes-the-palette-of-its-own-scheme.md:
+// an override takes the palette the scheme variant gives its own color. The hue
+// and chroma expected below are each variant's own formula, applied to the
+// override -- not to the source, whose chroma toCss() used to lend it. The MTB
+// fixtures cannot tell the two apart: they are `tonalSpot`, whose chroma is
+// fixed.
+describe("builder() › core-color overrides", () => {
+  const overrides = {
+    secondary: "#00D68A",
+    tertiary: "#B33B15",
+    error: "#7A0BC0",
+    neutral: "#5DE4C7",
+    neutralVariant: "#F766FF",
+  };
+  const own = (hex: string) => Hct.fromInt(argbFromHex(hex));
+
+  // `content` and `fidelity` build their primary palette at the hue and chroma
+  // of their color, and their neutral ones at an eighth of its chroma
+  it.each(["content", "fidelity"] as const)(
+    "should keep the hue and chroma of each override under %s",
+    (scheme) => {
+      const { allPalettes } = builder(SOURCE, { scheme, ...overrides });
+
+      for (const core of ["secondary", "tertiary", "error"] as const) {
+        expect(allPalettes[core].hue).toBeCloseTo(own(overrides[core]).hue);
+        expect(allPalettes[core].chroma).toBeCloseTo(
+          own(overrides[core]).chroma,
+        );
+      }
+
+      const neutral = own(overrides.neutral);
+      expect(allPalettes.neutral.hue).toBeCloseTo(neutral.hue);
+      expect(allPalettes.neutral.chroma).toBeCloseTo(neutral.chroma / 8);
+
+      const neutralVariant = own(overrides.neutralVariant);
+      expect(allPalettes["neutral-variant"].hue).toBeCloseTo(
+        neutralVariant.hue,
+      );
+      expect(allPalettes["neutral-variant"].chroma).toBeCloseTo(
+        neutralVariant.chroma / 8 + 4,
+      );
+    },
+  );
+
+  // `expressive` builds its primary palette 240 degrees away from its color,
+  // at a fixed chroma: an override is rotated like a source color is
+  it("should rotate the hue of each override under expressive", () => {
+    const { allPalettes } = builder(SOURCE, {
+      scheme: "expressive",
+      ...overrides,
+    });
+
+    for (const core of ["secondary", "tertiary", "error"] as const) {
+      expect(allPalettes[core].hue).toBeCloseTo(
+        (own(overrides[core]).hue + 240) % 360,
+      );
+      expect(allPalettes[core].chroma).toBe(40);
+    }
+
+    expect(allPalettes.neutral.chroma).toBe(8);
+    expect(allPalettes["neutral-variant"].chroma).toBe(12);
   });
 });
 

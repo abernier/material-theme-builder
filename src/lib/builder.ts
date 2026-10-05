@@ -261,6 +261,8 @@ function optionalHex(hex: string | undefined) {
 // both the roles and the eleven shades of every palette as `--color-*`, so a
 // shade name (`primary-500`) is taken the way a role name is.
 function assertCustomColorNames(customColors: HexCustomColor[]) {
+  if (customColors.length === 0) return;
+
   // Every name already taken, as the exporters spell it, with who took it
   const takenRoles = new Map<string, string>();
   const takenPalettes = new Map<string, string>();
@@ -290,14 +292,7 @@ function assertCustomColorNames(customColors: HexCustomColor[]) {
       taken.set(spelling, `the ${what} of customColors[${i}]`);
     }
 
-    // The four roles `buildCustomColorRoles()` generates
-    const roles = [
-      name,
-      `on${upperFirst(name)}`,
-      `${name}Container`,
-      `on${upperFirst(name)}Container`,
-    ];
-    for (const role of roles)
+    for (const role of Object.values(customColorRoleNames(name)))
       take(takenRoles, kebabCase(role), `role '${role}'`);
 
     const palette = kebabCase(name);
@@ -361,6 +356,17 @@ type CoreOverrides = {
   neutralVariant?: number;
 };
 
+// The palettes of the rendered scheme, core-color overrides applied. `error` is
+// only set when overridden: a scheme keeps its own error palette otherwise.
+type CorePalettes = {
+  primary: TonalPalette;
+  secondary: TonalPalette;
+  tertiary: TonalPalette;
+  error?: TonalPalette;
+  neutral: TonalPalette;
+  neutralVariant: TonalPalette;
+};
+
 type ColorPalettes = Record<string, TonalPalette>;
 
 /**
@@ -389,7 +395,7 @@ export type BuilderContext = {
   // The rendered scheme at any level -- the one construction behind
   // mergedColorsLight/Dark, for the exporters that need other levels than the
   // configured one (toJson() exports six)
-  buildScheme: (isDark: boolean, contrast: number) => DynamicScheme;
+  renderScheme: (isDark: boolean, contrast: number) => DynamicScheme;
 
   // Computed outputs (shared across toCss, toJson, toFigma)
   allPalettes: Record<string, TonalPalette>;
@@ -440,12 +446,27 @@ function getPalette(palettes: ColorPalettes, colorName: string) {
 }
 
 //
-// The roles of one custom color, as DynamicColor objects exactly like core
-// colors:
+// The names of the four roles of one custom color:
 // 1. <colorname>
 // 2. on<Colorname>
 // 3. <colorname>Container
 // 4. on<Colorname>Container
+//
+// Spelled here once, for `buildCustomColorRoles()` that generates the roles and
+// `assertCustomColorNames()` that keeps their names free.
+//
+function customColorRoleNames(colorname: string) {
+  return {
+    color: colorname,
+    onColor: `on${upperFirst(colorname)}`,
+    container: `${colorname}Container`,
+    onContainer: `on${upperFirst(colorname)}Container`,
+  };
+}
+
+//
+// The roles of one custom color, as DynamicColor objects exactly like core
+// colors.
 //
 // Based on Material Design 3 spec: https://m3.material.io/styles/color/roles
 //
@@ -454,28 +475,29 @@ function getPalette(palettes: ColorPalettes, colorName: string) {
 
 function buildCustomColorRoles(colorname: string, palette: TonalPalette) {
   const getPaletteForColor = () => palette;
+  const names = customColorRoleNames(colorname);
 
   return {
-    [colorname]: new DynamicColor(
-      colorname,
+    [names.color]: new DynamicColor(
+      names.color,
       getPaletteForColor,
       (s) => (s.isDark ? 80 : 40), // Main color: lighter in dark mode, darker in light mode
       true, // background
     ),
-    [`on${upperFirst(colorname)}`]: new DynamicColor(
-      `on${upperFirst(colorname)}`,
+    [names.onColor]: new DynamicColor(
+      names.onColor,
       getPaletteForColor,
       (s) => (s.isDark ? 20 : 100), // Text on main color: high contrast (dark on light, light on dark)
       false,
     ),
-    [`${colorname}Container`]: new DynamicColor(
-      `${colorname}Container`,
+    [names.container]: new DynamicColor(
+      names.container,
       getPaletteForColor,
       (s) => (s.isDark ? 30 : 90), // Container: subtle variant (darker in dark mode, lighter in light mode)
       true, // background
     ),
-    [`on${upperFirst(colorname)}Container`]: new DynamicColor(
-      `on${upperFirst(colorname)}Container`,
+    [names.onContainer]: new DynamicColor(
+      names.onContainer,
       getPaletteForColor,
       (s) => (s.isDark ? 90 : 30), // Text on container: high contrast against container background
       false,
@@ -520,9 +542,9 @@ function mergeBaseAndCustomColors(
 }
 
 //
-// The scheme every exporter renders, at one level (light or dark, at one
-// contrast): toCss(), toJson().schemes and all the others read their system
-// roles from this one construction, so they cannot disagree.
+// The palettes of the scheme every exporter renders: toCss(), toJson().schemes
+// and all the others read their system roles from this one construction, so
+// they cannot disagree.
 //
 // A core-color override takes the palette the variant gives its own color (see
 // docs/adr/0004-a-core-color-override-takes-the-palette-of-its-own-scheme.md):
@@ -534,48 +556,72 @@ function mergeBaseAndCustomColors(
 // - `neutral` and `neutralVariant` take the neutral and the neutral-variant
 //   palette of the scheme of their own color.
 //
-function buildScheme(
+// Resolved once per theme rather than at every level: a scheme's palettes come
+// from its color alone, light or dark and at any contrast, and building a
+// scheme is the expensive part (`fidelity` and `content` search a complement).
+//
+function resolveCorePalettes(
   schemeName: SchemeName,
   sourceArgb: number,
   overrides: CoreOverrides,
-  isDark: boolean,
-  contrast: number,
-) {
+): CorePalettes {
   const SchemeClass = schemesMap[schemeName];
+  // The level asked for here is arbitrary: the palettes do not depend on it
   const schemeOf = (argb: number) =>
-    new SchemeClass(Hct.fromInt(argb), isDark, contrast);
+    new SchemeClass(Hct.fromInt(argb), false, DEFAULT_CONTRAST);
 
   const base = schemeOf(sourceArgb);
   const { secondary, tertiary, error, neutral, neutralVariant } = overrides;
 
+  return {
+    primary: base.primaryPalette,
+    secondary:
+      secondary !== undefined
+        ? schemeOf(secondary).primaryPalette
+        : base.secondaryPalette,
+    tertiary:
+      tertiary !== undefined
+        ? schemeOf(tertiary).primaryPalette
+        : base.tertiaryPalette,
+    error: error !== undefined ? schemeOf(error).primaryPalette : undefined,
+    neutral:
+      neutral !== undefined
+        ? schemeOf(neutral).neutralPalette
+        : base.neutralPalette,
+    neutralVariant:
+      neutralVariant !== undefined
+        ? schemeOf(neutralVariant).neutralVariantPalette
+        : base.neutralVariantPalette,
+  };
+}
+
+//
+// The scheme every exporter renders, at one level (light or dark, at one
+// contrast), from the palettes `resolveCorePalettes()` resolved.
+//
+function buildScheme(
+  schemeName: SchemeName,
+  sourceArgb: number,
+  palettes: CorePalettes,
+  isDark: boolean,
+  contrast: number,
+) {
   const scheme = new DynamicScheme({
     sourceColorArgb: sourceArgb,
     variant: schemeToVariant[schemeName],
     contrastLevel: contrast,
     isDark,
-    primaryPalette: base.primaryPalette,
-    secondaryPalette:
-      secondary !== undefined
-        ? schemeOf(secondary).primaryPalette
-        : base.secondaryPalette,
-    tertiaryPalette:
-      tertiary !== undefined
-        ? schemeOf(tertiary).primaryPalette
-        : base.tertiaryPalette,
-    neutralPalette:
-      neutral !== undefined
-        ? schemeOf(neutral).neutralPalette
-        : base.neutralPalette,
-    neutralVariantPalette:
-      neutralVariant !== undefined
-        ? schemeOf(neutralVariant).neutralVariantPalette
-        : base.neutralVariantPalette,
+    primaryPalette: palettes.primary,
+    secondaryPalette: palettes.secondary,
+    tertiaryPalette: palettes.tertiary,
+    neutralPalette: palettes.neutral,
+    neutralVariantPalette: palettes.neutralVariant,
   });
 
   // The DynamicScheme constructor does not accept an errorPalette: it has to
   // be set after creation
-  if (error !== undefined) {
-    scheme.errorPalette = schemeOf(error).primaryPalette;
+  if (palettes.error !== undefined) {
+    scheme.errorPalette = palettes.error;
   }
 
   return scheme;
@@ -706,8 +752,20 @@ export function builder(
   if (cores.neutralVariant)
     overrides.neutralVariant = argbFromHex(cores.neutralVariant);
 
+  const corePalettes = resolveCorePalettes(
+    scheme,
+    effectiveSourceArgb,
+    overrides,
+  );
+
   const renderScheme = (isDark: boolean, contrastLevel: number) =>
-    buildScheme(scheme, effectiveSourceArgb, overrides, isDark, contrastLevel);
+    buildScheme(
+      scheme,
+      effectiveSourceArgb,
+      corePalettes,
+      isDark,
+      contrastLevel,
+    );
 
   const lightScheme = renderScheme(false, contrast);
   const darkScheme = renderScheme(true, contrast);
@@ -787,7 +845,7 @@ export function builder(
     neutralVariant,
     error,
     hexCustomColors,
-    buildScheme: renderScheme,
+    renderScheme,
     allPalettes,
     refPalettes,
     mergedColorsLight,

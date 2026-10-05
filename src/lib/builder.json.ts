@@ -68,7 +68,7 @@ const FIXTURE_TOKEN_ORDER = [
 export function buildJson(ctx: BuilderContext) {
   const {
     hexSource,
-    buildScheme,
+    renderScheme,
     primary,
     secondary,
     tertiary,
@@ -112,7 +112,7 @@ export function buildJson(ctx: BuilderContext) {
       // takes background/onBackground from the scheme of `primary` alone
       // instead; we do not reproduce that (see
       // docs/adr/0002-json-background-follows-the-rendered-scheme.md).
-      jsonSchemes[name] = extractSchemeColors(buildScheme(isDark, contrast));
+      jsonSchemes[name] = extractSchemeColors(renderScheme(isDark, contrast));
     }
 
     return jsonSchemes;
