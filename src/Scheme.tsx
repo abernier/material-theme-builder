@@ -174,9 +174,81 @@ const twClasses = {
 } satisfies Record<TokenName, string>;
 
 /**
+ * The role each swatch's label is written in -- its M3 pair, the way the
+ * official app's poster does it: `primary` reads in `on-primary` and
+ * `on-primary` in `primary`; the surface family reads in `on-surface`, and
+ * the inks (`on-surface`, `outline`) in `surface`. `scrim` and `shadow` are
+ * black in both schemes, so their label is plain white, as in the app.
+ *
+ * The fixed accents are not on the app's poster; they follow the same pairing.
+ */
+const ink = {
+  primary: "onPrimary",
+  onPrimary: "primary",
+  primaryContainer: "onPrimaryContainer",
+  onPrimaryContainer: "primaryContainer",
+  secondary: "onSecondary",
+  onSecondary: "secondary",
+  secondaryContainer: "onSecondaryContainer",
+  onSecondaryContainer: "secondaryContainer",
+  tertiary: "onTertiary",
+  onTertiary: "tertiary",
+  tertiaryContainer: "onTertiaryContainer",
+  onTertiaryContainer: "tertiaryContainer",
+
+  error: "onError",
+  onError: "error",
+  errorContainer: "onErrorContainer",
+  onErrorContainer: "errorContainer",
+
+  primaryFixed: "onPrimaryFixed",
+  primaryFixedDim: "onPrimaryFixed",
+  onPrimaryFixed: "primaryFixed",
+  onPrimaryFixedVariant: "primaryFixed",
+  secondaryFixed: "onSecondaryFixed",
+  secondaryFixedDim: "onSecondaryFixed",
+  onSecondaryFixed: "secondaryFixed",
+  onSecondaryFixedVariant: "secondaryFixed",
+  tertiaryFixed: "onTertiaryFixed",
+  tertiaryFixedDim: "onTertiaryFixed",
+  onTertiaryFixed: "tertiaryFixed",
+  onTertiaryFixedVariant: "tertiaryFixed",
+
+  surfaceDim: "onSurface",
+  surface: "onSurface",
+  surfaceBright: "onSurface",
+  surfaceContainerLowest: "onSurface",
+  surfaceContainerLow: "onSurface",
+  surfaceContainer: "onSurface",
+  surfaceContainerHigh: "onSurface",
+  surfaceContainerHighest: "onSurface",
+  onSurface: "surface",
+  onSurfaceVariant: "surfaceVariant",
+  outline: "surface",
+  outlineVariant: "onSurface",
+
+  inverseSurface: "inverseOnSurface",
+  inverseOnSurface: "inverseSurface",
+  inversePrimary: "onSurface",
+  scrim: "white",
+  shadow: "white",
+
+  background: "onBackground",
+  onBackground: "background",
+  surfaceVariant: "onSurfaceVariant",
+  surfaceTint: "onPrimary",
+} satisfies Record<TokenName, TokenName | "white">;
+
+/** The CSS color a label is written in, from the role it is paired with. */
+function inkOf(role: TokenName | "white"): string {
+  return role === "white" ? "white" : `var(--md-sys-color-${kebabCase(role)})`;
+}
+
+/**
  * One color cell: the role as `title`, its human name as label, the color
  * itself from `var(--md-sys-color-<role>)` — or from the Tailwind utility when
- * under a `tw` `Scheme`.
+ * under a `tw` `Scheme`. The label is written in the role's pair (`ink`),
+ * always from the var: `tw` is about the `bg-*` utilities resolving.
  */
 function Swatch({
   role,
@@ -195,11 +267,11 @@ function Swatch({
     <div
       title={name}
       className={classNames(tw && twClasses[role], className)}
-      style={
-        tw
-          ? style
-          : { backgroundColor: `var(--md-sys-color-${name})`, ...style }
-      }
+      style={{
+        ...(!tw && { backgroundColor: `var(--md-sys-color-${name})` }),
+        color: inkOf(ink[role]),
+        ...style,
+      }}
       {...props}
     >
       {children ?? <p>{startCase(role)}</p>}
@@ -235,8 +307,6 @@ function PosterStyle({ notext }: { notext?: boolean }) {
 
           p {
             font-family: sans-serif;
-            color: white;
-            mix-blend-mode: difference;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -291,6 +361,34 @@ const themeStyles = {
     color: "#fbfbfb",
   },
 } satisfies Record<"light" | "dark", CSSProperties>;
+
+/**
+ * One cell of a custom color's row: the `--md-sys-color-<name>` token as its
+ * color, its `label` written in the `ink` token -- its pair, as `ink` maps
+ * the standard roles.
+ */
+function CustomSwatch({
+  name,
+  ink,
+  label,
+}: {
+  name: string;
+  ink: string;
+  label: string;
+}) {
+  return (
+    <div
+      title={name}
+      style={{
+        ...cell,
+        backgroundColor: `var(--md-sys-color-${name})`,
+        color: `var(--md-sys-color-${ink})`,
+      }}
+    >
+      <p>{label}</p>
+    </div>
+  );
+}
 
 /**
  * The four roles the current spec no longer lists, as an extra row under
@@ -644,54 +742,30 @@ export function Scheme({
         }
         {customColors && customColors.length > 0 && (
           <div style={column("var(--gap2)")}>
-            {customColors?.map((customColor) => (
-              <div key={customColor.name} style={grid(4)}>
-                <Foo>
-                  <FooTop
-                    title={kebabCase(customColor.name)}
-                    style={{
-                      ...cell,
-                      backgroundColor: `var(--md-sys-color-${kebabCase(customColor.name)})`,
-                    }}
-                  >
-                    <p>{upperFirst(customColor.name)}</p>
-                  </FooTop>
-                </Foo>
-                <Foo>
-                  <FooTop
-                    title={`on-${kebabCase(customColor.name)}`}
-                    style={{
-                      ...cell,
-                      backgroundColor: `var(--md-sys-color-on-${kebabCase(customColor.name)})`,
-                    }}
-                  >
-                    <p>On {upperFirst(customColor.name)}</p>
-                  </FooTop>
-                </Foo>
-                <Foo>
-                  <FooTop
-                    title={`${kebabCase(customColor.name)}-container`}
-                    style={{
-                      ...cell,
-                      backgroundColor: `var(--md-sys-color-${kebabCase(customColor.name)}-container)`,
-                    }}
-                  >
-                    <p>{upperFirst(customColor.name)} Container</p>
-                  </FooTop>
-                </Foo>
-                <Foo>
-                  <FooTop
-                    title={`on-${kebabCase(customColor.name)}-container`}
-                    style={{
-                      ...cell,
-                      backgroundColor: `var(--md-sys-color-on-${kebabCase(customColor.name)}-container)`,
-                    }}
-                  >
-                    <p>On {upperFirst(customColor.name)} Container</p>
-                  </FooTop>
-                </Foo>
-              </div>
-            ))}
+            {customColors.map((customColor) => {
+              const name = kebabCase(customColor.name);
+              const label = upperFirst(customColor.name);
+              return (
+                <div key={customColor.name} style={grid(4)}>
+                  <CustomSwatch name={name} ink={`on-${name}`} label={label} />
+                  <CustomSwatch
+                    name={`on-${name}`}
+                    ink={name}
+                    label={`On ${label}`}
+                  />
+                  <CustomSwatch
+                    name={`${name}-container`}
+                    ink={`on-${name}-container`}
+                    label={`${label} Container`}
+                  />
+                  <CustomSwatch
+                    name={`on-${name}-container`}
+                    ink={`${name}-container`}
+                    label={`On ${label} Container`}
+                  />
+                </div>
+              );
+            })}
           </div>
         )}
 
@@ -753,6 +827,7 @@ export function Shades({
                     alignItems: "center",
                     justifyContent: "center",
                     backgroundColor: `var(--md-ref-palette-${isCustom ? kebabCase(name) : name}-${tone})`,
+                    color: tone >= 80 ? "black" : "white",
                   }}
                 >
                   <p>{tone}</p>
