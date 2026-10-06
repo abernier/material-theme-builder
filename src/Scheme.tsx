@@ -115,13 +115,19 @@ const TwContext = createContext(false);
  * seen by Tailwind's source scanner, so the class would never be generated.
  * `satisfies` is what keeps this exhaustive: a token added to the library
  * breaks the build here until its utility is written down.
+ *
+ * `secondary` alone goes through an arbitrary value: next to shadcn, whose
+ * `@theme inline` outranks the plugin on the name, `bg-secondary` lands on
+ * `secondary-container` -- shadcn's `--secondary`. The README's own way out,
+ * and it paints the M3 role with or without shadcn. (`primary` and
+ * `background` collide too, but land on the same color.)
  */
 const twClasses = {
   primary: "bg-primary",
   onPrimary: "bg-on-primary",
   primaryContainer: "bg-primary-container",
   onPrimaryContainer: "bg-on-primary-container",
-  secondary: "bg-secondary",
+  secondary: "bg-[var(--md-sys-color-secondary)]",
   onSecondary: "bg-on-secondary",
   secondaryContainer: "bg-secondary-container",
   onSecondaryContainer: "bg-on-secondary-container",

@@ -11,3 +11,6 @@ Builder's own does, instead of white blended by difference:
   light one — the tones of `on-primary` and `on-primary-container`.
 
 `Poster` no longer sets any `color` or `mix-blend-mode` on the `<p>`s it holds.
+
+`<Scheme tw>` paints `secondary` with `bg-[var(--md-sys-color-secondary)]`:
+next to shadcn, `bg-secondary` lands on `secondary-container`.
