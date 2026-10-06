@@ -117,14 +117,14 @@ const TwContext = createContext(false);
  * `satisfies` is what keeps this exhaustive: a token added to the library
  * breaks the build here until its utility is written down.
  *
- * `secondary` alone goes through an arbitrary value: next to shadcn, whose
- * `@theme inline` outranks the plugin on the name, `bg-secondary` lands on
- * `secondary-container` -- shadcn's `--secondary`. The README's own way out,
- * and it paints the M3 role with or without shadcn. (`primary` and
- * `background` collide too, but land on the same color.)
+ * `primary`, `secondary` and `background` go through arbitrary values: they
+ * are the three names shadcn claims too, and its `@theme inline` outranks the
+ * plugin on them -- `bg-secondary` would land on `secondary-container`, and
+ * all three on shadcn's own colors without `shadcn.css`. The README's way
+ * out, which paints the M3 role whatever else is installed.
  */
 const twClasses = {
-  primary: "bg-primary",
+  primary: "bg-[var(--md-sys-color-primary)]",
   onPrimary: "bg-on-primary",
   primaryContainer: "bg-primary-container",
   onPrimaryContainer: "bg-on-primary-container",
@@ -175,7 +175,7 @@ const twClasses = {
   shadow: "bg-shadow",
 
   // Dropped from the current spec, still emitted — see `Scheme`'s props
-  background: "bg-background",
+  background: "bg-[var(--md-sys-color-background)]",
   onBackground: "bg-on-background",
   surfaceVariant: "bg-surface-variant",
   surfaceTint: "bg-surface-tint",
