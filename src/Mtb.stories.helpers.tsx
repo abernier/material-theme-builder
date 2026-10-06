@@ -104,46 +104,52 @@ function TailwindCustomColors() {
   return (
     <div className="flex flex-col gap-(--gap2)">
       <div className="grid grid-cols-4">
-        <div className="h-(--cell) bg-myCustomColor1" title="myCustomColor1">
+        <div
+          className="h-(--cell) bg-myCustomColor1 text-on-myCustomColor1"
+          title="myCustomColor1"
+        >
           <p>MyCustomColor1</p>
         </div>
         <div
-          className="h-(--cell) bg-on-myCustomColor1"
+          className="h-(--cell) bg-on-myCustomColor1 text-myCustomColor1"
           title="on-myCustomColor1"
         >
           <p>On MyCustomColor1</p>
         </div>
         <div
-          className="h-(--cell) bg-myCustomColor1-container"
+          className="h-(--cell) bg-myCustomColor1-container text-on-myCustomColor1-container"
           title="myCustomColor1-container"
         >
           <p>MyCustomColor1 Container</p>
         </div>
         <div
-          className="h-(--cell) bg-on-myCustomColor1-container"
+          className="h-(--cell) bg-on-myCustomColor1-container text-myCustomColor1-container"
           title="on-myCustomColor1-container"
         >
           <p>On MyCustomColor1 Container</p>
         </div>
       </div>
       <div className="grid grid-cols-4">
-        <div className="h-(--cell) bg-myCustomColor2" title="myCustomColor2">
+        <div
+          className="h-(--cell) bg-myCustomColor2 text-on-myCustomColor2"
+          title="myCustomColor2"
+        >
           <p>MyCustomColor2</p>
         </div>
         <div
-          className="h-(--cell) bg-on-myCustomColor2"
+          className="h-(--cell) bg-on-myCustomColor2 text-myCustomColor2"
           title="on-myCustomColor2"
         >
           <p>On MyCustomColor2</p>
         </div>
         <div
-          className="h-(--cell) bg-myCustomColor2-container"
+          className="h-(--cell) bg-myCustomColor2-container text-on-myCustomColor2-container"
           title="myCustomColor2-container"
         >
           <p>MyCustomColor2 Container</p>
         </div>
         <div
-          className="h-(--cell) bg-on-myCustomColor2-container"
+          className="h-(--cell) bg-on-myCustomColor2-container text-myCustomColor2-container"
           title="on-myCustomColor2-container"
         >
           <p>On MyCustomColor2 Container</p>
@@ -195,37 +201,37 @@ export function TailwindScheme() {
           <div className="space-y-2">
             <h4 className="text-sm font-semibold">Primary</h4>
             <div className="grid grid-cols-11 rounded-md overflow-hidden">
-              <div className="bg-primary-50 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-primary-50 text-black aspect-square flex items-center justify-center text-center text-xs">
                 50
               </div>
-              <div className="bg-primary-100 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-primary-100 text-black aspect-square flex items-center justify-center text-center text-xs">
                 100
               </div>
-              <div className="bg-primary-200 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-primary-200 text-black aspect-square flex items-center justify-center text-center text-xs">
                 200
               </div>
-              <div className="bg-primary-300 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-primary-300 text-white aspect-square flex items-center justify-center text-center text-xs">
                 300
               </div>
-              <div className="bg-primary-400 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-primary-400 text-white aspect-square flex items-center justify-center text-center text-xs">
                 400
               </div>
-              <div className="bg-primary-500 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-primary-500 text-white aspect-square flex items-center justify-center text-center text-xs">
                 500
               </div>
-              <div className="bg-primary-600 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-primary-600 text-white aspect-square flex items-center justify-center text-center text-xs">
                 600
               </div>
-              <div className="bg-primary-700 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-primary-700 text-white aspect-square flex items-center justify-center text-center text-xs">
                 700
               </div>
-              <div className="bg-primary-800 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-primary-800 text-white aspect-square flex items-center justify-center text-center text-xs">
                 800
               </div>
-              <div className="bg-primary-900 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-primary-900 text-white aspect-square flex items-center justify-center text-center text-xs">
                 900
               </div>
-              <div className="bg-primary-950 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-primary-950 text-white aspect-square flex items-center justify-center text-center text-xs">
                 950
               </div>
             </div>
@@ -235,37 +241,37 @@ export function TailwindScheme() {
           <div className="space-y-2">
             <h4 className="text-sm font-semibold">Secondary</h4>
             <div className="grid grid-cols-11 rounded-md overflow-hidden">
-              <div className="bg-secondary-50 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-secondary-50 text-black aspect-square flex items-center justify-center text-center text-xs">
                 50
               </div>
-              <div className="bg-secondary-100 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-secondary-100 text-black aspect-square flex items-center justify-center text-center text-xs">
                 100
               </div>
-              <div className="bg-secondary-200 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-secondary-200 text-black aspect-square flex items-center justify-center text-center text-xs">
                 200
               </div>
-              <div className="bg-secondary-300 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-secondary-300 text-white aspect-square flex items-center justify-center text-center text-xs">
                 300
               </div>
-              <div className="bg-secondary-400 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-secondary-400 text-white aspect-square flex items-center justify-center text-center text-xs">
                 400
               </div>
-              <div className="bg-secondary-500 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-secondary-500 text-white aspect-square flex items-center justify-center text-center text-xs">
                 500
               </div>
-              <div className="bg-secondary-600 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-secondary-600 text-white aspect-square flex items-center justify-center text-center text-xs">
                 600
               </div>
-              <div className="bg-secondary-700 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-secondary-700 text-white aspect-square flex items-center justify-center text-center text-xs">
                 700
               </div>
-              <div className="bg-secondary-800 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-secondary-800 text-white aspect-square flex items-center justify-center text-center text-xs">
                 800
               </div>
-              <div className="bg-secondary-900 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-secondary-900 text-white aspect-square flex items-center justify-center text-center text-xs">
                 900
               </div>
-              <div className="bg-secondary-950 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-secondary-950 text-white aspect-square flex items-center justify-center text-center text-xs">
                 950
               </div>
             </div>
@@ -275,37 +281,37 @@ export function TailwindScheme() {
           <div className="space-y-2">
             <h4 className="text-sm font-semibold">Tertiary</h4>
             <div className="grid grid-cols-11 rounded-md overflow-hidden">
-              <div className="bg-tertiary-50 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-tertiary-50 text-black aspect-square flex items-center justify-center text-center text-xs">
                 50
               </div>
-              <div className="bg-tertiary-100 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-tertiary-100 text-black aspect-square flex items-center justify-center text-center text-xs">
                 100
               </div>
-              <div className="bg-tertiary-200 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-tertiary-200 text-black aspect-square flex items-center justify-center text-center text-xs">
                 200
               </div>
-              <div className="bg-tertiary-300 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-tertiary-300 text-white aspect-square flex items-center justify-center text-center text-xs">
                 300
               </div>
-              <div className="bg-tertiary-400 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-tertiary-400 text-white aspect-square flex items-center justify-center text-center text-xs">
                 400
               </div>
-              <div className="bg-tertiary-500 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-tertiary-500 text-white aspect-square flex items-center justify-center text-center text-xs">
                 500
               </div>
-              <div className="bg-tertiary-600 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-tertiary-600 text-white aspect-square flex items-center justify-center text-center text-xs">
                 600
               </div>
-              <div className="bg-tertiary-700 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-tertiary-700 text-white aspect-square flex items-center justify-center text-center text-xs">
                 700
               </div>
-              <div className="bg-tertiary-800 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-tertiary-800 text-white aspect-square flex items-center justify-center text-center text-xs">
                 800
               </div>
-              <div className="bg-tertiary-900 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-tertiary-900 text-white aspect-square flex items-center justify-center text-center text-xs">
                 900
               </div>
-              <div className="bg-tertiary-950 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-tertiary-950 text-white aspect-square flex items-center justify-center text-center text-xs">
                 950
               </div>
             </div>
@@ -315,37 +321,37 @@ export function TailwindScheme() {
           <div className="space-y-2">
             <h4 className="text-sm font-semibold">Error</h4>
             <div className="grid grid-cols-11 rounded-md overflow-hidden">
-              <div className="bg-error-50 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-error-50 text-black aspect-square flex items-center justify-center text-center text-xs">
                 50
               </div>
-              <div className="bg-error-100 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-error-100 text-black aspect-square flex items-center justify-center text-center text-xs">
                 100
               </div>
-              <div className="bg-error-200 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-error-200 text-black aspect-square flex items-center justify-center text-center text-xs">
                 200
               </div>
-              <div className="bg-error-300 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-error-300 text-white aspect-square flex items-center justify-center text-center text-xs">
                 300
               </div>
-              <div className="bg-error-400 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-error-400 text-white aspect-square flex items-center justify-center text-center text-xs">
                 400
               </div>
-              <div className="bg-error-500 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-error-500 text-white aspect-square flex items-center justify-center text-center text-xs">
                 500
               </div>
-              <div className="bg-error-600 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-error-600 text-white aspect-square flex items-center justify-center text-center text-xs">
                 600
               </div>
-              <div className="bg-error-700 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-error-700 text-white aspect-square flex items-center justify-center text-center text-xs">
                 700
               </div>
-              <div className="bg-error-800 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-error-800 text-white aspect-square flex items-center justify-center text-center text-xs">
                 800
               </div>
-              <div className="bg-error-900 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-error-900 text-white aspect-square flex items-center justify-center text-center text-xs">
                 900
               </div>
-              <div className="bg-error-950 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-error-950 text-white aspect-square flex items-center justify-center text-center text-xs">
                 950
               </div>
             </div>
@@ -355,37 +361,37 @@ export function TailwindScheme() {
           <div className="space-y-2">
             <h4 className="text-sm font-semibold">Neutral</h4>
             <div className="grid grid-cols-11 rounded-md overflow-hidden">
-              <div className="bg-neutral-50 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-neutral-50 text-black aspect-square flex items-center justify-center text-center text-xs">
                 50
               </div>
-              <div className="bg-neutral-100 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-neutral-100 text-black aspect-square flex items-center justify-center text-center text-xs">
                 100
               </div>
-              <div className="bg-neutral-200 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-neutral-200 text-black aspect-square flex items-center justify-center text-center text-xs">
                 200
               </div>
-              <div className="bg-neutral-300 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-neutral-300 text-white aspect-square flex items-center justify-center text-center text-xs">
                 300
               </div>
-              <div className="bg-neutral-400 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-neutral-400 text-white aspect-square flex items-center justify-center text-center text-xs">
                 400
               </div>
-              <div className="bg-neutral-500 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-neutral-500 text-white aspect-square flex items-center justify-center text-center text-xs">
                 500
               </div>
-              <div className="bg-neutral-600 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-neutral-600 text-white aspect-square flex items-center justify-center text-center text-xs">
                 600
               </div>
-              <div className="bg-neutral-700 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-neutral-700 text-white aspect-square flex items-center justify-center text-center text-xs">
                 700
               </div>
-              <div className="bg-neutral-800 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-neutral-800 text-white aspect-square flex items-center justify-center text-center text-xs">
                 800
               </div>
-              <div className="bg-neutral-900 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-neutral-900 text-white aspect-square flex items-center justify-center text-center text-xs">
                 900
               </div>
-              <div className="bg-neutral-950 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-neutral-950 text-white aspect-square flex items-center justify-center text-center text-xs">
                 950
               </div>
             </div>
@@ -395,37 +401,37 @@ export function TailwindScheme() {
           <div className="space-y-2">
             <h4 className="text-sm font-semibold">Neutral Variant</h4>
             <div className="grid grid-cols-11 rounded-md overflow-hidden">
-              <div className="bg-neutral-variant-50 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-neutral-variant-50 text-black aspect-square flex items-center justify-center text-center text-xs">
                 50
               </div>
-              <div className="bg-neutral-variant-100 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-neutral-variant-100 text-black aspect-square flex items-center justify-center text-center text-xs">
                 100
               </div>
-              <div className="bg-neutral-variant-200 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-neutral-variant-200 text-black aspect-square flex items-center justify-center text-center text-xs">
                 200
               </div>
-              <div className="bg-neutral-variant-300 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-neutral-variant-300 text-white aspect-square flex items-center justify-center text-center text-xs">
                 300
               </div>
-              <div className="bg-neutral-variant-400 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-neutral-variant-400 text-white aspect-square flex items-center justify-center text-center text-xs">
                 400
               </div>
-              <div className="bg-neutral-variant-500 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-neutral-variant-500 text-white aspect-square flex items-center justify-center text-center text-xs">
                 500
               </div>
-              <div className="bg-neutral-variant-600 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-neutral-variant-600 text-white aspect-square flex items-center justify-center text-center text-xs">
                 600
               </div>
-              <div className="bg-neutral-variant-700 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-neutral-variant-700 text-white aspect-square flex items-center justify-center text-center text-xs">
                 700
               </div>
-              <div className="bg-neutral-variant-800 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-neutral-variant-800 text-white aspect-square flex items-center justify-center text-center text-xs">
                 800
               </div>
-              <div className="bg-neutral-variant-900 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-neutral-variant-900 text-white aspect-square flex items-center justify-center text-center text-xs">
                 900
               </div>
-              <div className="bg-neutral-variant-950 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-neutral-variant-950 text-white aspect-square flex items-center justify-center text-center text-xs">
                 950
               </div>
             </div>
@@ -435,37 +441,37 @@ export function TailwindScheme() {
           <div className="space-y-2">
             <h4 className="text-sm font-semibold">myCustomColor1</h4>
             <div className="grid grid-cols-11 rounded-md overflow-hidden">
-              <div className="bg-myCustomColor1-50 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-myCustomColor1-50 text-black aspect-square flex items-center justify-center text-center text-xs">
                 50
               </div>
-              <div className="bg-myCustomColor1-100 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-myCustomColor1-100 text-black aspect-square flex items-center justify-center text-center text-xs">
                 100
               </div>
-              <div className="bg-myCustomColor1-200 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-myCustomColor1-200 text-black aspect-square flex items-center justify-center text-center text-xs">
                 200
               </div>
-              <div className="bg-myCustomColor1-300 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-myCustomColor1-300 text-white aspect-square flex items-center justify-center text-center text-xs">
                 300
               </div>
-              <div className="bg-myCustomColor1-400 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-myCustomColor1-400 text-white aspect-square flex items-center justify-center text-center text-xs">
                 400
               </div>
-              <div className="bg-myCustomColor1-500 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-myCustomColor1-500 text-white aspect-square flex items-center justify-center text-center text-xs">
                 500
               </div>
-              <div className="bg-myCustomColor1-600 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-myCustomColor1-600 text-white aspect-square flex items-center justify-center text-center text-xs">
                 600
               </div>
-              <div className="bg-myCustomColor1-700 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-myCustomColor1-700 text-white aspect-square flex items-center justify-center text-center text-xs">
                 700
               </div>
-              <div className="bg-myCustomColor1-800 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-myCustomColor1-800 text-white aspect-square flex items-center justify-center text-center text-xs">
                 800
               </div>
-              <div className="bg-myCustomColor1-900 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-myCustomColor1-900 text-white aspect-square flex items-center justify-center text-center text-xs">
                 900
               </div>
-              <div className="bg-myCustomColor1-950 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-myCustomColor1-950 text-white aspect-square flex items-center justify-center text-center text-xs">
                 950
               </div>
             </div>
@@ -475,37 +481,37 @@ export function TailwindScheme() {
           <div className="space-y-2">
             <h4 className="text-sm font-semibold">myCustomColor2</h4>
             <div className="grid grid-cols-11 rounded-md overflow-hidden">
-              <div className="bg-myCustomColor2-50 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-myCustomColor2-50 text-black aspect-square flex items-center justify-center text-center text-xs">
                 50
               </div>
-              <div className="bg-myCustomColor2-100 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-myCustomColor2-100 text-black aspect-square flex items-center justify-center text-center text-xs">
                 100
               </div>
-              <div className="bg-myCustomColor2-200 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-myCustomColor2-200 text-black aspect-square flex items-center justify-center text-center text-xs">
                 200
               </div>
-              <div className="bg-myCustomColor2-300 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-myCustomColor2-300 text-white aspect-square flex items-center justify-center text-center text-xs">
                 300
               </div>
-              <div className="bg-myCustomColor2-400 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-myCustomColor2-400 text-white aspect-square flex items-center justify-center text-center text-xs">
                 400
               </div>
-              <div className="bg-myCustomColor2-500 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-myCustomColor2-500 text-white aspect-square flex items-center justify-center text-center text-xs">
                 500
               </div>
-              <div className="bg-myCustomColor2-600 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-myCustomColor2-600 text-white aspect-square flex items-center justify-center text-center text-xs">
                 600
               </div>
-              <div className="bg-myCustomColor2-700 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-myCustomColor2-700 text-white aspect-square flex items-center justify-center text-center text-xs">
                 700
               </div>
-              <div className="bg-myCustomColor2-800 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-myCustomColor2-800 text-white aspect-square flex items-center justify-center text-center text-xs">
                 800
               </div>
-              <div className="bg-myCustomColor2-900 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-myCustomColor2-900 text-white aspect-square flex items-center justify-center text-center text-xs">
                 900
               </div>
-              <div className="bg-myCustomColor2-950 aspect-square flex items-center justify-center text-center text-xs">
+              <div className="bg-myCustomColor2-950 text-white aspect-square flex items-center justify-center text-center text-xs">
                 950
               </div>
             </div>
