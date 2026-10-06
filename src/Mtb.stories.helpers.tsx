@@ -92,6 +92,18 @@ export function Layout({
 }
 
 /**
+ * A label written in the `--md-sys-color-*` M3 pairs with its swatch, as
+ * `Scheme`'s are -- inline, since `Poster`'s unlayered label rule would beat a
+ * `text-*` utility.
+ */
+function ink(role: string) {
+  return {
+    color: `var(--md-sys-color-${role})`,
+    mixBlendMode: "normal",
+  } as const;
+}
+
+/**
  * The custom-color roles, as Tailwind utilities.
  *
  * `Scheme` renders custom colors through inline `var(--md-sys-color-*)` styles,
@@ -105,48 +117,56 @@ function TailwindCustomColors() {
     <div className="flex flex-col gap-(--gap2)">
       <div className="grid grid-cols-4">
         <div className="h-(--cell) bg-myCustomColor1" title="myCustomColor1">
-          <p>MyCustomColor1</p>
+          <p style={ink("on-my-custom-color-1")}>MyCustomColor1</p>
         </div>
         <div
           className="h-(--cell) bg-on-myCustomColor1"
           title="on-myCustomColor1"
         >
-          <p>On MyCustomColor1</p>
+          <p style={ink("my-custom-color-1")}>On MyCustomColor1</p>
         </div>
         <div
           className="h-(--cell) bg-myCustomColor1-container"
           title="myCustomColor1-container"
         >
-          <p>MyCustomColor1 Container</p>
+          <p style={ink("on-my-custom-color-1-container")}>
+            MyCustomColor1 Container
+          </p>
         </div>
         <div
           className="h-(--cell) bg-on-myCustomColor1-container"
           title="on-myCustomColor1-container"
         >
-          <p>On MyCustomColor1 Container</p>
+          <p style={ink("my-custom-color-1-container")}>
+            On MyCustomColor1 Container
+          </p>
         </div>
       </div>
       <div className="grid grid-cols-4">
         <div className="h-(--cell) bg-myCustomColor2" title="myCustomColor2">
-          <p>MyCustomColor2</p>
+          <p style={ink("on-my-custom-color-2")}>MyCustomColor2</p>
         </div>
         <div
           className="h-(--cell) bg-on-myCustomColor2"
           title="on-myCustomColor2"
         >
-          <p>On MyCustomColor2</p>
+          <p style={ink("my-custom-color-2")}>On MyCustomColor2</p>
         </div>
         <div
           className="h-(--cell) bg-myCustomColor2-container"
           title="myCustomColor2-container"
         >
-          <p>MyCustomColor2 Container</p>
+          <p style={ink("on-my-custom-color-2-container")}>
+            MyCustomColor2 Container
+          </p>
         </div>
         <div
           className="h-(--cell) bg-on-myCustomColor2-container"
           title="on-myCustomColor2-container"
         >
-          <p>On MyCustomColor2 Container</p>
+          <p style={ink("my-custom-color-2-container")}>
+            On MyCustomColor2 Container
+          </p>
         </div>
       </div>
     </div>
