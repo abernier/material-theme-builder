@@ -253,12 +253,22 @@ const inks = {
   surfaceTint: sys("onPrimary"),
 } satisfies Record<TokenName, string>;
 
-/**
- * A swatch's label, written in `ink` -- instead of the `Poster`'s default
- * white, blended by difference.
- */
+/** A swatch's label, written in `ink`. */
 function Label({ ink, children }: { ink: string; children: ReactNode }) {
-  return <p style={{ color: ink, mixBlendMode: "normal" }}>{children}</p>;
+  return <p style={{ color: ink }}>{children}</p>;
+}
+
+/**
+ * The tone a tonal palette's label is written in, on its `tone`: 100 on the
+ * dark half, 10 on the light one -- the tones M3 inks its own roles with,
+ * `on-primary` (100) on `primary` (40), `on-primary-container` (10) on
+ * `primary-container` (90).
+ *
+ * The cut at 50 keeps every pair at about 4.5:1 or more: tone 50 under 100,
+ * tone 60 under 10.
+ */
+function inkTone(tone: number) {
+  return tone <= 50 ? 100 : 10;
 }
 
 /**
@@ -319,8 +329,6 @@ function PosterStyle({ notext }: { notext?: boolean }) {
 
           p {
             font-family: sans-serif;
-            color: white;
-            mix-blend-mode: difference;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -855,7 +863,11 @@ export function Shades({
                     backgroundColor: `var(--md-ref-palette-${isCustom ? kebabCase(name) : name}-${tone})`,
                   }}
                 >
-                  <p>{tone}</p>
+                  <Label
+                    ink={`var(--md-ref-palette-${isCustom ? kebabCase(name) : name}-${inkTone(tone)})`}
+                  >
+                    {tone}
+                  </Label>
                 </div>
               ))}
           </div>
