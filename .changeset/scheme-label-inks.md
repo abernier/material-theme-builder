@@ -12,6 +12,6 @@ Builder's own does, instead of white blended by difference:
 
 `Poster` no longer sets any `color` or `mix-blend-mode` on the `<p>`s it holds.
 
-`<Scheme tw>` paints `primary`, `secondary` and `background` with
-`bg-[var(--md-sys-color-*)]`: next to shadcn, which claims those three names
-too, `bg-secondary` lands on `secondary-container`.
+`<Scheme tw>` paints `primary`, `secondary` and `background` straight from
+their `--md-sys-color-*` property, as an arbitrary value: next to shadcn, which
+claims those three names too, `bg-secondary` lands on `secondary-container`.
