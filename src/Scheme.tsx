@@ -13,7 +13,7 @@
  * Its layout needs no Tailwind: it is shipped compiled, in `node_modules`,
  * where a consumer's Tailwind does not look for class names -- so it is written
  * as inline styles, sized by the custom properties `Poster` declares. Only
- * `Scheme`'s opt-in `tw` mode uses utilities.
+ * `Scheme`'s and `Shades`' opt-in `tw` mode uses utilities.
  *
  * @example
  * ```tsx
@@ -35,12 +35,20 @@ import {
   useContext,
   type ComponentProps,
   type CSSProperties,
+  type ReactNode,
 } from "react";
 import {
   STANDARD_TONES,
   type HexCustomColor,
   type TokenName,
 } from "./lib/builder";
+import {
+  CORE_PALETTES,
+  refPaletteVar,
+  SHADE_TO_TONE,
+  sysColorVar,
+} from "./lib/tokens";
+import { roleInk, toneInk } from "./Scheme.ink";
 
 /** The class names given, space-separated -- `undefined` if there is none. */
 function classNames(...names: (string | false | undefined)[]) {
@@ -114,13 +122,19 @@ const TwContext = createContext(false);
  * seen by Tailwind's source scanner, so the class would never be generated.
  * `satisfies` is what keeps this exhaustive: a token added to the library
  * breaks the build here until its utility is written down.
+ *
+ * `primary`, `secondary` and `background` go through arbitrary values: they
+ * are the three names shadcn claims too, and its `@theme inline` outranks the
+ * plugin on them -- `bg-secondary` would land on `secondary-container`, and
+ * all three on shadcn's own colors without `shadcn.css`. The README's way
+ * out, which paints the M3 role whatever else is installed.
  */
 const twClasses = {
-  primary: "bg-primary",
+  primary: "bg-[var(--md-sys-color-primary)]",
   onPrimary: "bg-on-primary",
   primaryContainer: "bg-primary-container",
   onPrimaryContainer: "bg-on-primary-container",
-  secondary: "bg-secondary",
+  secondary: "bg-[var(--md-sys-color-secondary)]",
   onSecondary: "bg-on-secondary",
   secondaryContainer: "bg-secondary-container",
   onSecondaryContainer: "bg-on-secondary-container",
@@ -167,43 +181,163 @@ const twClasses = {
   shadow: "bg-shadow",
 
   // Dropped from the current spec, still emitted — see `Scheme`'s props
-  background: "bg-background",
+  background: "bg-[var(--md-sys-color-background)]",
   onBackground: "bg-on-background",
   surfaceVariant: "bg-surface-variant",
   surfaceTint: "bg-surface-tint",
 } satisfies Record<TokenName, string>;
 
+/** A Tailwind shade of the plugin's: `50`, `100`... `950`. */
+type Shade = (typeof SHADE_TO_TONE)[number][0];
+
 /**
- * One color cell: the role as `title`, its human name as label, the color
- * itself from `var(--md-sys-color-<role>)` — or from the Tailwind utility when
- * under a `tw` `Scheme`.
+ * The eleven shades of each core palette, mapped to their Tailwind utilities
+ * -- spelled out for the same reason as `twClasses`: built at runtime,
+ * `bg-${palette}-${shade}` would never be seen by the scanner. `satisfies`
+ * keeps both axes exhaustive.
+ *
+ * A custom color's shades cannot be spelled out here: see `Shades`' `tw`.
  */
-function Swatch({
-  role,
+const shadeClasses = {
+  primary: {
+    50: "bg-primary-50",
+    100: "bg-primary-100",
+    200: "bg-primary-200",
+    300: "bg-primary-300",
+    400: "bg-primary-400",
+    500: "bg-primary-500",
+    600: "bg-primary-600",
+    700: "bg-primary-700",
+    800: "bg-primary-800",
+    900: "bg-primary-900",
+    950: "bg-primary-950",
+  },
+  secondary: {
+    50: "bg-secondary-50",
+    100: "bg-secondary-100",
+    200: "bg-secondary-200",
+    300: "bg-secondary-300",
+    400: "bg-secondary-400",
+    500: "bg-secondary-500",
+    600: "bg-secondary-600",
+    700: "bg-secondary-700",
+    800: "bg-secondary-800",
+    900: "bg-secondary-900",
+    950: "bg-secondary-950",
+  },
+  tertiary: {
+    50: "bg-tertiary-50",
+    100: "bg-tertiary-100",
+    200: "bg-tertiary-200",
+    300: "bg-tertiary-300",
+    400: "bg-tertiary-400",
+    500: "bg-tertiary-500",
+    600: "bg-tertiary-600",
+    700: "bg-tertiary-700",
+    800: "bg-tertiary-800",
+    900: "bg-tertiary-900",
+    950: "bg-tertiary-950",
+  },
+  error: {
+    50: "bg-error-50",
+    100: "bg-error-100",
+    200: "bg-error-200",
+    300: "bg-error-300",
+    400: "bg-error-400",
+    500: "bg-error-500",
+    600: "bg-error-600",
+    700: "bg-error-700",
+    800: "bg-error-800",
+    900: "bg-error-900",
+    950: "bg-error-950",
+  },
+  neutral: {
+    50: "bg-neutral-50",
+    100: "bg-neutral-100",
+    200: "bg-neutral-200",
+    300: "bg-neutral-300",
+    400: "bg-neutral-400",
+    500: "bg-neutral-500",
+    600: "bg-neutral-600",
+    700: "bg-neutral-700",
+    800: "bg-neutral-800",
+    900: "bg-neutral-900",
+    950: "bg-neutral-950",
+  },
+  "neutral-variant": {
+    50: "bg-neutral-variant-50",
+    100: "bg-neutral-variant-100",
+    200: "bg-neutral-variant-200",
+    300: "bg-neutral-variant-300",
+    400: "bg-neutral-variant-400",
+    500: "bg-neutral-variant-500",
+    600: "bg-neutral-variant-600",
+    700: "bg-neutral-variant-700",
+    800: "bg-neutral-variant-800",
+    900: "bg-neutral-variant-900",
+    950: "bg-neutral-variant-950",
+  },
+} satisfies Record<(typeof CORE_PALETTES)[number], Record<Shade, string>>;
+
+/** A swatch's label, written in `ink` -- see `Scheme.ink.ts`. */
+function Label({ ink, children }: { ink: string; children: ReactNode }) {
+  return <p style={{ color: ink }}>{children}</p>;
+}
+
+/**
+ * One color cell: `name` as `title`, `label` written in `ink`, the color
+ * itself from `var(--md-sys-color-<name>)` -- or from `twClass` when under a
+ * `tw` `Scheme`.
+ */
+function Cell({
+  name,
+  twClass,
+  ink,
+  label,
   className,
   style,
-  children,
   ...props
 }: {
-  /** The M3 token to paint, named as the library names it. */
-  role: TokenName;
-} & ComponentProps<"div">) {
+  /** The kebab-cased role: the `--md-sys-color-*` suffix. */
+  name: string;
+  /** The Tailwind utility that paints it, for a `tw` `Scheme`. */
+  twClass: string;
+  /** The label's color -- see `Scheme.ink.ts`. */
+  ink: string;
+  label: ReactNode;
+} & Omit<ComponentProps<"div">, "title" | "children">) {
   const tw = useContext(TwContext);
-  const name = kebabCase(role);
 
   return (
     <div
       title={name}
-      className={classNames(tw && twClasses[role], className)}
-      style={
-        tw
-          ? style
-          : { backgroundColor: `var(--md-sys-color-${name})`, ...style }
-      }
+      className={classNames(tw && twClass, className)}
+      style={tw ? style : { backgroundColor: sysColorVar(name), ...style }}
       {...props}
     >
-      {children ?? <p>{startCase(role)}</p>}
+      <Label ink={ink}>{label}</Label>
     </div>
+  );
+}
+
+/** One M3 role's cell: the token as `title`, its human name as label. */
+function Swatch({
+  role,
+  ...props
+}: {
+  /** The M3 token to paint, named as the library names it. */
+  role: TokenName;
+} & Omit<ComponentProps<"div">, "title" | "children">) {
+  const name = kebabCase(role);
+
+  return (
+    <Cell
+      name={name}
+      twClass={twClasses[role]}
+      ink={roleInk(name)}
+      label={startCase(role)}
+      {...props}
+    />
   );
 }
 
@@ -235,8 +369,6 @@ function PosterStyle({ notext }: { notext?: boolean }) {
 
           p {
             font-family: sans-serif;
-            color: white;
-            mix-blend-mode: difference;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -257,6 +389,9 @@ function PosterStyle({ notext }: { notext?: boolean }) {
  * Without it they still render, but with no gaps and unstyled labels -- so
  * wrap them all in one, the way the stories do. Lay it out like any `div`,
  * e.g. as a column with some gap between the schemes.
+ *
+ * It inks only the labels `Scheme` and `Shades` write; whatever else goes in
+ * paints its own.
  */
 export function Poster({
   notext = false,
@@ -352,8 +487,9 @@ export function Scheme({
   /** Heading displayed above the scheme. */
   title?: string;
   /**
-   * Paint the swatches with Tailwind utilities (`bg-primary`) instead of the
-   * raw `var(--md-sys-color-primary)`.
+   * Paint the swatches with Tailwind utilities (`bg-on-primary`) instead of
+   * the raw `var(--md-sys-color-on-primary)` -- all but `primary`, `secondary`
+   * and `background`, which go through an arbitrary value: see `twClasses`.
    *
    * Off by default: Tailwind is optional here, so the stories are better proof
    * of the theme when they do without it. Only the Tailwind story turns it on —
@@ -362,6 +498,10 @@ export function Scheme({
    * package for the utilities -- which it does not do in `node_modules` unless
    * told to: `@source "../node_modules/material-theme-builder/dist/react.js";`
    * (relative to the stylesheet).
+   *
+   * A custom color's utilities are named at runtime, which no scanner sees:
+   * list them, e.g. `@source inline("bg-{,on-}brand{,-container}");`
+   * (Tailwind 4.1+).
    */
   tw?: boolean;
   /** The custom colors to show, as `<Mtb>` got them. */
@@ -644,54 +784,56 @@ export function Scheme({
         }
         {customColors && customColors.length > 0 && (
           <div style={column("var(--gap2)")}>
-            {customColors?.map((customColor) => (
-              <div key={customColor.name} style={grid(4)}>
-                <Foo>
-                  <FooTop
-                    title={kebabCase(customColor.name)}
-                    style={{
-                      ...cell,
-                      backgroundColor: `var(--md-sys-color-${kebabCase(customColor.name)})`,
-                    }}
-                  >
-                    <p>{upperFirst(customColor.name)}</p>
-                  </FooTop>
-                </Foo>
-                <Foo>
-                  <FooTop
-                    title={`on-${kebabCase(customColor.name)}`}
-                    style={{
-                      ...cell,
-                      backgroundColor: `var(--md-sys-color-on-${kebabCase(customColor.name)})`,
-                    }}
-                  >
-                    <p>On {upperFirst(customColor.name)}</p>
-                  </FooTop>
-                </Foo>
-                <Foo>
-                  <FooTop
-                    title={`${kebabCase(customColor.name)}-container`}
-                    style={{
-                      ...cell,
-                      backgroundColor: `var(--md-sys-color-${kebabCase(customColor.name)}-container)`,
-                    }}
-                  >
-                    <p>{upperFirst(customColor.name)} Container</p>
-                  </FooTop>
-                </Foo>
-                <Foo>
-                  <FooTop
-                    title={`on-${kebabCase(customColor.name)}-container`}
-                    style={{
-                      ...cell,
-                      backgroundColor: `var(--md-sys-color-on-${kebabCase(customColor.name)}-container)`,
-                    }}
-                  >
-                    <p>On {upperFirst(customColor.name)} Container</p>
-                  </FooTop>
-                </Foo>
-              </div>
-            ))}
+            {customColors.map(({ name }) => {
+              const role = kebabCase(name);
+              const label = upperFirst(name);
+
+              // Each of the four roles, the one it is read against (its ink),
+              // and its utility -- which keeps the declared spelling, as the
+              // plugin registers it.
+              const cells = [
+                {
+                  role,
+                  ink: `on-${role}`,
+                  twClass: `bg-${name}`,
+                  label,
+                },
+                {
+                  role: `on-${role}`,
+                  ink: role,
+                  twClass: `bg-on-${name}`,
+                  label: `On ${label}`,
+                },
+                {
+                  role: `${role}-container`,
+                  ink: `on-${role}-container`,
+                  twClass: `bg-${name}-container`,
+                  label: `${label} Container`,
+                },
+                {
+                  role: `on-${role}-container`,
+                  ink: `${role}-container`,
+                  twClass: `bg-on-${name}-container`,
+                  label: `On ${label} Container`,
+                },
+              ];
+
+              return (
+                <div key={name} style={grid(4)}>
+                  {cells.map((c) => (
+                    <Foo key={c.role}>
+                      <Cell
+                        name={c.role}
+                        twClass={c.twClass}
+                        ink={sysColorVar(c.ink)}
+                        label={c.label}
+                        style={cell}
+                      />
+                    </Foo>
+                  ))}
+                </div>
+              );
+            })}
           </div>
         )}
 
@@ -708,59 +850,94 @@ export function Scheme({
 export function Shades({
   customColors,
   noTitle,
+  tw: twProp,
 }: {
   /** Hide the palette group titles. */
   noTitle?: boolean;
   /** The custom colors to show, as `<Mtb>` got them. */
   customColors?: HexCustomColor[];
+  /**
+   * Paint the plugin's eleven Tailwind shades (`bg-primary-500`) instead of
+   * every tone from `var(--md-ref-palette-*)`, as `Scheme`'s `tw` does -- and
+   * follows it, when nested in one.
+   *
+   * The core palettes' utilities are spelled out (`shadeClasses`); a custom
+   * color's are named at runtime, which no scanner sees: list them, e.g.
+   * `@source inline("bg-brand-{50,{100..900..100},950}");` (Tailwind 4.1+).
+   */
+  tw?: boolean;
 }) {
+  const twContext = useContext(TwContext);
+  const tw = twProp ?? twContext;
+
+  const palettes = [
+    ...CORE_PALETTES.map((name) => ({
+      name,
+      palette: name,
+      title: name.replace("-", " "),
+      shadeClass: (shade: Shade) => shadeClasses[name][shade],
+    })),
+    ...(customColors ?? []).map(({ name }) => ({
+      name,
+      palette: kebabCase(name),
+      title: upperFirst(name),
+      // Named at runtime -- see `tw`
+      shadeClass: (shade: Shade) => `bg-${name}-${shade}`,
+    })),
+  ];
+
   return (
     <div style={column("var(--gap2)")}>
-      {[
-        ...[
-          "primary",
-          "secondary",
-          "tertiary",
-          "error",
-          "neutral",
-          "neutral-variant",
-        ].map((name) => ({ name, isCustom: false })),
-        ...(customColors?.map((cc) => ({ name: cc.name, isCustom: true })) ||
-          []),
-      ].map(({ name, isCustom }) => (
-        <div key={name}>
-          {!noTitle && (
-            <h3 style={heading}>
-              {isCustom ? upperFirst(name) : name.replace("-", " ")}
-            </h3>
-          )}
-
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: `repeat(${STANDARD_TONES.length}, 1fr)`,
-            }}
-          >
-            {STANDARD_TONES.slice()
+      {palettes.map(({ name, palette, title, shadeClass }) => {
+        // A row: the plugin's eleven shades, or every standard tone
+        const cells = tw
+          ? SHADE_TO_TONE.map(([shade, tone]) => ({
+              tone,
+              label: shade,
+              className: shadeClass(shade),
+              tooltip: `${palette}-${tone} (${shadeClass(shade)})`,
+            }))
+          : STANDARD_TONES.slice()
               .reverse()
-              .map((tone) => (
+              .map((tone) => ({
+                tone,
+                label: tone,
+                className: undefined,
+                tooltip: `${palette}-${tone}`,
+              }));
+
+        return (
+          <div key={name}>
+            {!noTitle && <h3 style={heading}>{title}</h3>}
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: `repeat(${cells.length}, 1fr)`,
+              }}
+            >
+              {cells.map(({ tone, label, className, tooltip }) => (
                 <div
                   key={tone}
-                  title={`${isCustom ? kebabCase(name) : name}-${tone}`}
+                  title={tooltip}
+                  className={className}
                   style={{
                     height: "var(--tone, 4rem)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    backgroundColor: `var(--md-ref-palette-${isCustom ? kebabCase(name) : name}-${tone})`,
+                    backgroundColor: tw
+                      ? undefined
+                      : refPaletteVar(palette, tone),
                   }}
                 >
-                  <p>{tone}</p>
+                  <Label ink={toneInk(palette, tone)}>{label}</Label>
                 </div>
               ))}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

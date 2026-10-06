@@ -92,431 +92,46 @@ export function Layout({
 }
 
 /**
- * The custom-color roles, as Tailwind utilities.
+ * Renders every M3 role as a Tailwind utility class: `Scheme` and `Shades`,
+ * switched to their `tw` mode, where each swatch takes its color from `bg-*`
+ * instead of `var(--md-sys-color-*)`.
  *
- * `Scheme` renders custom colors through inline `var(--md-sys-color-*)` styles,
- * because their names only exist at runtime — `bg-${name}` would never be seen
- * by Tailwind's source scanner, so the utility would never be generated. Here
- * the names are known, so the classes can be written literally and actually
- * prove that `bg-myCustomColor1` & co. resolve.
+ * The custom colors' utilities, named at runtime, are listed for Tailwind by
+ * the `@source inline()` lines in `globals.css`.
  */
-function TailwindCustomColors() {
-  return (
-    <div className="flex flex-col gap-(--gap2)">
-      <div className="grid grid-cols-4">
-        <div className="h-(--cell) bg-myCustomColor1" title="myCustomColor1">
-          <p>MyCustomColor1</p>
-        </div>
-        <div
-          className="h-(--cell) bg-on-myCustomColor1"
-          title="on-myCustomColor1"
-        >
-          <p>On MyCustomColor1</p>
-        </div>
-        <div
-          className="h-(--cell) bg-myCustomColor1-container"
-          title="myCustomColor1-container"
-        >
-          <p>MyCustomColor1 Container</p>
-        </div>
-        <div
-          className="h-(--cell) bg-on-myCustomColor1-container"
-          title="on-myCustomColor1-container"
-        >
-          <p>On MyCustomColor1 Container</p>
-        </div>
-      </div>
-      <div className="grid grid-cols-4">
-        <div className="h-(--cell) bg-myCustomColor2" title="myCustomColor2">
-          <p>MyCustomColor2</p>
-        </div>
-        <div
-          className="h-(--cell) bg-on-myCustomColor2"
-          title="on-myCustomColor2"
-        >
-          <p>On MyCustomColor2</p>
-        </div>
-        <div
-          className="h-(--cell) bg-myCustomColor2-container"
-          title="myCustomColor2-container"
-        >
-          <p>MyCustomColor2 Container</p>
-        </div>
-        <div
-          className="h-(--cell) bg-on-myCustomColor2-container"
-          title="on-myCustomColor2-container"
-        >
-          <p>On MyCustomColor2 Container</p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/**
- * Renders every M3 role as a Tailwind utility class.
- *
- * Reuses the `Scheme` layout — switched to its `tw` mode, where each swatch
- * takes its color from `bg-*` instead of `var(--md-sys-color-*)` — and
- * completes it with what `Scheme` cannot express as classes: the custom colors,
- * and the tonal shades.
- */
-export function TailwindScheme() {
+export function TailwindScheme({
+  customColors,
+}: Pick<ComponentProps<typeof Scheme>, "customColors">) {
   return (
     <>
       <Scheme
         tw
         theme="light"
         title="Light scheme"
+        customColors={customColors}
         fixedAccents
         surfaceTint
         background
         surfaceVariant
-      >
-        <TailwindCustomColors />
-      </Scheme>
-
+      />
       <Scheme
         tw
         theme="dark"
         title="Dark scheme"
+        customColors={customColors}
         fixedAccents
         surfaceTint
         background
         surfaceVariant
-      >
-        <TailwindCustomColors />
-      </Scheme>
+      />
+      <Shades tw customColors={customColors} />
 
-      <div className="p-6 space-y-6">
-        {/* Shades */}
-        <div className="space-y-4">
-          {/* Primary Shades */}
-          <div className="space-y-2">
-            <h4 className="text-sm font-semibold">Primary</h4>
-            <div className="grid grid-cols-11 rounded-md overflow-hidden">
-              <div className="bg-primary-50 aspect-square flex items-center justify-center text-center text-xs">
-                50
-              </div>
-              <div className="bg-primary-100 aspect-square flex items-center justify-center text-center text-xs">
-                100
-              </div>
-              <div className="bg-primary-200 aspect-square flex items-center justify-center text-center text-xs">
-                200
-              </div>
-              <div className="bg-primary-300 aspect-square flex items-center justify-center text-center text-xs">
-                300
-              </div>
-              <div className="bg-primary-400 aspect-square flex items-center justify-center text-center text-xs">
-                400
-              </div>
-              <div className="bg-primary-500 aspect-square flex items-center justify-center text-center text-xs">
-                500
-              </div>
-              <div className="bg-primary-600 aspect-square flex items-center justify-center text-center text-xs">
-                600
-              </div>
-              <div className="bg-primary-700 aspect-square flex items-center justify-center text-center text-xs">
-                700
-              </div>
-              <div className="bg-primary-800 aspect-square flex items-center justify-center text-center text-xs">
-                800
-              </div>
-              <div className="bg-primary-900 aspect-square flex items-center justify-center text-center text-xs">
-                900
-              </div>
-              <div className="bg-primary-950 aspect-square flex items-center justify-center text-center text-xs">
-                950
-              </div>
-            </div>
-          </div>
-
-          {/* Secondary Shades */}
-          <div className="space-y-2">
-            <h4 className="text-sm font-semibold">Secondary</h4>
-            <div className="grid grid-cols-11 rounded-md overflow-hidden">
-              <div className="bg-secondary-50 aspect-square flex items-center justify-center text-center text-xs">
-                50
-              </div>
-              <div className="bg-secondary-100 aspect-square flex items-center justify-center text-center text-xs">
-                100
-              </div>
-              <div className="bg-secondary-200 aspect-square flex items-center justify-center text-center text-xs">
-                200
-              </div>
-              <div className="bg-secondary-300 aspect-square flex items-center justify-center text-center text-xs">
-                300
-              </div>
-              <div className="bg-secondary-400 aspect-square flex items-center justify-center text-center text-xs">
-                400
-              </div>
-              <div className="bg-secondary-500 aspect-square flex items-center justify-center text-center text-xs">
-                500
-              </div>
-              <div className="bg-secondary-600 aspect-square flex items-center justify-center text-center text-xs">
-                600
-              </div>
-              <div className="bg-secondary-700 aspect-square flex items-center justify-center text-center text-xs">
-                700
-              </div>
-              <div className="bg-secondary-800 aspect-square flex items-center justify-center text-center text-xs">
-                800
-              </div>
-              <div className="bg-secondary-900 aspect-square flex items-center justify-center text-center text-xs">
-                900
-              </div>
-              <div className="bg-secondary-950 aspect-square flex items-center justify-center text-center text-xs">
-                950
-              </div>
-            </div>
-          </div>
-
-          {/* Tertiary Shades */}
-          <div className="space-y-2">
-            <h4 className="text-sm font-semibold">Tertiary</h4>
-            <div className="grid grid-cols-11 rounded-md overflow-hidden">
-              <div className="bg-tertiary-50 aspect-square flex items-center justify-center text-center text-xs">
-                50
-              </div>
-              <div className="bg-tertiary-100 aspect-square flex items-center justify-center text-center text-xs">
-                100
-              </div>
-              <div className="bg-tertiary-200 aspect-square flex items-center justify-center text-center text-xs">
-                200
-              </div>
-              <div className="bg-tertiary-300 aspect-square flex items-center justify-center text-center text-xs">
-                300
-              </div>
-              <div className="bg-tertiary-400 aspect-square flex items-center justify-center text-center text-xs">
-                400
-              </div>
-              <div className="bg-tertiary-500 aspect-square flex items-center justify-center text-center text-xs">
-                500
-              </div>
-              <div className="bg-tertiary-600 aspect-square flex items-center justify-center text-center text-xs">
-                600
-              </div>
-              <div className="bg-tertiary-700 aspect-square flex items-center justify-center text-center text-xs">
-                700
-              </div>
-              <div className="bg-tertiary-800 aspect-square flex items-center justify-center text-center text-xs">
-                800
-              </div>
-              <div className="bg-tertiary-900 aspect-square flex items-center justify-center text-center text-xs">
-                900
-              </div>
-              <div className="bg-tertiary-950 aspect-square flex items-center justify-center text-center text-xs">
-                950
-              </div>
-            </div>
-          </div>
-
-          {/* Error Shades */}
-          <div className="space-y-2">
-            <h4 className="text-sm font-semibold">Error</h4>
-            <div className="grid grid-cols-11 rounded-md overflow-hidden">
-              <div className="bg-error-50 aspect-square flex items-center justify-center text-center text-xs">
-                50
-              </div>
-              <div className="bg-error-100 aspect-square flex items-center justify-center text-center text-xs">
-                100
-              </div>
-              <div className="bg-error-200 aspect-square flex items-center justify-center text-center text-xs">
-                200
-              </div>
-              <div className="bg-error-300 aspect-square flex items-center justify-center text-center text-xs">
-                300
-              </div>
-              <div className="bg-error-400 aspect-square flex items-center justify-center text-center text-xs">
-                400
-              </div>
-              <div className="bg-error-500 aspect-square flex items-center justify-center text-center text-xs">
-                500
-              </div>
-              <div className="bg-error-600 aspect-square flex items-center justify-center text-center text-xs">
-                600
-              </div>
-              <div className="bg-error-700 aspect-square flex items-center justify-center text-center text-xs">
-                700
-              </div>
-              <div className="bg-error-800 aspect-square flex items-center justify-center text-center text-xs">
-                800
-              </div>
-              <div className="bg-error-900 aspect-square flex items-center justify-center text-center text-xs">
-                900
-              </div>
-              <div className="bg-error-950 aspect-square flex items-center justify-center text-center text-xs">
-                950
-              </div>
-            </div>
-          </div>
-
-          {/* Neutral Shades */}
-          <div className="space-y-2">
-            <h4 className="text-sm font-semibold">Neutral</h4>
-            <div className="grid grid-cols-11 rounded-md overflow-hidden">
-              <div className="bg-neutral-50 aspect-square flex items-center justify-center text-center text-xs">
-                50
-              </div>
-              <div className="bg-neutral-100 aspect-square flex items-center justify-center text-center text-xs">
-                100
-              </div>
-              <div className="bg-neutral-200 aspect-square flex items-center justify-center text-center text-xs">
-                200
-              </div>
-              <div className="bg-neutral-300 aspect-square flex items-center justify-center text-center text-xs">
-                300
-              </div>
-              <div className="bg-neutral-400 aspect-square flex items-center justify-center text-center text-xs">
-                400
-              </div>
-              <div className="bg-neutral-500 aspect-square flex items-center justify-center text-center text-xs">
-                500
-              </div>
-              <div className="bg-neutral-600 aspect-square flex items-center justify-center text-center text-xs">
-                600
-              </div>
-              <div className="bg-neutral-700 aspect-square flex items-center justify-center text-center text-xs">
-                700
-              </div>
-              <div className="bg-neutral-800 aspect-square flex items-center justify-center text-center text-xs">
-                800
-              </div>
-              <div className="bg-neutral-900 aspect-square flex items-center justify-center text-center text-xs">
-                900
-              </div>
-              <div className="bg-neutral-950 aspect-square flex items-center justify-center text-center text-xs">
-                950
-              </div>
-            </div>
-          </div>
-
-          {/* Neutral Variant Shades */}
-          <div className="space-y-2">
-            <h4 className="text-sm font-semibold">Neutral Variant</h4>
-            <div className="grid grid-cols-11 rounded-md overflow-hidden">
-              <div className="bg-neutral-variant-50 aspect-square flex items-center justify-center text-center text-xs">
-                50
-              </div>
-              <div className="bg-neutral-variant-100 aspect-square flex items-center justify-center text-center text-xs">
-                100
-              </div>
-              <div className="bg-neutral-variant-200 aspect-square flex items-center justify-center text-center text-xs">
-                200
-              </div>
-              <div className="bg-neutral-variant-300 aspect-square flex items-center justify-center text-center text-xs">
-                300
-              </div>
-              <div className="bg-neutral-variant-400 aspect-square flex items-center justify-center text-center text-xs">
-                400
-              </div>
-              <div className="bg-neutral-variant-500 aspect-square flex items-center justify-center text-center text-xs">
-                500
-              </div>
-              <div className="bg-neutral-variant-600 aspect-square flex items-center justify-center text-center text-xs">
-                600
-              </div>
-              <div className="bg-neutral-variant-700 aspect-square flex items-center justify-center text-center text-xs">
-                700
-              </div>
-              <div className="bg-neutral-variant-800 aspect-square flex items-center justify-center text-center text-xs">
-                800
-              </div>
-              <div className="bg-neutral-variant-900 aspect-square flex items-center justify-center text-center text-xs">
-                900
-              </div>
-              <div className="bg-neutral-variant-950 aspect-square flex items-center justify-center text-center text-xs">
-                950
-              </div>
-            </div>
-          </div>
-
-          {/* myCustomColor1 Shades */}
-          <div className="space-y-2">
-            <h4 className="text-sm font-semibold">myCustomColor1</h4>
-            <div className="grid grid-cols-11 rounded-md overflow-hidden">
-              <div className="bg-myCustomColor1-50 aspect-square flex items-center justify-center text-center text-xs">
-                50
-              </div>
-              <div className="bg-myCustomColor1-100 aspect-square flex items-center justify-center text-center text-xs">
-                100
-              </div>
-              <div className="bg-myCustomColor1-200 aspect-square flex items-center justify-center text-center text-xs">
-                200
-              </div>
-              <div className="bg-myCustomColor1-300 aspect-square flex items-center justify-center text-center text-xs">
-                300
-              </div>
-              <div className="bg-myCustomColor1-400 aspect-square flex items-center justify-center text-center text-xs">
-                400
-              </div>
-              <div className="bg-myCustomColor1-500 aspect-square flex items-center justify-center text-center text-xs">
-                500
-              </div>
-              <div className="bg-myCustomColor1-600 aspect-square flex items-center justify-center text-center text-xs">
-                600
-              </div>
-              <div className="bg-myCustomColor1-700 aspect-square flex items-center justify-center text-center text-xs">
-                700
-              </div>
-              <div className="bg-myCustomColor1-800 aspect-square flex items-center justify-center text-center text-xs">
-                800
-              </div>
-              <div className="bg-myCustomColor1-900 aspect-square flex items-center justify-center text-center text-xs">
-                900
-              </div>
-              <div className="bg-myCustomColor1-950 aspect-square flex items-center justify-center text-center text-xs">
-                950
-              </div>
-            </div>
-          </div>
-
-          {/* myCustomColor2 Shades */}
-          <div className="space-y-2">
-            <h4 className="text-sm font-semibold">myCustomColor2</h4>
-            <div className="grid grid-cols-11 rounded-md overflow-hidden">
-              <div className="bg-myCustomColor2-50 aspect-square flex items-center justify-center text-center text-xs">
-                50
-              </div>
-              <div className="bg-myCustomColor2-100 aspect-square flex items-center justify-center text-center text-xs">
-                100
-              </div>
-              <div className="bg-myCustomColor2-200 aspect-square flex items-center justify-center text-center text-xs">
-                200
-              </div>
-              <div className="bg-myCustomColor2-300 aspect-square flex items-center justify-center text-center text-xs">
-                300
-              </div>
-              <div className="bg-myCustomColor2-400 aspect-square flex items-center justify-center text-center text-xs">
-                400
-              </div>
-              <div className="bg-myCustomColor2-500 aspect-square flex items-center justify-center text-center text-xs">
-                500
-              </div>
-              <div className="bg-myCustomColor2-600 aspect-square flex items-center justify-center text-center text-xs">
-                600
-              </div>
-              <div className="bg-myCustomColor2-700 aspect-square flex items-center justify-center text-center text-xs">
-                700
-              </div>
-              <div className="bg-myCustomColor2-800 aspect-square flex items-center justify-center text-center text-xs">
-                800
-              </div>
-              <div className="bg-myCustomColor2-900 aspect-square flex items-center justify-center text-center text-xs">
-                900
-              </div>
-              <div className="bg-myCustomColor2-950 aspect-square flex items-center justify-center text-center text-xs">
-                950
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <p className="text-sm italic text-center">
-          Every color the <code>@plugin</code> declares is shown here as a
-          Tailwind utility class
-        </p>
-      </div>
+      <p className="text-sm italic text-center">
+        Every color the <code>@plugin</code> declares is shown here as a
+        Tailwind utility class, but <code>primary</code>, <code>secondary</code>{" "}
+        and <code>background</code>, which shadcn claims too: those are painted
+        from their M3 property
+      </p>
     </>
   );
 }

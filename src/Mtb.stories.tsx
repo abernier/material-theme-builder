@@ -713,7 +713,7 @@ export const TailwindSt: Story = {
   render: (args) => (
     <Mtb {...args}>
       <Layout>
-        <TailwindScheme />
+        <TailwindScheme customColors={args.customColors} />
       </Layout>
     </Mtb>
   ),
