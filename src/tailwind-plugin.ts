@@ -4,7 +4,9 @@ import plugin from "tailwindcss/plugin";
 import {
   CORE_PALETTES,
   DEFAULT_PREFIX,
+  refPaletteVar,
   SHADE_TO_TONE,
+  sysColorVar,
   tokenNames,
 } from "./lib/tokens";
 
@@ -67,9 +69,9 @@ export function mtbColors({
 } = {}): Record<string, string> {
   const colors: Record<string, string> = {};
 
-  const sys = (token: string) => `var(--${prefix}-sys-color-${token})`;
+  const sys = (token: string) => sysColorVar(token, prefix);
   const ref = (palette: string, tone: number) =>
-    `var(--${prefix}-ref-palette-${palette}-${tone})`;
+    refPaletteVar(palette, tone, prefix);
 
   // ── Scheme tokens ──
   for (const name of tokenNames) {

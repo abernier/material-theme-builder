@@ -1,5 +1,6 @@
 // The M3 color vocabulary, on its own: the token names, the tonal-palette
-// names, and the Tailwind shade <-> M3 tone mapping.
+// names, the Tailwind shade <-> M3 tone mapping, and the `var()` references
+// into the custom properties they are declared as.
 //
 // A leaf module by design. `builder.ts` owns the color engine and imports
 // `@material/material-color-utilities`; the Tailwind plugin
@@ -8,6 +9,32 @@
 
 /** Default CSS custom-property prefix. */
 export const DEFAULT_PREFIX = "md";
+
+/**
+ * `var(--<prefix>-sys-color-<role>)`: the custom property a scheme role is
+ * read from, as `<Mtb>` and `toCss()` declare it.
+ *
+ * @param role The role, kebab-cased: `on-primary-container`.
+ * @param prefix The prefix the properties were declared with.
+ */
+export function sysColorVar(role: string, prefix = DEFAULT_PREFIX) {
+  return `var(--${prefix}-sys-color-${role})`;
+}
+
+/**
+ * `var(--<prefix>-ref-palette-<palette>-<tone>)`: one tone of a palette.
+ *
+ * @param palette The palette, kebab-cased: `primary`, `neutral-variant`...
+ * @param tone The tone, 0 to 100.
+ * @param prefix The prefix the properties were declared with.
+ */
+export function refPaletteVar(
+  palette: string,
+  tone: number,
+  prefix = DEFAULT_PREFIX,
+) {
+  return `var(--${prefix}-ref-palette-${palette}-${tone})`;
+}
 
 /**
  * Material Design 3 token names and their descriptions.

@@ -3,11 +3,14 @@ import { createRequire } from "node:module";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { compile } from "tailwindcss";
 import { describe, expect, it } from "vitest";
 
 import { formatOutput } from "../scripts/generate.mjs";
 import { builder } from "./lib/builder";
+import { Scheme, Shades } from "./Scheme";
 import mtbTailwindPlugin, {
   mtbColors,
   type MtbTailwindPluginOptions,
@@ -399,6 +402,27 @@ describe("shadcn.css", () => {
   );
 });
 
+/** The `bg-*` utilities the `class` attributes of `markup` name, each once. */
+function bgClassesIn(markup: string) {
+  return new Set(
+    [...markup.matchAll(/ class="([^"]*)"/g)]
+      .flatMap(([, value]) => (value ?? "").split(" "))
+      .filter((name) => name.startsWith("bg-")),
+  );
+}
+
+/**
+ * The `bg-*` utilities `css` has a rule for, each once, unescaped back to the
+ * class name: `.bg-\[var\(--x\)\]` is `bg-[var(--x)]`'s.
+ */
+function bgRulesIn(css: string) {
+  return new Set(
+    [...css.matchAll(/^\s*\.(bg-[^\s{]+) \{$/gm)].map(([, selector]) =>
+      (selector ?? "").replace(/\\(.)/g, "$1"),
+    ),
+  );
+}
+
 describe("styles/globals.css", () => {
   it("should keep every @import ahead of the first rule", () => {
     // The repo dogfoods the arrangement the README documents. CSS drops an
@@ -416,6 +440,55 @@ describe("styles/globals.css", () => {
     expect(lastImport).toBeGreaterThan(-1);
     expect(firstRule).toBeGreaterThan(-1);
     expect(lastImport).toBeLessThan(firstRule);
+  });
+
+  it("should list, in its @source inline() lines, every utility <Scheme tw> and <Shades tw> name at runtime", async () => {
+    // The names the file's own `@plugin` block registers: what the components
+    // get below, so the lines are checked against the names they are for.
+    const customColors = [
+      { name: "myCustomColor1", hex: "#00D68A" },
+      { name: "myCustomColor2", hex: "#FFE16B" },
+    ];
+    const css = fs.readFileSync(path.join(here, "styles/globals.css"), "utf8");
+    expect(css).toContain("custom-colors: myCustomColor1, myCustomColor2;");
+    const sources = css.match(/^@source inline\(.*\);$/gm) ?? [];
+    expect(sources).toHaveLength(2);
+
+    // Every option on, so every swatch is drawn
+    const markup =
+      renderToStaticMarkup(
+        createElement(Scheme, {
+          tw: true,
+          customColors,
+          fixedAccents: true,
+          surfaceTint: true,
+          background: true,
+          surfaceVariant: true,
+        }),
+      ) +
+      renderToStaticMarkup(createElement(Shades, { tw: true, customColors }));
+    const named = [...bgClassesIn(markup)];
+    // The 49 scheme tokens and the six core palettes' eleven shades are spelled
+    // out in the components, for the scanner to find; a custom color's four
+    // roles and eleven shades are built from its name, which it never sees.
+    const safelisted = named.filter((name) => name.includes("myCustomColor"));
+    const literal = named.filter((name) => !name.includes("myCustomColor"));
+    expect(literal).toHaveLength(49 + 6 * 11);
+    expect(safelisted).toHaveLength(2 * (4 + 11));
+
+    const stylesheet = `${TAILWIND}@plugin "./tailwind-plugin.ts" {\n  custom-colors: myCustomColor1, myCustomColor2;\n}\n${sources.join("\n")}\n`;
+    const [fromSources, fromScan] = await Promise.all([
+      build(stylesheet, []),
+      build(stylesheet, literal),
+    ]);
+
+    // The lines alone, no scan: exactly the runtime-named utilities. One
+    // missing never paints; one extra is a rule nobody wears.
+    expect([...bgRulesIn(fromSources)].sort()).toEqual([...safelisted].sort());
+    // With the scanner's finds: every spelled-out utility gets its rule, the
+    // three arbitrary values included.
+    const rules = bgRulesIn(fromScan);
+    expect(literal.filter((name) => !rules.has(name))).toEqual([]);
   });
 });
 

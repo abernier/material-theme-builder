@@ -96,8 +96,8 @@ export function Layout({
  * switched to their `tw` mode, where each swatch takes its color from `bg-*`
  * instead of `var(--md-sys-color-*)`.
  *
- * The utilities they name at runtime -- shades, custom colors -- are listed for
- * Tailwind by an `@source inline()` in `globals.css`.
+ * The custom colors' utilities, named at runtime, are listed for Tailwind by
+ * the `@source inline()` lines in `globals.css`.
  */
 export function TailwindScheme({
   customColors,
@@ -128,7 +128,9 @@ export function TailwindScheme({
 
       <p className="text-sm italic text-center">
         Every color the <code>@plugin</code> declares is shown here as a
-        Tailwind utility class
+        Tailwind utility class, but <code>primary</code>, <code>secondary</code>{" "}
+        and <code>background</code>, which shadcn claims too: those are painted
+        from their M3 property
       </p>
     </>
   );

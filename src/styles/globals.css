@@ -1,6 +1,6 @@
 /*
  * The project's stylesheet, the one `components.json` names -- so `shadcn init`
- * wrote all of it except the two blocks marked below, and `shadcn add` keeps
+ * wrote all of it except the block marked below, and `shadcn add` keeps
  * that current, exactly as in a scaffolded project. Do NOT hand-edit it: it used to
  * be a hand-kept approximation and had quietly drifted a whole major behind
  * (shadcn 3 `radix-nova` defaults, missing `--font-heading` and the
@@ -15,7 +15,7 @@
  *   pnpm dlx shadcn@latest init --preset b0 --template vite --name probe --yes
  *   cat probe/src/index.css
  *
- * ...then paste it below this comment, keeping the two marked blocks.
+ * ...then paste it below this comment, keeping the marked block.
  */
 @import "tailwindcss";
 @import "tw-animate-css";
@@ -34,14 +34,18 @@
  * `@theme inline` also claims -- `background`, `primary`, `secondary` -- shadcn
  * wins. Which is what the alias mapping is for: `bg-secondary` follows
  * `--secondary`, the same property `<Button variant="secondary">` reads.
+ *
+ * The `@source inline()` lines list the custom colors' utilities, which
+ * `<Scheme tw>` and `<Shades tw>` name at runtime -- out of the scanner's
+ * sight. Keep their names in step with `custom-colors` (Tailwind 4.1+).
  */
 @import "../shadcn.css";
 @plugin "../tailwind-plugin.ts" {
   custom-colors: myCustomColor1, myCustomColor2;
 }
-/* The utilities `<Scheme tw>` / `<Shades tw>` name at runtime -- no scanner sees them. */
-@source inline("bg-{primary,secondary,tertiary,error,neutral,neutral-variant,myCustomColor1,myCustomColor2}-{50,{100..900..100},950}");
 @source inline("bg-{,on-}{myCustomColor1,myCustomColor2}{,-container}");
+@source inline("bg-{myCustomColor1,myCustomColor2}-{50,{100..900..100},950}");
+/* ---- end material-theme-builder ------------------------------------------- */
 
 @custom-variant dark (&:is(.dark *));
 
