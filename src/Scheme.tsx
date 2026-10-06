@@ -13,7 +13,7 @@
  * Its layout needs no Tailwind: it is shipped compiled, in `node_modules`,
  * where a consumer's Tailwind does not look for class names -- so it is written
  * as inline styles, sized by the custom properties `Poster` declares. Only
- * `Scheme`'s opt-in `tw` mode uses utilities.
+ * `Scheme`'s and `Shades`' opt-in `tw` mode uses utilities.
  *
  * @example
  * ```tsx
@@ -42,6 +42,7 @@ import {
   type HexCustomColor,
   type TokenName,
 } from "./lib/builder";
+import { CORE_PALETTES, SHADE_TO_TONE } from "./lib/tokens";
 import { roleInk, toneInk } from "./Scheme.ink";
 
 /** The class names given, space-separated -- `undefined` if there is none. */
@@ -373,6 +374,9 @@ export function Scheme({
    * package for the utilities -- which it does not do in `node_modules` unless
    * told to: `@source "../node_modules/material-theme-builder/dist/react.js";`
    * (relative to the stylesheet).
+   *
+   * The custom colors' utilities are named at runtime, which no scanner sees:
+   * list them, e.g. `@source inline("bg-{,on-}brand{,-container}");`.
    */
   tw?: boolean;
   /** The custom colors to show, as `<Mtb>` got them. */
@@ -663,19 +667,32 @@ export function Scheme({
                 <div key={name} style={grid(4)}>
                   {(
                     [
-                      [role, label],
-                      [`on-${role}`, `On ${label}`],
-                      [`${role}-container`, `${label} Container`],
-                      [`on-${role}-container`, `On ${label} Container`],
+                      [role, name, label],
+                      [`on-${role}`, `on-${name}`, `On ${label}`],
+                      [
+                        `${role}-container`,
+                        `${name}-container`,
+                        `${label} Container`,
+                      ],
+                      [
+                        `on-${role}-container`,
+                        `on-${name}-container`,
+                        `On ${label} Container`,
+                      ],
                     ] as const
-                  ).map(([role, label]) => (
+                  ).map(([role, twName, label]) => (
                     <Foo key={role}>
                       <FooTop
                         title={role}
-                        style={{
-                          ...cell,
-                          backgroundColor: `var(--md-sys-color-${role})`,
-                        }}
+                        className={tw ? `bg-${twName}` : undefined}
+                        style={
+                          tw
+                            ? cell
+                            : {
+                                ...cell,
+                                backgroundColor: `var(--md-sys-color-${role})`,
+                              }
+                        }
                       >
                         <Label ink={roleInk(role)}>{label}</Label>
                       </FooTop>
@@ -700,61 +717,72 @@ export function Scheme({
 export function Shades({
   customColors,
   noTitle,
+  tw = false,
 }: {
   /** Hide the palette group titles. */
   noTitle?: boolean;
   /** The custom colors to show, as `<Mtb>` got them. */
   customColors?: HexCustomColor[];
+  /**
+   * Paint the plugin's eleven Tailwind shades (`bg-primary-500`) instead of
+   * every tone from `var(--md-ref-palette-*)`, as `Scheme`'s `tw` does.
+   *
+   * Their utilities are named at runtime, which no scanner sees: list them,
+   * e.g. `@source inline("bg-{primary,brand}-{50,{100..900..100},950}");`.
+   */
+  tw?: boolean;
 }) {
+  const tones = tw
+    ? SHADE_TO_TONE.map(([shade, tone]) => ({ label: shade, tone }))
+    : STANDARD_TONES.slice()
+        .reverse()
+        .map((tone) => ({ label: tone, tone }));
+
   return (
     <div style={column("var(--gap2)")}>
       {[
-        ...[
-          "primary",
-          "secondary",
-          "tertiary",
-          "error",
-          "neutral",
-          "neutral-variant",
-        ].map((name) => ({ name, isCustom: false })),
+        ...CORE_PALETTES.map((name) => ({ name, isCustom: false })),
         ...(customColors?.map((cc) => ({ name: cc.name, isCustom: true })) ||
           []),
-      ].map(({ name, isCustom }) => (
-        <div key={name}>
-          {!noTitle && (
-            <h3 style={heading}>
-              {isCustom ? upperFirst(name) : name.replace("-", " ")}
-            </h3>
-          )}
+      ].map(({ name, isCustom }) => {
+        const palette = isCustom ? kebabCase(name) : name;
 
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: `repeat(${STANDARD_TONES.length}, 1fr)`,
-            }}
-          >
-            {STANDARD_TONES.slice()
-              .reverse()
-              .map((tone) => (
+        return (
+          <div key={name}>
+            {!noTitle && (
+              <h3 style={heading}>
+                {isCustom ? upperFirst(name) : name.replace("-", " ")}
+              </h3>
+            )}
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: `repeat(${tones.length}, 1fr)`,
+              }}
+            >
+              {tones.map(({ label, tone }) => (
                 <div
                   key={tone}
-                  title={`${isCustom ? kebabCase(name) : name}-${tone}`}
+                  title={`${palette}-${tone}`}
+                  className={tw ? `bg-${name}-${label}` : undefined}
                   style={{
                     height: "var(--tone, 4rem)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    backgroundColor: `var(--md-ref-palette-${isCustom ? kebabCase(name) : name}-${tone})`,
+                    backgroundColor: tw
+                      ? undefined
+                      : `var(--md-ref-palette-${palette}-${tone})`,
                   }}
                 >
-                  <Label ink={toneInk(isCustom ? kebabCase(name) : name, tone)}>
-                    {tone}
-                  </Label>
+                  <Label ink={toneInk(palette, tone)}>{label}</Label>
                 </div>
               ))}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

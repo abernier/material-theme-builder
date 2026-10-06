@@ -1,5 +1,4 @@
 import type { Meta } from "@storybook/react-vite";
-import { kebabCase } from "lodash-es";
 import { useState, type ComponentProps } from "react";
 import { Fab } from "./components/m3/Fab";
 import { ExportButton } from "./ExportButton";
@@ -10,10 +9,8 @@ import {
   schemeNames,
   type MtbConfig,
 } from "./lib/builder";
-import { SHADE_TO_TONE } from "./lib/tokens";
 import type { Mtb } from "./Mtb";
 import { Poster, Scheme, Shades } from "./Scheme";
-import { roleInk, toneInk } from "./Scheme.ink";
 
 /**
  * `<Mtb>`'s props as controls, shared by every story that themes with them.
@@ -95,140 +92,44 @@ export function Layout({
 }
 
 /**
- * The custom-color roles, as Tailwind utilities.
+ * Renders every M3 role as a Tailwind utility class: `Scheme` and `Shades`,
+ * switched to their `tw` mode, where each swatch takes its color from `bg-*`
+ * instead of `var(--md-sys-color-*)`.
  *
- * `Scheme` renders custom colors through inline `var(--md-sys-color-*)` styles,
- * because their names only exist at runtime — `bg-${name}` would never be seen
- * by Tailwind's source scanner, so the utility would never be generated. Here
- * the names are known, so the classes can be written literally and actually
- * prove that `bg-myCustomColor1` & co. resolve.
+ * The utilities they name at runtime -- shades, custom colors -- are listed for
+ * Tailwind by an `@source inline()` in `globals.css`.
  */
-const twCustomColors = [1, 2].map((n): [string, string][] => [
-  [`my-custom-color-${n}`, `MyCustomColor${n}`],
-  [`on-my-custom-color-${n}`, `On MyCustomColor${n}`],
-  [`my-custom-color-${n}-container`, `MyCustomColor${n} Container`],
-  [`on-my-custom-color-${n}-container`, `On MyCustomColor${n} Container`],
-]);
-const twCustomColorClasses: Record<string, string> = {
-  "my-custom-color-1": "bg-myCustomColor1",
-  "on-my-custom-color-1": "bg-on-myCustomColor1",
-  "my-custom-color-1-container": "bg-myCustomColor1-container",
-  "on-my-custom-color-1-container": "bg-on-myCustomColor1-container",
-  "my-custom-color-2": "bg-myCustomColor2",
-  "on-my-custom-color-2": "bg-on-myCustomColor2",
-  "my-custom-color-2-container": "bg-myCustomColor2-container",
-  "on-my-custom-color-2-container": "bg-on-myCustomColor2-container",
-};
-
-function TailwindCustomColors() {
-  return (
-    <div className="flex flex-col gap-(--gap2)">
-      {twCustomColors.map((roles, i) => (
-        <div key={i} className="grid grid-cols-4">
-          {roles.map(([role, label]) => (
-            <div
-              key={role}
-              className={`h-(--cell) ${twCustomColorClasses[role]}`}
-              title={role}
-            >
-              <p style={{ color: roleInk(role) }}>{label}</p>
-            </div>
-          ))}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/**
- * The tonal shades, as Tailwind utilities -- spelled out, for the same
- * scanner, in `SHADE_TO_TONE`'s order.
- */
-const twShades = {
-  Primary:
-    "bg-primary-50 bg-primary-100 bg-primary-200 bg-primary-300 bg-primary-400 bg-primary-500 bg-primary-600 bg-primary-700 bg-primary-800 bg-primary-900 bg-primary-950",
-  Secondary:
-    "bg-secondary-50 bg-secondary-100 bg-secondary-200 bg-secondary-300 bg-secondary-400 bg-secondary-500 bg-secondary-600 bg-secondary-700 bg-secondary-800 bg-secondary-900 bg-secondary-950",
-  Tertiary:
-    "bg-tertiary-50 bg-tertiary-100 bg-tertiary-200 bg-tertiary-300 bg-tertiary-400 bg-tertiary-500 bg-tertiary-600 bg-tertiary-700 bg-tertiary-800 bg-tertiary-900 bg-tertiary-950",
-  Error:
-    "bg-error-50 bg-error-100 bg-error-200 bg-error-300 bg-error-400 bg-error-500 bg-error-600 bg-error-700 bg-error-800 bg-error-900 bg-error-950",
-  Neutral:
-    "bg-neutral-50 bg-neutral-100 bg-neutral-200 bg-neutral-300 bg-neutral-400 bg-neutral-500 bg-neutral-600 bg-neutral-700 bg-neutral-800 bg-neutral-900 bg-neutral-950",
-  "Neutral Variant":
-    "bg-neutral-variant-50 bg-neutral-variant-100 bg-neutral-variant-200 bg-neutral-variant-300 bg-neutral-variant-400 bg-neutral-variant-500 bg-neutral-variant-600 bg-neutral-variant-700 bg-neutral-variant-800 bg-neutral-variant-900 bg-neutral-variant-950",
-  myCustomColor1:
-    "bg-myCustomColor1-50 bg-myCustomColor1-100 bg-myCustomColor1-200 bg-myCustomColor1-300 bg-myCustomColor1-400 bg-myCustomColor1-500 bg-myCustomColor1-600 bg-myCustomColor1-700 bg-myCustomColor1-800 bg-myCustomColor1-900 bg-myCustomColor1-950",
-  myCustomColor2:
-    "bg-myCustomColor2-50 bg-myCustomColor2-100 bg-myCustomColor2-200 bg-myCustomColor2-300 bg-myCustomColor2-400 bg-myCustomColor2-500 bg-myCustomColor2-600 bg-myCustomColor2-700 bg-myCustomColor2-800 bg-myCustomColor2-900 bg-myCustomColor2-950",
-};
-
-function TailwindShades() {
-  return (
-    <div className="space-y-4">
-      {Object.entries(twShades).map(([title, classes]) => (
-        <div key={title} className="space-y-2">
-          <h4 className="text-sm font-semibold">{title}</h4>
-          <div className="grid grid-cols-11 rounded-md overflow-hidden">
-            {SHADE_TO_TONE.map(([shade, tone], i) => (
-              <div
-                key={shade}
-                className={`${classes.split(" ")[i]} aspect-square flex items-center justify-center text-center text-xs`}
-                style={{ color: toneInk(kebabCase(title), tone) }}
-              >
-                {shade}
-              </div>
-            ))}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/**
- * Renders every M3 role as a Tailwind utility class.
- *
- * Reuses the `Scheme` layout — switched to its `tw` mode, where each swatch
- * takes its color from `bg-*` instead of `var(--md-sys-color-*)` — and
- * completes it with what `Scheme` cannot express as classes: the custom colors,
- * and the tonal shades.
- */
-export function TailwindScheme() {
+export function TailwindScheme({
+  customColors,
+}: Pick<ComponentProps<typeof Scheme>, "customColors">) {
   return (
     <>
       <Scheme
         tw
         theme="light"
         title="Light scheme"
+        customColors={customColors}
         fixedAccents
         surfaceTint
         background
         surfaceVariant
-      >
-        <TailwindCustomColors />
-      </Scheme>
-
+      />
       <Scheme
         tw
         theme="dark"
         title="Dark scheme"
+        customColors={customColors}
         fixedAccents
         surfaceTint
         background
         surfaceVariant
-      >
-        <TailwindCustomColors />
-      </Scheme>
+      />
+      <Shades tw customColors={customColors} />
 
-      <div className="p-6 space-y-6">
-        <TailwindShades />
-
-        <p className="text-sm italic text-center">
-          Every color the <code>@plugin</code> declares is shown here as a
-          Tailwind utility class
-        </p>
-      </div>
+      <p className="text-sm italic text-center">
+        Every color the <code>@plugin</code> declares is shown here as a
+        Tailwind utility class
+      </p>
     </>
   );
 }

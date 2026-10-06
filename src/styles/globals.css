@@ -39,6 +39,9 @@
 @plugin "../tailwind-plugin.ts" {
   custom-colors: myCustomColor1, myCustomColor2;
 }
+/* The utilities `<Scheme tw>` / `<Shades tw>` name at runtime -- no scanner sees them. */
+@source inline("bg-{primary,secondary,tertiary,error,neutral,neutral-variant,myCustomColor1,myCustomColor2}-{50,{100..900..100},950}");
+@source inline("bg-{,on-}{myCustomColor1,myCustomColor2}{,-container}");
 
 @custom-variant dark (&:is(.dark *));
 

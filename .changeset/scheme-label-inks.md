@@ -15,3 +15,8 @@ Builder's own does, instead of white blended by difference:
 `<Scheme tw>` paints `primary`, `secondary` and `background` straight from
 their `--md-sys-color-*` property, as an arbitrary value: next to shadcn, which
 claims those three names too, `bg-secondary` lands on `secondary-container`.
+
+`<Scheme tw>` paints the custom colors with their utilities too
+(`bg-on-brand`…), and `<Shades tw>` paints the plugin's eleven Tailwind shades
+(`bg-primary-500`…). Both are named at runtime, so list them for Tailwind with
+`@source inline()`.
