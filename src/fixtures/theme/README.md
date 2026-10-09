@@ -4,5 +4,5 @@ Regenerate with:
 
 ```sh
 pnpm run build
-node dist/cli.js builder "#6750A4" --output src/fixtures/theme
+node dist/cli.js "#6750A4" --format figma --output src/fixtures/theme
 ```

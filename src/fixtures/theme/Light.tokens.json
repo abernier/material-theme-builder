@@ -1,4 +1,7 @@
 {
+  "$extensions": {
+    "com.figma.modeName": "Light"
+  },
   "ref": {
     "palette": {
       "Primary": {
@@ -2846,7 +2849,285 @@
       }
     }
   },
-  "$extensions": {
-    "com.figma.modeName": "Light"
+  "shadcn": {
+    "Background": {
+      "$type": "color",
+      "$value": "{sys.color.Surface}",
+      "$description": "shadcn --background, backed by the M3 surface role.",
+      "$extensions": {
+        "com.figma.scopes": ["ALL_SCOPES"],
+        "css.variable": "--background"
+      }
+    },
+    "Foreground": {
+      "$type": "color",
+      "$value": "{sys.color.On Surface}",
+      "$description": "shadcn --foreground, backed by the M3 on-surface role.",
+      "$extensions": {
+        "com.figma.scopes": ["ALL_SCOPES"],
+        "css.variable": "--foreground"
+      }
+    },
+    "Card": {
+      "$type": "color",
+      "$value": "{sys.color.Surface Container Low}",
+      "$description": "shadcn --card, backed by the M3 surface-container-low role.",
+      "$extensions": {
+        "com.figma.scopes": ["ALL_SCOPES"],
+        "css.variable": "--card"
+      }
+    },
+    "Card Foreground": {
+      "$type": "color",
+      "$value": "{sys.color.On Surface}",
+      "$description": "shadcn --card-foreground, backed by the M3 on-surface role.",
+      "$extensions": {
+        "com.figma.scopes": ["ALL_SCOPES"],
+        "css.variable": "--card-foreground"
+      }
+    },
+    "Popover": {
+      "$type": "color",
+      "$value": "{sys.color.Surface Container High}",
+      "$description": "shadcn --popover, backed by the M3 surface-container-high role.",
+      "$extensions": {
+        "com.figma.scopes": ["ALL_SCOPES"],
+        "css.variable": "--popover"
+      }
+    },
+    "Popover Foreground": {
+      "$type": "color",
+      "$value": "{sys.color.On Surface}",
+      "$description": "shadcn --popover-foreground, backed by the M3 on-surface role.",
+      "$extensions": {
+        "com.figma.scopes": ["ALL_SCOPES"],
+        "css.variable": "--popover-foreground"
+      }
+    },
+    "Primary": {
+      "$type": "color",
+      "$value": "{sys.color.Primary}",
+      "$description": "shadcn --primary, backed by the M3 primary role.",
+      "$extensions": {
+        "com.figma.scopes": ["ALL_SCOPES"],
+        "css.variable": "--primary"
+      }
+    },
+    "Primary Foreground": {
+      "$type": "color",
+      "$value": "{sys.color.On Primary}",
+      "$description": "shadcn --primary-foreground, backed by the M3 on-primary role.",
+      "$extensions": {
+        "com.figma.scopes": ["ALL_SCOPES"],
+        "css.variable": "--primary-foreground"
+      }
+    },
+    "Secondary": {
+      "$type": "color",
+      "$value": "{sys.color.Secondary Container}",
+      "$description": "shadcn --secondary, backed by the M3 secondary-container role.",
+      "$extensions": {
+        "com.figma.scopes": ["ALL_SCOPES"],
+        "css.variable": "--secondary"
+      }
+    },
+    "Secondary Foreground": {
+      "$type": "color",
+      "$value": "{sys.color.On Secondary Container}",
+      "$description": "shadcn --secondary-foreground, backed by the M3 on-secondary-container role.",
+      "$extensions": {
+        "com.figma.scopes": ["ALL_SCOPES"],
+        "css.variable": "--secondary-foreground"
+      }
+    },
+    "Muted": {
+      "$type": "color",
+      "$value": "{sys.color.Surface Container Highest}",
+      "$description": "shadcn --muted, backed by the M3 surface-container-highest role.",
+      "$extensions": {
+        "com.figma.scopes": ["ALL_SCOPES"],
+        "css.variable": "--muted"
+      }
+    },
+    "Muted Foreground": {
+      "$type": "color",
+      "$value": "{sys.color.On Surface Variant}",
+      "$description": "shadcn --muted-foreground, backed by the M3 on-surface-variant role.",
+      "$extensions": {
+        "com.figma.scopes": ["ALL_SCOPES"],
+        "css.variable": "--muted-foreground"
+      }
+    },
+    "Accent": {
+      "$type": "color",
+      "$value": "{sys.color.Secondary Container}",
+      "$description": "shadcn --accent, backed by the M3 secondary-container role.",
+      "$extensions": {
+        "com.figma.scopes": ["ALL_SCOPES"],
+        "css.variable": "--accent"
+      }
+    },
+    "Accent Foreground": {
+      "$type": "color",
+      "$value": "{sys.color.On Secondary Container}",
+      "$description": "shadcn --accent-foreground, backed by the M3 on-secondary-container role.",
+      "$extensions": {
+        "com.figma.scopes": ["ALL_SCOPES"],
+        "css.variable": "--accent-foreground"
+      }
+    },
+    "Destructive": {
+      "$type": "color",
+      "$value": "{sys.color.Error}",
+      "$description": "shadcn --destructive, backed by the M3 error role.",
+      "$extensions": {
+        "com.figma.scopes": ["ALL_SCOPES"],
+        "css.variable": "--destructive"
+      }
+    },
+    "Border": {
+      "$type": "color",
+      "$value": "{sys.color.Outline Variant}",
+      "$description": "shadcn --border, backed by the M3 outline-variant role.",
+      "$extensions": {
+        "com.figma.scopes": ["ALL_SCOPES"],
+        "css.variable": "--border"
+      }
+    },
+    "Input": {
+      "$type": "color",
+      "$value": "{sys.color.Outline}",
+      "$description": "shadcn --input, backed by the M3 outline role.",
+      "$extensions": {
+        "com.figma.scopes": ["ALL_SCOPES"],
+        "css.variable": "--input"
+      }
+    },
+    "Ring": {
+      "$type": "color",
+      "$value": "{sys.color.Primary}",
+      "$description": "shadcn --ring, backed by the M3 primary role.",
+      "$extensions": {
+        "com.figma.scopes": ["ALL_SCOPES"],
+        "css.variable": "--ring"
+      }
+    },
+    "Chart 1": {
+      "$type": "color",
+      "$value": "{sys.color.Primary Fixed}",
+      "$description": "shadcn --chart-1, backed by the M3 primary-fixed role.",
+      "$extensions": {
+        "com.figma.scopes": ["ALL_SCOPES"],
+        "css.variable": "--chart-1"
+      }
+    },
+    "Chart 2": {
+      "$type": "color",
+      "$value": "{sys.color.Secondary Fixed}",
+      "$description": "shadcn --chart-2, backed by the M3 secondary-fixed role.",
+      "$extensions": {
+        "com.figma.scopes": ["ALL_SCOPES"],
+        "css.variable": "--chart-2"
+      }
+    },
+    "Chart 3": {
+      "$type": "color",
+      "$value": "{sys.color.Tertiary Fixed}",
+      "$description": "shadcn --chart-3, backed by the M3 tertiary-fixed role.",
+      "$extensions": {
+        "com.figma.scopes": ["ALL_SCOPES"],
+        "css.variable": "--chart-3"
+      }
+    },
+    "Chart 4": {
+      "$type": "color",
+      "$value": "{sys.color.Primary Fixed Dim}",
+      "$description": "shadcn --chart-4, backed by the M3 primary-fixed-dim role.",
+      "$extensions": {
+        "com.figma.scopes": ["ALL_SCOPES"],
+        "css.variable": "--chart-4"
+      }
+    },
+    "Chart 5": {
+      "$type": "color",
+      "$value": "{sys.color.Secondary Fixed Dim}",
+      "$description": "shadcn --chart-5, backed by the M3 secondary-fixed-dim role.",
+      "$extensions": {
+        "com.figma.scopes": ["ALL_SCOPES"],
+        "css.variable": "--chart-5"
+      }
+    },
+    "Sidebar": {
+      "$type": "color",
+      "$value": "{sys.color.Surface Container Low}",
+      "$description": "shadcn --sidebar, backed by the M3 surface-container-low role.",
+      "$extensions": {
+        "com.figma.scopes": ["ALL_SCOPES"],
+        "css.variable": "--sidebar"
+      }
+    },
+    "Sidebar Foreground": {
+      "$type": "color",
+      "$value": "{sys.color.On Surface}",
+      "$description": "shadcn --sidebar-foreground, backed by the M3 on-surface role.",
+      "$extensions": {
+        "com.figma.scopes": ["ALL_SCOPES"],
+        "css.variable": "--sidebar-foreground"
+      }
+    },
+    "Sidebar Primary": {
+      "$type": "color",
+      "$value": "{sys.color.Primary}",
+      "$description": "shadcn --sidebar-primary, backed by the M3 primary role.",
+      "$extensions": {
+        "com.figma.scopes": ["ALL_SCOPES"],
+        "css.variable": "--sidebar-primary"
+      }
+    },
+    "Sidebar Primary Foreground": {
+      "$type": "color",
+      "$value": "{sys.color.On Primary}",
+      "$description": "shadcn --sidebar-primary-foreground, backed by the M3 on-primary role.",
+      "$extensions": {
+        "com.figma.scopes": ["ALL_SCOPES"],
+        "css.variable": "--sidebar-primary-foreground"
+      }
+    },
+    "Sidebar Accent": {
+      "$type": "color",
+      "$value": "{sys.color.Secondary Container}",
+      "$description": "shadcn --sidebar-accent, backed by the M3 secondary-container role.",
+      "$extensions": {
+        "com.figma.scopes": ["ALL_SCOPES"],
+        "css.variable": "--sidebar-accent"
+      }
+    },
+    "Sidebar Accent Foreground": {
+      "$type": "color",
+      "$value": "{sys.color.On Secondary Container}",
+      "$description": "shadcn --sidebar-accent-foreground, backed by the M3 on-secondary-container role.",
+      "$extensions": {
+        "com.figma.scopes": ["ALL_SCOPES"],
+        "css.variable": "--sidebar-accent-foreground"
+      }
+    },
+    "Sidebar Border": {
+      "$type": "color",
+      "$value": "{sys.color.Outline Variant}",
+      "$description": "shadcn --sidebar-border, backed by the M3 outline-variant role.",
+      "$extensions": {
+        "com.figma.scopes": ["ALL_SCOPES"],
+        "css.variable": "--sidebar-border"
+      }
+    },
+    "Sidebar Ring": {
+      "$type": "color",
+      "$value": "{sys.color.Primary}",
+      "$description": "shadcn --sidebar-ring, backed by the M3 primary role.",
+      "$extensions": {
+        "com.figma.scopes": ["ALL_SCOPES"],
+        "css.variable": "--sidebar-ring"
+      }
+    }
   }
 }
